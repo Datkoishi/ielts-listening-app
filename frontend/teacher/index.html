@@ -2636,12 +2636,14 @@ function initializePlanMapDiagram(container) {
   if (saveQuestionsBtn) {
     saveQuestionsBtn.addEventListener("click", async () => {
       try {
-        if (!validatePlanMapDiagramQuestion(questionForm)) {
-          return
-        }
         const questionType = questionTypeSelect?.value
         const instructions = container.querySelector("#instructions")?.value?.trim()
         const numQuestions = Number.parseInt(numQuestionsInput?.value || "0", 10)
+
+        // Validate the form
+        if (!validatePlanMapDiagramQuestion(questionForm)) {
+          return
+        }
 
         console.log("Saving form data:", {
           questionType,
@@ -2649,6 +2651,8 @@ function initializePlanMapDiagram(container) {
           hasImage: !!imageDataUrl,
           numQuestions,
         })
+
+        // Continue with saving...
 
         // Validate required fields
         if (!questionType || !instructions || !imageDataUrl) {
@@ -3720,19 +3724,13 @@ function showNotification(message, type = "info") {
 function validatePlanMapDiagramQuestion(questionElement) {
   if (!questionElement) return false
 
-  // Chỉ kiểm tra loại câu hỏi đã chọn
+  // Get the selected question type
   const questionType = questionElement.querySelector("#questionType")?.value
   const instructions = questionElement.querySelector("#instructions")?.value
+  const imageElement = questionElement.querySelector("img")
   const imageFile = questionElement.querySelector("#imageFile")?.files[0]
 
-  // Log để debug
-  console.log("Validating form data:", {
-    questionType,
-    instructions,
-    hasImage: !!imageFile,
-  })
-
-  // Kiểm tra các trường bắt buộc
+  // Check basic required fields
   if (!questionType) {
     showNotification("Vui lòng chọn loại câu hỏi", "error")
     return false
@@ -3743,36 +3741,45 @@ function validatePlanMapDiagramQuestion(questionElement) {
     return false
   }
 
-  if (!imageFile && !questionElement.querySelector("img")) {
+  if (!imageElement && !imageFile) {
     showNotification("Vui lòng tải lên hình ảnh", "error")
     return false
   }
 
-  // Lấy tất cả câu trả lời cho loại câu hỏi đã chọn
-  const answers = Array.from(questionElement.querySelectorAll('[id^="answer"]'))
-  if (answers.length === 0) {
-    showNotification("Vui lòng thêm ít nhất một câu trả lời", "error")
+  // Get number of questions
+  const numQuestions = Number.parseInt(questionElement.querySelector("#numQuestions")?.value || "0", 10)
+  if (numQuestions <= 0) {
+    showNotification("Vui lòng nhập số lượng câu hỏi hợp lệ", "error")
     return false
   }
 
-  // Kiểm tra đáp án dựa trên loại câu hỏi đã chọn
-  if (questionType === "map") {
-    // Chỉ kiểm tra radio buttons cho câu hỏi map
-    const hasAllAnswers = answers.every((_, index) => {
-      const selectedRadio = questionElement.querySelector(`input[name="correctAnswer${index}"]:checked`)
+  // Validate answers based on selected type
+  for (let i = 0; i < numQuestions; i++) {
+    const answer = questionElement.querySelector(`#answer${i}`)?.value?.trim()
+    if (!answer) {
+      showNotification(`Vui lòng nhập câu trả lời cho câu ${i + 1}`, "error")
+      return false
+    }
+
+    if (questionType === "map") {
+      const selectedRadio = questionElement.querySelector(`input[name="correctAnswer${i}"]:checked`)
       if (!selectedRadio) {
-        showNotification(`Vui lòng chọn đáp án đúng cho câu hỏi ${index + 1}`, "error")
+        showNotification(`Vui lòng chọn đáp án đúng cho câu ${i + 1}`, "error")
         return false
       }
-      return true
-    })
-    if (!hasAllAnswers) {
-      return false
+    } else {
+      const correctAnswer = questionElement.querySelector(`#correctAnswer${i}`)?.value?.trim()
+      if (!correctAnswer) {
+        showNotification(`Vui lòng nhập đáp án đúng cho câu ${i + 1}`, "error")
+        return false
+      }
     }
   }
 
   return true
 }
+
+
     </script>
         </body></html>
 
