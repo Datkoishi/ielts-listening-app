@@ -1221,7 +1221,7 @@
     </div>
 
     <script>
-   // Constants
+  // Constants
 const MAX_QUESTIONS = 40
 const PARTS = 4
 
@@ -1231,8 +1231,11 @@ let currentPart = 1
 let totalQuestions = 0
 const audioFile = null
 const audioDuration = 0
+
+// Add test metadata to the test object
 let test = {
-  // Changed to let
+  title: "",
+  description: "",
   part1: [],
   part2: [],
   part3: [],
@@ -1415,6 +1418,114 @@ function updateT2ListeningExercisePreview() {
   }
 }
 
+// Add function to validate test metadata
+function validateTestMetadata() {
+  if (!test.title) {
+    showNotification("Vui lòng nhập tên bộ đề thi", "error")
+    return false
+  }
+  return true
+}
+
+// Add function to check minimum questions per part
+function validatePartQuestions() {
+  // Minimum 2 questions per part is recommended but not required
+  const warnings = []
+  for (let i = 1; i <= 4; i++) {
+    const partQuestions = test[`part${i}`].length
+    if (partQuestions === 0) {
+      warnings.push(`Part ${i} chưa có câu hỏi nào`)
+    }
+  }
+
+  if (warnings.length > 0) {
+    return confirm(`Cảnh báo:\n${warnings.join("\n")}\n\nBạn có muốn tiếp tục lưu không?`)
+  }
+
+  return true
+}
+
+// Update the saveTest function
+function saveTest() {
+  try {
+    console.log("Starting to save test...")
+
+    // Validate test metadata first
+    if (!validateTestMetadata()) {
+      return
+    }
+
+    const savedTest = {
+      title: test.title,
+      description: test.description,
+      part1: test.part1 || [],
+      part2: test.part2 || [],
+      part3: test.part3 || [],
+      part4: test.part4 || [],
+    }
+
+    // Count total valid questions
+    let totalValidQuestions = 0
+    for (let i = 1; i <= 4; i++) {
+      if (savedTest[`part${i}`] && savedTest[`part${i}`].length > 0) {
+        totalValidQuestions += savedTest[`part${i}`].reduce((sum, q) => sum + (q.numQuestions || 1), 0)
+      }
+    }
+
+    // Check if we have any valid questions
+    if (totalValidQuestions === 0) {
+      showNotification("Không tìm thấy câu hỏi hợp lệ nào để lưu", "error")
+      return
+    }
+
+    // Validate part questions
+    if (!validatePartQuestions()) {
+      return
+    }
+
+    // Update the test object
+    test = savedTest
+    console.log("Final saved test:", test)
+
+    showNotification(`Đã lưu thành công ${totalValidQuestions} câu hỏi!`, "success")
+  } catch (error) {
+    console.error("Error saving test:", error)
+    showNotification(`Lỗi khi lưu bài thi: ${error.message}`, "error")
+  }
+}
+
+// Cập nhật hàm addTestMetadataForm để thêm form vào đầu trang test creation
+function addTestMetadataForm() {
+  const metadataForm = document.createElement("div")
+  metadataForm.className = "test-metadata-form"
+  metadataForm.innerHTML = `
+    <div class="form-group">
+      <label for="testTitle">Tên bộ đề thi:</label>
+      <input type="text" id="testTitle" required 
+        value="${test.title}"
+        onchange="updateTestMetadata('title', this.value)">
+    </div>
+    <div class="form-group">
+      <label for="testDescription">Mô tả (không bắt buộc):</label>
+      <textarea id="testDescription" rows="2"
+        onchange="updateTestMetadata('description', this.value)">${test.description}</textarea>
+    </div>
+  `
+
+  // Thêm form vào đầu trang test creation
+  const testContent = document.getElementById("testContent")
+  if (testContent) {
+    testContent.insertBefore(metadataForm, testContent.firstChild)
+  } else {
+    console.error("Test content container not found")
+  }
+}
+
+// Update test metadata
+function updateTestMetadata(field, value) {
+  test[field] = value
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("startTestBtn").addEventListener("click", startTestCreation)
   document.getElementById("previousPartBtn").addEventListener("click", previousPart)
@@ -1448,6 +1559,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Gọi hàm để lấy danh sách loại câu hỏi khi trang được tải
   fetchQuestionTypes()
+
+  // Add test metadata form
+  addTestMetadataForm()
 })
 
 function startTestCreation() {
@@ -1461,6 +1575,7 @@ function startTestCreation() {
   renderTestCreation()
 }
 
+// Cập nhật hàm renderTestCreation để gọi addTestMetadataForm
 function renderTestCreation() {
   const testContent = document.getElementById("testContent")
   if (!testContent) {
@@ -1474,6 +1589,9 @@ function renderTestCreation() {
       <div class="question-count"><i class="fas fa-question-circle"></i> Total Questions: ${totalQuestions}/40</div>
     </div>
   `
+
+  // Thêm form metadata
+  addTestMetadataForm()
 
   // Create all part containers if they don't exist
   for (let i = 1; i <= 4; i++) {
@@ -1632,287 +1750,227 @@ function nextPart() {
   }
 }
 
-function saveTest() {
-  try {
-    console.log("Starting to save test...")
-    const savedTest = {
-      part1: [],
-      part2: [],
-      part3: [],
-      part4: [],
-    }
+function processQuestionByType(q, type, questionIndex, part) {
+  switch (type) {
+    case "One answer": {
+      const questionText = q.querySelector("#t3-questionText")?.value?.trim()
+      const options =
+        q
+          .querySelector("#t3-options")
+          ?.value?.split("\n")
+          .filter((o) => o.trim()) || []
+      const correctAnswer = q.querySelector("#t3-correctAnswer")?.value?.trim()
 
-    for (let i = 1; i <= 4; i++) {
-      console.log(`Processing part ${i}...`)
-      const part = document.getElementById(`part${i}`)
-      if (!part) {
-        console.warn(`Part ${i} container not found`)
-        continue
+      if (!questionText || options.length === 0 || !correctAnswer) {
+        console.warn(`Incomplete data for One answer question ${questionIndex + 1}`)
+        return null
       }
 
-      const questions = part.querySelectorAll(".question")
-      console.log(`Found ${questions.length} questions in part ${i}`)
+      return {
+        type,
+        content: [questionText, ...options],
+        correctAnswers: correctAnswer,
+      }
+    }
 
-      savedTest[`part${i}`] = Array.from(questions)
-        .map((q, questionIndex) => {
-          // Get the question type from the closest h3 element
-          const typeElement = q.querySelector("h3")
-          if (!typeElement) {
-            console.warn(`Type element not found for question ${questionIndex + 1} in part ${i}`)
-            return null
-          }
+    case "More than one answer": {
+      const questionText = q.querySelector("#t4-questionText")?.value?.trim()
+      const options =
+        q
+          .querySelector("#t4-options")
+          ?.value?.split("\n")
+          .filter((o) => o.trim()) || []
+      const answers = q.querySelector("#t4-correctAnswers")?.value?.trim()
 
-          const type = typeElement.textContent.replace(/[^a-zA-Z\s/-]/g, "").trim()
-          console.log(`Processing question ${questionIndex + 1} of type: ${type}`)
+      if (!questionText || options.length === 0 || !answers) {
+        console.warn(`Incomplete data for More than one answer question ${questionIndex + 1}`)
+        return null
+      }
 
-          try {
-            switch (type) {
-              case "One answer": {
-                const questionText = q.querySelector("#t3-questionText")?.value?.trim()
-                const options =
-                  q
-                    .querySelector("#t3-options")
-                    ?.value?.split("\n")
-                    .filter((o) => o.trim()) || []
-                const correctAnswer = q.querySelector("#t3-correctAnswer")?.value?.trim()
+      return {
+        type,
+        content: [questionText, ...options],
+        correctAnswers: answers
+          .split(",")
+          .map((a) => a.trim())
+          .filter((a) => a),
+      }
+    }
 
-                if (!questionText || options.length === 0 || !correctAnswer) {
-                  console.warn(`Incomplete data for One answer question ${questionIndex + 1}`)
-                  return null
-                }
+    case "Matching": {
+      const title = q.querySelector('[id^="t3-questionTitle"]')?.value?.trim()
+      const people =
+        q
+          .querySelector('[id^="t3-people"]')
+          ?.value?.split("\n")
+          .filter((p) => p.trim()) || []
+      const responsibilities =
+        q
+          .querySelector('[id^="t3-responsibilities"]')
+          ?.value?.split("\n")
+          .filter((r) => r.trim()) || []
+      const answers =
+        q
+          .querySelector('[id^="t3-correctAnswers"]')
+          ?.value?.split("\n")
+          .filter((a) => a.trim()) || []
 
-                return {
-                  type,
-                  content: [questionText, ...options],
-                  correctAnswers: correctAnswer,
-                }
-              }
+      if (!title || people.length === 0 || responsibilities.length === 0 || answers.length === 0) {
+        console.warn(`Incomplete data for Matching question ${questionIndex + 1}`)
+        return null
+      }
 
-              case "More than one answer": {
-                const questionText = q.querySelector("#t4-questionText")?.value?.trim()
-                const options =
-                  q
-                    .querySelector("#t4-options")
-                    ?.value?.split("\n")
-                    .filter((o) => o.trim()) || []
-                const answers = q.querySelector("#t4-correctAnswers")?.value?.trim()
+      return {
+        type,
+        content: [title, ...people, ...responsibilities],
+        correctAnswers: answers,
+      }
+    }
 
-                if (!questionText || options.length === 0 || !answers) {
-                  console.warn(`Incomplete data for More than one answer question ${questionIndex + 1}`)
-                  return null
-                }
+    case "Plan/Map/Diagram labelling": {
+      const questionType = q.querySelector("#questionType")?.value?.trim()
+      const instructions = q.querySelector("#instructions")?.value?.trim()
+      const imageElement = q.querySelector("img")
+      const imageUrl = imageElement ? imageElement.src : ""
+      const answers = Array.from(q.querySelectorAll('[id^="answer"]')).map((el) => el.value?.trim() || "")
 
-                return {
-                  type,
-                  content: [questionText, ...options],
-                  correctAnswers: answers
-                    .split(",")
-                    .map((a) => a.trim())
-                    .filter((a) => a),
-                }
-              }
+      // Log the current state for debugging
+      console.log("Processing Plan/Map/Diagram question data:", {
+        questionType,
+        instructions,
+        hasImage: !!imageUrl,
+        answers,
+      })
 
-              case "Matching": {
-                const title = q.querySelector('[id^="t3-questionTitle"]')?.value?.trim()
-                const people =
-                  q
-                    .querySelector('[id^="t3-people"]')
-                    ?.value?.split("\n")
-                    .filter((p) => p.trim()) || []
-                const responsibilities =
-                  q
-                    .querySelector('[id^="t3-responsibilities"]')
-                    ?.value?.split("\n")
-                    .filter((r) => r.trim()) || []
-                const answers =
-                  q
-                    .querySelector('[id^="t3-correctAnswers"]')
-                    ?.value?.split("\n")
-                    .filter((a) => a.trim()) || []
-
-                if (!title || people.length === 0 || responsibilities.length === 0 || answers.length === 0) {
-                  console.warn(`Incomplete data for Matching question ${questionIndex + 1}`)
-                  return null
-                }
-
-                return {
-                  type,
-                  content: [title, ...people, ...responsibilities],
-                  correctAnswers: answers,
-                }
-              }
-
-              case "Plan/Map/Diagram labelling": {
-                const questionType = q.querySelector("#questionType")?.value?.trim()
-                const instructions = q.querySelector("#instructions")?.value?.trim()
-                const imageElement = q.querySelector("img")
-                const imageUrl = imageElement ? imageElement.src : ""
-                const answers = Array.from(q.querySelectorAll('[id^="answer"]')).map((el) => el.value?.trim() || "")
-
-                // Log the current state for debugging
-                console.log("Processing Plan/Map/Diagram question data:", {
-                  questionType,
-                  instructions,
-                  hasImage: !!imageUrl,
-                  answers,
-                })
-
-                // Validate required fields
-                if (!questionType || !instructions || !imageUrl) {
-                  console.warn(`Missing required fields for question ${questionIndex + 1}:`, {
-                    hasType: !!questionType,
-                    hasInstructions: !!instructions,
-                    hasImage: !!imageUrl,
-                  })
-                  return null
-                }
-
-                // Get correct answers based on question type
-                let correctAnswers = []
-                if (questionType === "map") {
-                  // For map type, get selected radio button values
-                  correctAnswers = answers.map((_, index) => {
-                    const selectedRadio = q.querySelector(`input[name="correctAnswer${index}"]:checked`)
-                    if (!selectedRadio) {
-                      console.warn(`No selected radio button for answer ${index + 1}`)
-                      return ""
-                    }
-                    return selectedRadio.value
-                  })
-                } else {
-                  // For other types, get values from correctAnswer inputs
-                  correctAnswers = Array.from(q.querySelectorAll('[id^="correctAnswer"]')).map(
-                    (el) => el.value?.trim() || "",
-                  )
-                }
-
-                // Validate answers
-                if (answers.length === 0 || correctAnswers.some((answer) => !answer)) {
-                  console.warn(`Invalid answers for question ${questionIndex + 1}:`, {
-                    answerCount: answers.length,
-                    correctAnswers,
-                  })
-                  return null
-                }
-
-                // Log the final question data
-                const questionData = {
-                  type,
-                  content: [questionType, instructions, imageUrl, ...answers],
-                  correctAnswers: correctAnswers.filter((answer) => answer),
-                }
-                console.log(`Question ${questionIndex + 1} data:`, questionData)
-
-                return questionData
-              }
-
-              case "Note Completion": {
-                const instructions = q.querySelector("#t2ListeningExerciseInstructions")?.value?.trim()
-                const topic = q.querySelector("#t2ListeningExerciseTopic")?.value?.trim()
-                const questions = Array.from(q.querySelectorAll('[id^="t2ListeningExerciseQuestion"]'))
-                  .map((el) => el.value?.trim())
-                  .filter((q) => q)
-                const answers = Array.from(q.querySelectorAll(".t2-listening-exercise-correct-answer-input"))
-                  .map((el) => el.value?.trim())
-                  .filter((a) => a)
-
-                if (!instructions || !topic || questions.length === 0 || answers.length === 0) {
-                  console.warn(`Incomplete data for Note Completion question ${questionIndex + 1}`)
-                  return null
-                }
-
-                return {
-                  type,
-                  content: [instructions, topic, ...questions],
-                  correctAnswers: answers,
-                }
-              }
-
-              case "Form/Table Completion": {
-                const instruction = q.querySelector("#tableInstruction")?.value?.trim()
-                const rows = Array.from(q.querySelectorAll("#fareTable tr")).slice(1) // Skip header row
-                const tableData = rows
-                  .map((row) => {
-                    const inputs = row.querySelectorAll("input:not(.t6-correct-answer-input)")
-                    return Array.from(inputs).map((input) => input.value?.trim() || "")
-                  })
-                  .filter((row) => row.every((cell) => cell))
-
-                const answers = Array.from(q.querySelectorAll(".t6-correct-answer-input"))
-                  .map((el) => el.value?.trim())
-                  .filter((a) => a)
-
-                if (!instruction || tableData.length === 0 || answers.length === 0) {
-                  console.warn(`Incomplete data for Form/Table Completion question ${questionIndex + 1}`)
-                  return null
-                }
-
-                return {
-                  type,
-                  content: [instruction, ...tableData.flat()],
-                  correctAnswers: answers,
-                }
-              }
-
-              case "Flow chart Completion": {
-                const title = q.querySelector("#flowChartTitle")?.value?.trim()
-                const instructions = q.querySelector("#flowChartInstructions")?.value?.trim()
-                const flowItems =
-                  q
-                    .querySelector("#flowChartItems")
-                    ?.value?.split("\n")
-                    .filter((item) => item.trim()) || []
-                const options =
-                  q
-                    .querySelector("#flowChartOptions")
-                    ?.value?.split("\n")
-                    .filter((item) => item.trim()) || []
-                const answers = q
-                  .querySelector("#flowChartAnswers")
-                  ?.value?.split(",")
-                  .map((a) => a.trim())
-                  .filter((a) => a)
-
-                if (!title || !instructions || flowItems.length === 0 || options.length === 0 || answers.length === 0) {
-                  console.warn(`Incomplete data for Flow chart Completion question ${questionIndex + 1}`)
-                  return null
-                }
-
-                return {
-                  type,
-                  content: [title, instructions, ...flowItems, ...options],
-                  correctAnswers: answers,
-                }
-              }
-
-              default:
-                console.warn(`Unknown question type: ${type}`)
-                return null
-            }
-          } catch (error) {
-            console.error(`Error processing question ${questionIndex + 1} of type "${type}":`, error)
-            return null
-          }
+      // Validate required fields
+      if (!questionType || !instructions || !imageUrl) {
+        console.warn(`Missing required fields for question ${questionIndex + 1}:`, {
+          hasType: !!questionType,
+          hasInstructions: !!instructions,
+          hasImage: !!imageUrl,
         })
-        .filter((q) => q !== null) // Remove any null entries
+        return null
+      }
 
-      console.log(`Saved ${savedTest[`part${i}`].length} questions in part ${i}`)
+      // Get correct answers based on question type
+      let correctAnswers = []
+      if (questionType === "map") {
+        // For map type, get selected radio button values
+        correctAnswers = answers.map((_, index) => {
+          const selectedRadio = q.querySelector(`input[name="correctAnswer${index}"]:checked`)
+          if (!selectedRadio) {
+            console.warn(`No selected radio button for answer ${index + 1}`)
+            return ""
+          }
+          return selectedRadio.value
+        })
+      } else {
+        // For other types, get values from correctAnswer inputs
+        correctAnswers = Array.from(q.querySelectorAll('[id^="correctAnswer"]')).map((el) => el.value?.trim() || "")
+      }
+
+      // Validate answers
+      if (answers.length === 0 || correctAnswers.some((answer) => !answer)) {
+        console.warn(`Invalid answers for question ${questionIndex + 1}:`, {
+          answerCount: answers.length,
+          correctAnswers,
+        })
+        return null
+      }
+
+      // Log the final question data
+      const questionData = {
+        type,
+        content: [questionType, instructions, imageUrl, ...answers],
+        correctAnswers: correctAnswers.filter((answer) => answer),
+      }
+      console.log(`Question ${questionIndex + 1} data:`, questionData)
+
+      return questionData
     }
 
-    // Update the test object with the saved data
-    test = savedTest
-    console.log("Final saved test:", test)
+    case "Note Completion": {
+      const instructions = q.querySelector("#t2ListeningExerciseInstructions")?.value?.trim()
+      const topic = q.querySelector("#t2ListeningExerciseTopic")?.value?.trim()
+      const questions = Array.from(q.querySelectorAll('[id^="t2ListeningExerciseQuestion"]'))
+        .map((el) => el.value?.trim())
+        .filter((q) => q)
+      const answers = Array.from(q.querySelectorAll(".t2-listening-exercise-correct-answer-input"))
+        .map((el) => el.value?.trim())
+        .filter((a) => a)
 
-    // Check if any questions were actually saved
-    const totalSavedQuestions = Object.values(test).reduce((sum, part) => sum + part.length, 0)
-    if (totalSavedQuestions === 0) {
-      throw new Error("No valid questions were found to save")
+      if (!instructions || !topic || questions.length === 0 || answers.length === 0) {
+        console.warn(`Incomplete data for Note Completion question ${questionIndex + 1}`)
+        return null
+      }
+
+      return {
+        type,
+        content: [instructions, topic, ...questions],
+        correctAnswers: answers,
+      }
     }
 
-    alert(`Test saved successfully! Total questions: ${totalSavedQuestions}`)
-  } catch (error) {
-    console.error("Error saving test:", error)
-    alert(`Error saving test: ${error.message}. Please check the console for details.`)
+    case "Form/Table Completion": {
+      const instruction = q.querySelector("#tableInstruction")?.value?.trim()
+      const rows = Array.from(q.querySelectorAll("#fareTable tr")).slice(1) // Skip header row
+      const tableData = rows
+        .map((row) => {
+          const inputs = row.querySelectorAll("input:not(.t6-correct-answer-input)")
+          return Array.from(inputs).map((input) => input.value?.trim() || "")
+        })
+        .filter((row) => row.every((cell) => cell))
+
+      const answers = Array.from(q.querySelectorAll(".t6-correct-answer-input"))
+        .map((el) => el.value?.trim())
+        .filter((a) => a)
+
+      if (!instruction || tableData.length === 0 || answers.length === 0) {
+        console.warn(`Incomplete data for Form/Table Completion question ${questionIndex + 1}`)
+        return null
+      }
+
+      return {
+        type,
+        content: [instruction, ...tableData.flat()],
+        correctAnswers: answers,
+      }
+    }
+
+    case "Flow chart Completion": {
+      const title = q.querySelector("#flowChartTitle")?.value?.trim()
+      const instructions = q.querySelector("#flowChartInstructions")?.value?.trim()
+      const flowItems =
+        q
+          .querySelector("#flowChartItems")
+          ?.value?.split("\n")
+          .filter((item) => item.trim()) || []
+      const options =
+        q
+          .querySelector("#flowChartOptions")
+          ?.value?.split("\n")
+          .filter((item) => item.trim()) || []
+      const answers = q
+        .querySelector("#flowChartAnswers")
+        ?.value?.split(",")
+        .map((a) => a.trim())
+        .filter((a) => a)
+
+      if (!title || !instructions || flowItems.length === 0 || options.length === 0 || answers.length === 0) {
+        console.warn(`Incomplete data for Flow chart Completion question ${questionIndex + 1}`)
+        return null
+      }
+
+      return {
+        type,
+        content: [title, instructions, ...flowItems, ...options],
+        correctAnswers: answers,
+      }
+    }
+
+    default:
+      console.warn(`Unknown question type: ${type}`)
+      return null
   }
 }
 
@@ -2062,7 +2120,6 @@ function createPlanMapDiagramForm() {
                     </ul>
                 </li>
                 <li><strong>Xem lại và Gửi:</strong> Kiểm tra tất cả các mục nhập và nhấp vào "Thêm câu hỏi" để tạo câu hỏi.</li>
-                <li><strong>Lưu câu hỏi:</strong> Sau khi tạo tất cả câu h" để tạo câu hỏi.</li>
                 <li><strong>Lưu câu hỏi:</strong> Sau khi tạo tất cả câu hỏi, nhấp vào "Lưu câu hỏi" để gửi về hệ thống.</li>
             </ol>
         </div>
@@ -2523,12 +2580,20 @@ function initializeMatchingForm(container) {
 }
 
 function initializePlanMapDiagram(container) {
+  // Initialize container reference first
+  const questionContainer = container || document.createElement("div")
   if (!container) {
+    console.warn("Container not provided, creating new container")
+    questionContainer.className = "t1-ielts-creator"
+  }
+
+  // Rest of initialization code...
+  if (!questionContainer) {
     console.error("Container not found")
     return
   }
 
-  const questionForm = container.querySelector("#questionForm")
+  const questionForm = questionContainer.querySelector("#questionForm")
   if (!questionForm) {
     console.error("Question form not found")
     return
@@ -2539,66 +2604,15 @@ function initializePlanMapDiagram(container) {
     e.preventDefault()
   })
 
-  const answerInputs = container.querySelector("#answerInputs")
-  const numQuestionsInput = container.querySelector("#numQuestions")
-  const questionTypeSelect = container.querySelector("#questionType")
-  const imageFileInput = container.querySelector("#imageFile")
-  const saveQuestionsBtn = container.querySelector("#saveQuestionsBtn")
-  const notification = container.querySelector("#notification")
+  const answerInputs = questionContainer.querySelector("#answerInputs")
+  const numQuestionsInput = questionContainer.querySelector("#numQuestions")
+  const questionTypeSelect = questionContainer.querySelector("#questionType")
+  const imageFileInput = questionContainer.querySelector("#imageFile")
+  const saveQuestionsBtn = questionContainer.querySelector("#saveQuestionsBtn")
+  const notification = questionContainer.querySelector("#notification")
 
   // Initialize state
   let imageDataUrl = ""
-  const questions = []
-
-  function updateAnswerInputs() {
-    if (!answerInputs || !numQuestionsInput || !questionTypeSelect) {
-      console.error("Required elements not found")
-      return
-    }
-
-    const numQuestions = Number.parseInt(numQuestionsInput.value, 10)
-    const questionType = questionTypeSelect.value
-    answerInputs.innerHTML = ""
-
-    for (let i = 0; i < numQuestions; i++) {
-      const answerGroup = document.createElement("div")
-      answerGroup.className = "t1-form-group"
-
-      if (questionType === "map") {
-        answerGroup.innerHTML = `
-          <div class="map-question">
-            <label for="answer${i}">Câu trả lời ${i + 1}:</label>
-            <input type="text" id="answer${i}" required>
-            <div class="map-options">
-              <label>Câu trả lời đúng:</label>
-              <div class="radio-group">
-                ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                  .map(
-                    (letter) => `
-                    <label class="radio-label">
-                      <input type="radio" name="correctAnswer${i}" value="${letter}" required>
-                      ${letter}
-                    </label>
-                  `,
-                  )
-                  .join("")}
-              </div>
-            </div>
-          </div>
-        `
-      } else {
-        answerGroup.innerHTML = `
-          <div class="question-input">
-            <label for="answer${i}">Câu trả lời ${i + 1}:</label>
-            <input type="text" id="answer${i}" required>
-            <label for="correctAnswer${i}">Câu trả lời đúng:</label>
-            <input type="text" id="correctAnswer${i}" required>
-          </div>
-        `
-      }
-      answerInputs.appendChild(answerGroup)
-    }
-  }
 
   // Handle image upload
   if (imageFileInput) {
@@ -2606,12 +2620,24 @@ function initializePlanMapDiagram(container) {
       const file = e.target.files[0]
       if (file) {
         try {
-          imageDataUrl = await new Promise((resolve) => {
-            const reader = new FileReader()
-            reader.onload = (e) => resolve(e.target.result)
-            reader.readAsDataURL(file)
-          })
-          console.log("Image loaded successfully")
+          const reader = new FileReader()
+          reader.onload = (e) => {
+            imageDataUrl = e.target.result
+            // Create preview image
+            const previewImg = document.createElement("img")
+            previewImg.src = imageDataUrl
+            previewImg.style.maxWidth = "200px"
+            previewImg.style.marginTop = "10px"
+            const container = imageFileInput.parentElement
+            // Remove old preview if exists
+            const oldPreview = container.querySelector("img")
+            if (oldPreview) {
+              container.removeChild(oldPreview)
+            }
+            container.appendChild(previewImg)
+          }
+          reader.readAsDataURL(file)
+          console.log("Image file loaded")
         } catch (error) {
           console.error("Error loading image:", error)
           showNotification("Error loading image", "error")
@@ -2620,7 +2646,53 @@ function initializePlanMapDiagram(container) {
     })
   }
 
-  // Update answer inputs when question count or type changes
+  // Declare updateAnswerInputs here
+  function updateAnswerInputs() {
+    if (!answerInputs || !numQuestionsInput || !questionTypeSelect) {
+      console.warn("Required elements not found for updating answer inputs")
+      return
+    }
+
+    const numQuestions = Number.parseInt(numQuestionsInput.value, 10)
+    const questionType = questionTypeSelect.value
+
+    answerInputs.innerHTML = ""
+    for (let i = 0; i < numQuestions; i++) {
+      const answerDiv = document.createElement("div")
+      answerDiv.className = "t1-form-group"
+      answerDiv.innerHTML = `
+                <label for="answer${i}">Câu trả lời ${i + 1}:</label>
+                <input type="text" id="answer${i}" required>
+            `
+
+      if (questionType === "map") {
+        answerDiv.innerHTML += `
+                    <div class="t1-radio-group">
+                        <label>Chọn đáp án đúng:</label>
+                        ${["A", "B", "C", "D", "E", "F", "G", "H"]
+                          .map(
+                            (letter) => `
+                            <label>
+                                <input type="radio" name="correctAnswer${i}" value="${letter}" required>
+                                ${letter}
+                            </label>
+                        `,
+                          )
+                          .join("")}
+                    </div>
+                `
+      } else {
+        answerDiv.innerHTML += `
+                    <label for="correctAnswer${i}">Câu trả lời đúng cho câu ${i + 1}:</label>
+                    <input type="text" id="correctAnswer${i}" required>
+                `
+      }
+
+      answerInputs.appendChild(answerDiv)
+    }
+  }
+
+  // Update event listeners
   if (numQuestionsInput) {
     numQuestionsInput.addEventListener("change", updateAnswerInputs)
   }
@@ -2637,74 +2709,39 @@ function initializePlanMapDiagram(container) {
     saveQuestionsBtn.addEventListener("click", async () => {
       try {
         const questionType = questionTypeSelect?.value
-        const instructions = container.querySelector("#instructions")?.value?.trim()
+        const instructions = questionContainer.querySelector("#instructions")?.value?.trim()
         const numQuestions = Number.parseInt(numQuestionsInput?.value || "0", 10)
 
         // Validate the form
-        if (!validatePlanMapDiagramQuestion(questionForm)) {
-          return
-        }
-
-        console.log("Saving form data:", {
-          questionType,
-          instructions,
-          hasImage: !!imageDataUrl,
-          numQuestions,
-        })
-
-        // Continue with saving...
-
-        // Validate required fields
-        if (!questionType || !instructions || !imageDataUrl) {
-          const missing = []
-          if (!questionType) missing.push("Loại câu hỏi")
-          if (!instructions) missing.push("Hướng dẫn")
-          if (!imageDataUrl) missing.push("Hình ảnh")
-
-          showNotification(`Vui lòng điền đầy đủ: ${missing.join(", ")}`, "error")
+        if (!validatePlanMapDiagramQuestion(questionForm) || !validateAnswerCount(questionForm, numQuestions)) {
           return
         }
 
         // Collect answers and validate
         const answers = []
         const correctAnswers = []
-        let hasErrors = false
 
         for (let i = 0; i < numQuestions; i++) {
-          const answerInput = container.querySelector(`#answer${i}`)
+          const answerInput = questionContainer.querySelector(`#answer${i}`)
           const answer = answerInput?.value?.trim() || ""
+          answers.push(answer)
 
           if (questionType === "map") {
-            const selectedRadio = container.querySelector(`input[name="correctAnswer${i}"]:checked`)
+            const selectedRadio = questionContainer.querySelector(`input[name="correctAnswer${i}"]:checked`)
             if (!selectedRadio) {
-              console.warn(`No selected radio button for question ${i + 1}`)
-              showNotification(`Vui lòng chọn đáp án đúng cho câu hỏi ${i + 1}`, "error")
-              hasErrors = true
-              continue
+              showNotification(`Vui lòng chọn đáp án đúng cho câu ${i + 1}`, "error")
+              return
             }
             correctAnswers.push(selectedRadio.value)
           } else {
-            const correctAnswerInput = container.querySelector(`#correctAnswer${i}`)
+            const correctAnswerInput = questionContainer.querySelector(`#correctAnswer${i}`)
             const correctAnswer = correctAnswerInput?.value?.trim() || ""
             if (!correctAnswer) {
-              showNotification(`Vui lòng nhập đáp án đúng cho câu hỏi ${i + 1}`, "error")
-              hasErrors = true
-              continue
+              showNotification(`Vui lòng nhập đáp án đúng cho câu ${i + 1}`, "error")
+              return
             }
             correctAnswers.push(correctAnswer)
           }
-
-          if (!answer) {
-            showNotification(`Vui lòng nhập câu trả lời cho câu hỏi ${i + 1}`, "error")
-            hasErrors = true
-            continue
-          }
-
-          answers.push(answer)
-        }
-
-        if (hasErrors) {
-          return
         }
 
         // Create question object
@@ -2712,6 +2749,10 @@ function initializePlanMapDiagram(container) {
           type: "Plan/Map/Diagram labelling",
           content: [questionType, instructions, imageDataUrl, ...answers],
           correctAnswers,
+          hasType: true,
+          hasInstructions: true,
+          hasImage: true,
+          numQuestions: numQuestions,
         }
 
         // Add to test object
@@ -2722,17 +2763,22 @@ function initializePlanMapDiagram(container) {
           }
           test[`part${part}`].push(questionData)
           totalQuestions += numQuestions
+          updateQuestionCount()
         }
 
         console.log("Saved question:", questionData)
         showNotification("Câu hỏi đã được lưu thành công!", "success")
 
         // Reset form
-        if (questionForm) {
-          questionForm.reset()
-          imageDataUrl = ""
-          updateAnswerInputs()
+        questionForm.reset()
+        imageDataUrl = ""
+        // Remove image preview
+        const container = imageFileInput.parentElement
+        const oldPreview = container.querySelector("img")
+        if (oldPreview) {
+          container.removeChild(oldPreview)
         }
+        updateAnswerInputs()
       } catch (error) {
         console.error("Error saving questions:", error)
         showNotification(`Có lỗi xảy ra: ${error.message}`, "error")
@@ -3291,7 +3337,7 @@ function dragLeave(e) {
 function drop(e) {
   e.preventDefault()
   e.target.classList.remove("drag-over")
-  const data = e.dataTransfer.getData("text/plain")
+  const data = e.dataTransfer.setData("text/plain")
   e.target.textContent = data
 }
 
@@ -3722,13 +3768,25 @@ function showNotification(message, type = "info") {
 }
 
 function validatePlanMapDiagramQuestion(questionElement) {
-  if (!questionElement) return false
+  if (!questionElement) {
+    console.warn("Question element is null")
+    return false
+  }
 
   // Get the selected question type
   const questionType = questionElement.querySelector("#questionType")?.value
-  const instructions = questionElement.querySelector("#instructions")?.value
+  const instructions = questionElement.querySelector("#instructions")?.value?.trim()
   const imageElement = questionElement.querySelector("img")
   const imageFile = questionElement.querySelector("#imageFile")?.files[0]
+  const imageDataUrl = imageElement?.src
+
+  // Log validation state
+  console.log("Validating Plan/Map/Diagram question:", {
+    questionType,
+    hasInstructions: !!instructions,
+    hasImage: !!(imageElement || imageFile),
+    hasImageData: !!imageDataUrl,
+  })
 
   // Check basic required fields
   if (!questionType) {
@@ -3741,7 +3799,8 @@ function validatePlanMapDiagramQuestion(questionElement) {
     return false
   }
 
-  if (!imageElement && !imageFile) {
+  // Check for image
+  if (!imageDataUrl && !imageFile) {
     showNotification("Vui lòng tải lên hình ảnh", "error")
     return false
   }
@@ -3754,30 +3813,112 @@ function validatePlanMapDiagramQuestion(questionElement) {
   }
 
   // Validate answers based on selected type
+  let hasValidAnswers = true
   for (let i = 0; i < numQuestions; i++) {
     const answer = questionElement.querySelector(`#answer${i}`)?.value?.trim()
     if (!answer) {
       showNotification(`Vui lòng nhập câu trả lời cho câu ${i + 1}`, "error")
-      return false
+      hasValidAnswers = false
+      break
     }
 
     if (questionType === "map") {
-      const selectedRadio = questionElement.querySelector(`input[name="correctAnswer${i}"]:checked`)
+      const radioButtons = questionElement.querySelectorAll(`input[name="correctAnswer${i}"]`)
+      const selectedRadio = Array.from(radioButtons).find((radio) => radio.checked)
+
       if (!selectedRadio) {
         showNotification(`Vui lòng chọn đáp án đúng cho câu ${i + 1}`, "error")
-        return false
+        hasValidAnswers = false
+        break
+      }
+
+      // Validate that the selected answer is valid (A-H)
+      const validAnswers = ["A", "B", "C", "D", "E", "F", "G", "H"]
+      if (!validAnswers.includes(selectedRadio.value)) {
+        showNotification(`Đáp án không hợp lệ cho câu ${i + 1}`, "error")
+        hasValidAnswers = false
+        break
       }
     } else {
       const correctAnswer = questionElement.querySelector(`#correctAnswer${i}`)?.value?.trim()
       if (!correctAnswer) {
         showNotification(`Vui lòng nhập đáp án đúng cho câu ${i + 1}`, "error")
-        return false
+        hasValidAnswers = false
+        break
       }
     }
   }
 
+  return hasValidAnswers
+}
+
+function validateAnswerCount(questionElement, numQuestions) {
+  const answers = Array.from(questionElement.querySelectorAll('[id^="answer"]'))
+    .map((el) => el.value?.trim())
+    .filter(Boolean)
+
+  const correctAnswers = Array.from(questionElement.querySelectorAll('[name^="correctAnswer"]:checked'))
+    .map((el) => el.value)
+    .filter(Boolean)
+
+  if (answers.length !== numQuestions) {
+    showNotification(`Số lượng câu trả lời (${answers.length}) không khớp với số câu hỏi (${numQuestions})`, "error")
+    return false
+  }
+
+  if (correctAnswers.length !== numQuestions) {
+    showNotification(
+      `Số lượng đáp án đúng (${correctAnswers.length}) không khớp với số câu hỏi (${numQuestions})`,
+      "error",
+    )
+    return false
+  }
+
   return true
 }
+
+// Thêm CSS cho form metadata
+const metadataStyles = `
+  .test-metadata-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .test-metadata-form .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .test-metadata-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .test-metadata-form input[type="text"],
+  .test-metadata-form textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+
+  .test-metadata-form input[type="text"]:focus,
+  .test-metadata-form textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  }
+`
+
+// Thêm styles vào document
+const styleElement = document.createElement("style")
+styleElement.textContent = metadataStyles
+document.head.appendChild(styleElement)
 
 
     </script>
