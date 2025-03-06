@@ -1351,18 +1351,16 @@ function saveT2ListeningExercise() {
       type: "Note Completion",
       content: [instructions, topic, ...questions],
       correctAnswers,
-      numQuestions: correctAnswers.length,
     }
 
     // Add to test object
-    const part = Math.ceil((totalQuestions + 1) / 10)
+    const part = Math.ceil(totalQuestions / 10) || 1
     if (part >= 1 && part <= 4) {
       if (!test[`part${part}`]) {
         test[`part${part}`] = []
       }
       test[`part${part}`].push(questionData)
-      totalQuestions += correctAnswers.length
-      updateQuestionCount()
+      totalQuestions += questionCount
     }
 
     console.log("Saved Note Completion question:", questionData)
@@ -1448,6 +1446,42 @@ function validatePartQuestions() {
 }
 
 // Update the saveTest function
+function saveTest() {
+  try {
+    console.log("Starting to save test...")
+
+    // Validate test metadata first
+    if (!validateTestMetadata()) {
+      return
+    }
+
+    // Check if we have any questions in any part
+    let hasQuestions = false
+    for (let i = 1; i <= 4; i++) {
+      if (test[`part${i}`] && test[`part${i}`].length > 0) {
+        hasQuestions = true
+        break
+      }
+    }
+
+    if (!hasQuestions) {
+      showNotification("Không tìm thấy câu hỏi nào để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
+      return
+    }
+
+    // Validate part questions
+    if (!validatePartQuestions()) {
+      return
+    }
+
+    console.log("Final saved test:", test)
+    showNotification(`Đã lưu thành công bộ đề thi "${test.title}"!`, "success")
+  } catch (error) {
+    console.error("Error saving test:", error)
+    showNotification(`Lỗi khi lưu bài thi: ${error.message}`, "error")
+  }
+}
+
 // Cập nhật hàm addTestMetadataForm để thêm form vào đầu trang test creation
 function addTestMetadataForm() {
   const metadataForm = document.createElement("div")
@@ -1782,65 +1816,44 @@ function processQuestionByType(q, type, questionIndex, part) {
     }
 
     case "Plan/Map/Diagram labelling": {
-      const questionType = q.querySelector("#questionType")?.value?.trim()
+      const questionType = q.querySelector("#questionType")?.value
       const instructions = q.querySelector("#instructions")?.value?.trim()
       const imageElement = q.querySelector("img")
       const imageUrl = imageElement ? imageElement.src : ""
       const answers = Array.from(q.querySelectorAll('[id^="answer"]')).map((el) => el.value?.trim() || "")
 
-      // Log the current state for debugging
-      console.log("Processing Plan/Map/Diagram question data:", {
-        questionType,
-        instructions,
-        hasImage: !!imageUrl,
-        answers,
-      })
-
       // Validate required fields
-      if (!questionType || !instructions || !imageUrl) {
-        console.warn(`Missing required fields for question ${questionIndex + 1}:`, {
-          hasType: !!questionType,
-          hasInstructions: !!instructions,
-          hasImage: !!imageUrl,
-        })
+      if (!questionType || !instructions || !imageUrl || answers.length === 0) {
+        console.warn(`Missing required fields for Plan/Map/Diagram question ${questionIndex + 1}`)
         return null
       }
 
       // Get correct answers based on question type
       let correctAnswers = []
       if (questionType === "map") {
-        // For map type, get selected radio button values
-        correctAnswers = answers.map((_, index) => {
-          const selectedRadio = q.querySelector(`input[name="correctAnswer${index}"]:checked`)
-          if (!selectedRadio) {
-            console.warn(`No selected radio button for answer ${index + 1}`)
-            return ""
-          }
-          return selectedRadio.value
-        })
+        correctAnswers = answers
+          .map((_, index) => {
+            const selectedRadio = q.querySelector(`input[name="correctAnswer${index}"]:checked`)
+            return selectedRadio ? selectedRadio.value : ""
+          })
+          .filter((answer) => answer)
       } else {
-        // For other types, get values from correctAnswer inputs
-        correctAnswers = Array.from(q.querySelectorAll('[id^="correctAnswer"]')).map((el) => el.value?.trim() || "")
+        correctAnswers = Array.from(q.querySelectorAll('[id^="correctAnswer"]'))
+          .map((el) => el.value?.trim())
+          .filter((answer) => answer)
       }
 
-      // Validate answers
-      if (answers.length === 0 || correctAnswers.some((answer) => !answer)) {
-        console.warn(`Invalid answers for question ${questionIndex + 1}:`, {
-          answerCount: answers.length,
-          correctAnswers,
-        })
+      // Validate correct answers
+      if (correctAnswers.length !== answers.length) {
+        console.warn(`Incorrect number of answers for question ${questionIndex + 1}`)
         return null
       }
 
-      // Log the final question data
-      const questionData = {
+      return {
         type,
         content: [questionType, instructions, imageUrl, ...answers],
-        correctAnswers: correctAnswers.filter((answer) => answer),
+        correctAnswers,
       }
-      console.log(`Question ${questionIndex + 1} data:`, questionData)
-
-      return questionData
     }
 
     case "Note Completion": {
@@ -2440,7 +2453,7 @@ function createFlowChartCompletionForm() {
   `
 }
 
-// Update the initializeOneAnswerForm function to save questions
+// Update the initializeOneAnswerForm function to save the question
 function initializeOneAnswerForm(container) {
   const form = container.querySelector(".t3-one-answer-form")
   const preview = container.querySelector("#t3-questionPreview")
@@ -2465,18 +2478,15 @@ function initializeOneAnswerForm(container) {
       type: "One answer",
       content: [questionText, ...options],
       correctAnswers: correctAnswer,
-      numQuestions: 1,
     }
 
     // Add to test object
-    const part = Math.ceil((totalQuestions + 1) / 10)
+    const part = currentPart
     if (part >= 1 && part <= 4) {
       if (!test[`part${part}`]) {
         test[`part${part}`] = []
       }
       test[`part${part}`].push(questionData)
-      totalQuestions++
-      updateQuestionCount()
     }
 
     preview.innerHTML = `
@@ -2495,10 +2505,13 @@ function initializeOneAnswerForm(container) {
     `
 
     showNotification("Câu hỏi đã được lưu thành công!", "success")
+
+    // Reset form for next question
+    form.reset()
   })
 }
 
-// Update the initializeMultipleAnswerForm function to save questions
+// Update the initializeMultipleAnswerForm function to save the question
 function initializeMultipleAnswerForm(container) {
   const form = container.querySelector("#t4-questionForm")
   const previewArea = container.querySelector("#t4-previewArea")
@@ -2511,8 +2524,8 @@ function initializeMultipleAnswerForm(container) {
       .querySelector("#t4-options")
       .value.split("\n")
       .filter((option) => option.trim() !== "")
-    const correctAnswersText = form.querySelector("#t4-correctAnswers").value
-    const correctAnswers = correctAnswersText
+    const correctAnswersInput = form.querySelector("#t4-correctAnswers").value
+    const correctAnswers = correctAnswersInput
       .split(",")
       .map((num) => num.trim())
       .filter((num) => num)
@@ -2528,18 +2541,15 @@ function initializeMultipleAnswerForm(container) {
       type: "More than one answer",
       content: [questionText, ...options],
       correctAnswers: correctAnswers,
-      numQuestions: 1,
     }
 
     // Add to test object
-    const part = Math.ceil((totalQuestions + 1) / 10)
+    const part = currentPart
     if (part >= 1 && part <= 4) {
       if (!test[`part${part}`]) {
         test[`part${part}`] = []
       }
       test[`part${part}`].push(questionData)
-      totalQuestions++
-      updateQuestionCount()
     }
 
     previewArea.innerHTML = `
@@ -2548,23 +2558,178 @@ function initializeMultipleAnswerForm(container) {
         ${options
           .map(
             (option, index) => `
-          <label>
-            <input type="checkbox">
-            ${option}
-            ${correctAnswers.includes((index + 1).toString()) ? '<span class="t4-correct-answer"> (Correct)</span>' : ""}
-          </label>
-        `,
+            <label>
+              <input type="checkbox">
+              ${option}
+              ${correctAnswers.includes((index + 1).toString()) ? '<span class="t4-correct-answer"> (Correct)</span>' : ""}
+            </label>
+          `,
           )
           .join("")}
       </div>
     `
 
     showNotification("Câu hỏi đã được lưu thành công!", "success")
+
+    // Reset form for next question
+    form.reset()
   })
 }
 
-// Update the saveMatchingQuestions function to save questions
-// Update the saveT2ListeningExercise function to properly save questions
+// Update the saveMatchingQuestions function to save the question
+function saveMatchingQuestions(container) {
+  const count = Number.parseInt(container.querySelector("#t3-numberOfQuestions").value)
+
+  // Validate that we have at least one question
+  if (count <= 0) {
+    showNotification("Vui lòng thêm ít nhất một câu hỏi", "error")
+    return
+  }
+
+  for (let i = 0; i < count; i++) {
+    const title = container.querySelector(`#t3-questionTitle${i}`).value
+    const people = container
+      .querySelector(`#t3-people${i}`)
+      .value.split("\n")
+      .filter((p) => p.trim() !== "")
+    const responsibilities = container
+      .querySelector(`#t3-responsibilities${i}`)
+      .value.split("\n")
+      .filter((r) => r.trim() !== "")
+    const correctAnswers = container
+      .querySelector(`#t3-correctAnswers${i}`)
+      .value.split("\n")
+      .filter((a) => a.trim() !== "")
+
+    // Validate inputs
+    if (!title || people.length === 0 || responsibilities.length === 0 || correctAnswers.length === 0) {
+      showNotification(`Vui lòng điền đầy đủ thông tin cho câu hỏi ${i + 1}`, "error")
+      return
+    }
+
+    // Create question object
+    const questionData = {
+      type: "Matching",
+      content: [title, ...people, ...responsibilities],
+      correctAnswers: correctAnswers,
+    }
+
+    // Add to test object
+    const part = currentPart
+    if (part >= 1 && part <= 4) {
+      if (!test[`part${part}`]) {
+        test[`part${part}`] = []
+      }
+      test[`part${part}`].push(questionData)
+    }
+  }
+
+  showNotification("Câu hỏi đã được lưu thành công!", "success")
+
+  // Reset form for next question
+  container.querySelector("#t3-numberOfQuestions").value = "1"
+  container.querySelector("#t3-questionsContainer").innerHTML = createQuestionFields(0)
+}
+
+// Update the initializeFlowChartCompletionForm function to save the question
+function initializeFlowChartCompletionForm(container) {
+  if (!container) return
+
+  const form = container.querySelector(".flow-chart-form")
+  const preview = container.querySelector("#flowChartPreview")
+
+  if (!form || !preview) return
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault()
+
+    try {
+      const title = form.querySelector("#flowChartTitle").value
+      const instructions = form.querySelector("#flowChartInstructions").value
+      const flowItems = form
+        .querySelector("#flowChartItems")
+        .value.split("\n")
+        .filter((item) => item.trim())
+      const options = form
+        .querySelector("#flowChartOptions")
+        .value.split("\n")
+        .filter((item) => item.trim())
+      const correctAnswers = form
+        .querySelector("#flowChartAnswers")
+        .value.split(",")
+        .map((item) => item.trim())
+        .filter((item) => item)
+
+      // Validate inputs
+      if (!title || !instructions || flowItems.length === 0 || options.length === 0 || correctAnswers.length === 0) {
+        showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+        return
+      }
+
+      // Create question object
+      const questionData = {
+        type: "Flow chart Completion",
+        content: [title, instructions, ...flowItems, ...options],
+        correctAnswers: correctAnswers,
+      }
+
+      // Add to test object
+      const part = currentPart
+      if (part >= 1 && part <= 4) {
+        if (!test[`part${part}`]) {
+          test[`part${part}`] = []
+        }
+        test[`part${part}`].push(questionData)
+      }
+
+      // Update preview
+      updateFlowChartPreview(
+        {
+          title,
+          instructions,
+          flowItems,
+          options,
+          correctAnswers,
+        },
+        preview,
+      )
+
+      showNotification("Câu hỏi đã được lưu thành công!", "success")
+
+      // Reset form for next question
+      form.reset()
+    } catch (error) {
+      console.error("Error saving flow chart question:", error)
+      showNotification("Lỗi khi lưu câu hỏi. Vui lòng kiểm tra lại.", "error")
+    }
+  })
+
+  // Initialize preview button
+  const previewBtn = form.querySelector(".preview-btn")
+  if (previewBtn) {
+    previewBtn.addEventListener("click", () => {
+      const formData = {
+        title: form.querySelector("#flowChartTitle").value,
+        instructions: form.querySelector("#flowChartInstructions").value,
+        flowItems: form
+          .querySelector("#flowChartItems")
+          .value.split("\n")
+          .filter((item) => item.trim()),
+        options: form
+          .querySelector("#flowChartOptions")
+          .value.split("\n")
+          .filter((item) => item.trim()),
+        correctAnswers: form
+          .querySelector("#flowChartAnswers")
+          .value.split(",")
+          .map((item) => item.trim()),
+      }
+      updateFlowChartPreview(formData, preview)
+    })
+  }
+}
+
+// Update the initializePlanMapDiagram function to save the question
 function initializePlanMapDiagram(container) {
   // Initialize container reference first
   const questionContainer = container || document.createElement("div")
@@ -2588,6 +2753,9 @@ function initializePlanMapDiagram(container) {
   // Prevent default form submission
   questionForm.addEventListener("submit", (e) => {
     e.preventDefault()
+
+    // Save the question when form is submitted
+    saveMapDiagramQuestion(questionContainer)
   })
 
   const answerInputs = questionContainer.querySelector("#answerInputs")
@@ -2659,11 +2827,7 @@ function initializePlanMapDiagram(container) {
                           .map(
                             (letter) => `
                             <label>
-                                <input 
-                                  type="radio" 
-                                  name="correctAnswer${i}" 
-                                  value="${letter}" 
-                                  required>
+                                <input type="radio" name="correctAnswer${i}" value="${letter}" required>
                                 ${letter}
                             </label>
                         `,
@@ -2696,322 +2860,85 @@ function initializePlanMapDiagram(container) {
 
   // Handle save button click
   if (saveQuestionsBtn) {
-    saveQuestionsBtn.addEventListener("click", async () => {
-      try {
-        const questionType = questionTypeSelect?.value
-        const instructions = questionContainer.querySelector("#instructions")?.value?.trim()
-        const numQuestions = Number.parseInt(numQuestionsInput?.value || "0", 10)
-
-        // Validate the form
-        if (!validatePlanMapDiagramQuestion(questionForm) || !validateAnswerCount(questionForm, numQuestions)) {
-          return
-        }
-
-        // Collect answers and validate
-        const answers = []
-        const correctAnswers = []
-
-        for (let i = 0; i < numQuestions; i++) {
-          const answerInput = questionContainer.querySelector(`#answer${i}`)
-          const answer = answerInput?.value?.trim() || ""
-          answers.push(answer)
-
-          if (questionType === "map") {
-            const selectedRadio = questionContainer.querySelector(`input[name="correctAnswer${i}"]:checked`)
-            if (!selectedRadio) {
-              showNotification(`Vui lòng chọn đáp án đúng cho câu ${i + 1}`, "error")
-              return
-            }
-            correctAnswers.push(selectedRadio.value)
-          } else {
-            const correctAnswerInput = questionContainer.querySelector(`#correctAnswer${i}`)
-            const correctAnswer = correctAnswerInput?.value?.trim() || ""
-            if (!correctAnswer) {
-              showNotification(`Vui lòng nhập đáp án đúng cho câu ${i + 1}`, "error")
-              return
-            }
-            correctAnswers.push(correctAnswer)
-          }
-        }
-
-        // Create question object
-        const questionData = {
-          type: "Plan/Map/Diagram labelling",
-          content: [questionType, instructions, imageDataUrl, ...answers],
-          correctAnswers,
-          hasType: true,
-          hasInstructions: true,
-          hasImage: true,
-          numQuestions: numQuestions,
-        }
-
-        // Add to test object
-        const part = Math.ceil((totalQuestions + 1) / 10)
-        if (part >= 1 && part <= 4) {
-          if (!test[`part${part}`]) {
-            test[`part${part}`] = []
-          }
-          test[`part${part}`].push(questionData)
-          totalQuestions += numQuestions
-          updateQuestionCount()
-        }
-
-        console.log("Saved question:", questionData)
-        showNotification("Câu hỏi đã được lưu thành công!", "success")
-
-        // Reset form
-        questionForm.reset()
-        imageDataUrl = ""
-        // Remove image preview
-        const container = imageFileInput.parentElement
-        const oldPreview = container.querySelector("img")
-        if (oldPreview) {
-          container.removeChild(oldPreview)
-        }
-        updateAnswerInputs()
-      } catch (error) {
-        console.error("Error saving questions:", error)
-        showNotification(`Có lỗi xảy ra: ${error.message}`, "error")
-      }
+    saveQuestionsBtn.addEventListener("click", () => {
+      saveMapDiagramQuestion(questionContainer)
     })
   }
-}
 
-// Cập nhật hàm getAnswersHTML để hiển thị radio buttons đúng cách
-function getAnswersHTML(question) {
-  if (question.questionType === "map") {
-    return `
-      <table class="t1-answer-grid">
-        <tr>
-          <th></th>
-          <th>A</th>
-          <th>B</th>
-          <th>C</th>
-          <th>D</th>
-          <th>E</th>
-          <th>F</th>
-          <th>G</th>
-          <th>H</th>
-        </tr>
-        ${question.answers
-          .map(
-            (answer, i) => `
-          <tr>
-            <td>${question.startQuestionNumber + i} ${answer}</td>
-            ${["A", "B", "C", "D", "E", "F", "G", "H"]
-              .map(
-                (letter) => `
-              <td>
-                <input 
-                  type="radio" 
-                  name="q${question.startQuestionNumber + i}" 
-                  value="${letter}" 
-                  ${letter === question.correctAnswers[i] ? "checked" : ""}
-                  disabled
-                >
-              </td>
-            `,
-              )
-              .join("")}
-          </tr>
-        `,
-          )
-          .join("")}
-      </table>
-    `
-  } else if (question.questionType === "ship") {
-    return `
-      <table class="t1-answer-grid">
-        ${question.answers
-          .map(
-            (answer, i) => `
-          <tr>
-            <td>${question.startQuestionNumber + i} ${answer}</td>
-            <td><input type="text" class="t1-answer-input" maxlength="1" value="${question.correctAnswers[i]}" readonly></td>
-          </tr>
-        `,
-          )
-          .join("")}
-      </table>
-    `
-  } else {
-    return `
-      <table class="t1-answer-grid">
-        ${question.correctAnswers
-          .map(
-            (answer, i) => `
-          <tr>
-            <td>${question.startQuestionNumber + i}</td>
-            <td><input type="text" class="t1-answer-input" value="${answer}" readonly></td>
-          </tr>
-        `,
-          )
-          .join("")}
-      </table>
-    `
-  }
-}
-
-// Update the initialization of Note Completion form
-function initializeNoteCompletionForm(container) {
-  if (!container) {
-    console.error("Container not found")
-    return
-  }
-
-  const form = container.querySelector("#t2ListeningExerciseForm")
-  const questionContainer = container.querySelector("#t2ListeningExerciseQuestionContainer")
-  const questionCountInput = container.querySelector("#t2ListeningExerciseQuestionCount")
-  const updatePreviewBtn = container.querySelector('button[onclick="updateT2ListeningExercisePreview()"]')
-  const saveExerciseBtn = container.querySelector('button[onclick="saveT2ListeningExercise()"]')
-
-  if (!form || !questionContainer || !questionCountInput) {
-    console.error("Required elements not found")
-    return
-  }
-
-  function generateQuestionFields() {
-    const count = Number.parseInt(questionCountInput.value, 10)
-    questionContainer.innerHTML = ""
-
-    for (let i = 1; i <= count; i++) {
-      const questionGroup = document.createElement("div")
-      questionGroup.className = "t2-listening-exercise-form-group"
-      questionGroup.innerHTML = `
-        <label for="t2ListeningExerciseQuestion${i}">Question ${i}:</label>
-        <div class="t2-listening-exercise-answer-fields">
-          <textarea 
-            id="t2ListeningExerciseQuestion${i}" 
-            name="question${i}" 
-            placeholder="Question text (use [ANSWER] to mark answer position)"
-            onchange="updateT2ListeningExerciseCorrectAnswerFields(${i})"
-          ></textarea>
-        </div>
-        <div class="t2-listening-exercise-correct-answers" id="t2ListeningExerciseCorrectAnswers${i}">
-          <span class="t2-listening-exercise-correct-answer-label">Correct Answers:</span>
-        </div>
-      `
-      questionContainer.appendChild(questionGroup)
-    }
-  }
-
-  // Update event listeners
-  if (updatePreviewBtn) {
-    updatePreviewBtn.addEventListener("click", updateT2ListeningExercisePreview)
-  }
-
-  if (saveExerciseBtn) {
-    saveExerciseBtn.addEventListener("click", saveT2ListeningExercise)
-  }
-
-  questionCountInput.addEventListener("change", () => {
-    generateQuestionFields()
-    updateT2ListeningExercisePreview()
-  })
-
-  // Initialize with default fields
-  generateQuestionFields()
-  updateT2ListeningExercisePreview()
-}
-
-// Update the initializeFormTableCompletionForm function
-function initializeFlowChartCompletionForm(container) {
-  if (!container) return
-
-  const form = container.querySelector(".flow-chart-form")
-  const preview = container.querySelector("#flowChartPreview")
-
-  if (!form || !preview) return
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault()
-
+  // Function to save the map/diagram question
+  function saveMapDiagramQuestion(questionContainer) {
     try {
-      const formData = {
-        title: form.querySelector("#flowChartTitle").value,
-        instructions: form.querySelector("#flowChartInstructions").value,
-        flowItems: form
-          .querySelector("#flowChartItems")
-          .value.split("\n")
-          .filter((item) => item.trim()),
-        options: form
-          .querySelector("#flowChartOptions")
-          .value.split("\n")
-          .filter((item) => item.trim()),
-        correctAnswers: form
-          .querySelector("#flowChartAnswers")
-          .value.split(",")
-          .map((item) => item.trim()),
-      }
+      const questionType = questionTypeSelect?.value
+      const instructions = questionContainer.querySelector("#instructions")?.value?.trim()
+      const numQuestions = Number.parseInt(numQuestionsInput?.value || "0", 10)
 
-      // Validate inputs
-      if (
-        !formData.title ||
-        !formData.instructions ||
-        formData.flowItems.length === 0 ||
-        formData.options.length === 0 ||
-        formData.correctAnswers.length === 0
-      ) {
-        showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      // Validate the form
+      if (!validatePlanMapDiagramQuestion(questionForm) || !validateAnswerCount(questionForm, numQuestions)) {
         return
       }
 
-      // Save to test object
+      console.log("Saving form data:", {
+        questionType,
+        instructions,
+        hasImage: !!imageDataUrl,
+        numQuestions,
+      })
+
+      // Collect answers and validate
+      const answers = []
+      const correctAnswers = []
+
+      for (let i = 0; i < numQuestions; i++) {
+        const answerInput = questionContainer.querySelector(`#answer${i}`)
+        const answer = answerInput?.value?.trim() || ""
+        answers.push(answer)
+
+        if (questionType === "map") {
+          const selectedRadio = questionContainer.querySelector(`input[name="correctAnswer${i}"]:checked`)
+          correctAnswers.push(selectedRadio.value)
+        } else {
+          const correctAnswerInput = questionContainer.querySelector(`#correctAnswer${i}`)
+          const correctAnswer = correctAnswerInput?.value?.trim() || ""
+          correctAnswers.push(correctAnswer)
+        }
+      }
+
+      // Create question object
       const questionData = {
-        type: "Flow chart Completion",
-        content: [formData.title, formData.instructions, ...formData.flowItems, ...formData.options],
-        correctAnswers: formData.correctAnswers,
-        numQuestions: formData.correctAnswers.length,
+        type: "Plan/Map/Diagram labelling",
+        content: [questionType, instructions, imageDataUrl, ...answers],
+        correctAnswers,
       }
 
       // Add to test object
-      const part = Math.ceil((totalQuestions + 1) / 10)
+      const part = currentPart
       if (part >= 1 && part <= 4) {
         if (!test[`part${part}`]) {
           test[`part${part}`] = []
         }
         test[`part${part}`].push(questionData)
-        totalQuestions += formData.correctAnswers.length
-        updateQuestionCount()
       }
 
-      // Update preview
-      updateFlowChartPreview(formData, preview)
-
-      // Show success message
+      console.log("Saved question:", questionData)
       showNotification("Câu hỏi đã được lưu thành công!", "success")
-    } catch (error) {
-      console.error("Error saving flow chart question:", error)
-      showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
-    }
-  })
 
-  // Initialize preview button
-  const previewBtn = form.querySelector(".preview-btn")
-  if (previewBtn) {
-    previewBtn.addEventListener("click", () => {
-      const formData = {
-        title: form.querySelector("#flowChartTitle").value,
-        instructions: form.querySelector("#flowChartInstructions").value,
-        flowItems: form
-          .querySelector("#flowChartItems")
-          .value.split("\n")
-          .filter((item) => item.trim()),
-        options: form
-          .querySelector("#flowChartOptions")
-          .value.split("\n")
-          .filter((item) => item.trim()),
-        correctAnswers: form
-          .querySelector("#flowChartAnswers")
-          .value.split(",")
-          .map((item) => item.trim()),
+      // Reset form
+      questionForm.reset()
+      imageDataUrl = ""
+      // Remove image preview
+      const container = imageFileInput.parentElement
+      const oldPreview = container.querySelector("img")
+      if (oldPreview) {
+        container.removeChild(oldPreview)
       }
-      updateFlowChartPreview(formData, preview)
-    })
+      updateAnswerInputs()
+    } catch (error) {
+      console.error("Error saving questions:", error)
+      showNotification(`Có lỗi xảy ra: ${error.message}`, "error")
+    }
   }
 }
 
-// Update the saveTest function to better handle validation
 function createQuestionFields(index) {
   return `
         <div class="t3-question-fields" data-question="${index}">
@@ -3094,38 +3021,6 @@ function updateMatchingPreview(container) {
   }
 
   container.querySelector("#t3-questionsPreview").innerHTML = previewHTML
-}
-
-function saveMatchingQuestions(container) {
-  const questions = []
-  const count = Number.parseInt(container.querySelector("#t3-numberOfQuestions").value)
-
-  for (let i = 0; i < count; i++) {
-    const title = container.querySelector(`#t3-questionTitle${i}`).value
-    const people = container
-      .querySelector(`#t3-people${i}`)
-      .value.split("\n")
-      .filter((p) => p.trim() !== "")
-    const responsibilities = container
-      .querySelector(`#t3-responsibilities${i}`)
-      .value.split("\n")
-      .filter((r) => r.trim() !== "")
-    const correctAnswers = container
-      .querySelector(`#t3-correctAnswers${i}`)
-      .value.split("\n")
-      .filter((a) => a.trim() !== "")
-
-    questions.push({
-      title,
-      people,
-      responsibilities,
-      correctAnswers,
-    })
-  }
-
-  // Send data to backend (replace with actual API call)
-  console.log("Saving matching questions:", questions)
-  showMessage("Questions saved successfully!", "success")
 }
 
 function showMessage(message, type = "info") {
@@ -3571,36 +3466,36 @@ function initializeDragAndDrop(container) {
   const gaps = container.querySelectorAll(".gap")
 
   options.forEach((option) => {
-    option.addEventListener("dragstart", dragStart)
-    option.addEventListener("dragend", dragEnd)
+    option.addEventListener("dragstart", dragStartHandler)
+    option.addEventListener("dragend", dragEndHandler)
   })
 
   gaps.forEach((gap) => {
-    gap.addEventListener("dragover", dragOver)
-    gap.addEventListener("dragenter", dragEnter)
-    gap.addEventListener("dragleave", dragLeave)
-    gap.addEventListener("drop", drop)
+    gap.addEventListener("dragover", dragOverHandler)
+    gap.addEventListener("dragenter", dragEnterHandler)
+    gap.addEventListener("dragleave", dragLeaveHandler)
+    gap.addEventListener("drop", dropHandler)
   })
 }
 
-function dragStart(event) {
+function dragStartHandler(event) {
   event.dataTransfer.setData("text", event.target.textContent)
 }
 
-function dragOver(event) {
+function dragOverHandler(event) {
   event.preventDefault()
 }
 
-function dragEnter(event) {
+function dragEnterHandler(event) {
   event.preventDefault()
   event.target.classList.add("drag-over")
 }
 
-function dragLeave(event) {
+function dragLeaveHandler(event) {
   event.target.classList.remove("drag-over")
 }
 
-function drop(event) {
+function dropHandler(event) {
   event.preventDefault()
   const data = event.dataTransfer.getData("text")
   event.target.textContent = data
@@ -3726,7 +3621,14 @@ function validatePlanMapDiagramQuestion(questionElement) {
       // Validate that the selected answer is valid (A-H)
       const validAnswers = ["A", "B", "C", "D", "E", "F", "G", "H"]
       if (!validAnswers.includes(selectedRadio.value)) {
-        showNotification(`Đáp án đúng cho câu ${i + 1} không hợp lệ`, "error")
+        showNotification(`Đáp án không hợp lệ cho câu ${i + 1}`, "error")
+        hasValidAnswers = false
+        break
+      }
+    } else {
+      const correctAnswer = questionElement.querySelector(`#correctAnswer${i}`)?.value?.trim()
+      if (!correctAnswer) {
+        showNotification(`Vui lòng nhập đáp án đúng cho câu ${i + 1}`, "error")
         hasValidAnswers = false
         break
       }
@@ -3737,137 +3639,159 @@ function validatePlanMapDiagramQuestion(questionElement) {
 }
 
 function validateAnswerCount(questionElement, numQuestions) {
-  if (!questionElement) {
-    console.warn("Question element is null")
+  const answers = Array.from(questionElement.querySelectorAll('[id^="answer"]'))
+    .map((el) => el.value?.trim())
+    .filter(Boolean)
+
+  const correctAnswers = Array.from(questionElement.querySelectorAll('[name^="correctAnswer"]:checked'))
+    .map((el) => el.value)
+    .filter(Boolean)
+
+  if (answers.length !== numQuestions) {
+    showNotification(`Số lượng câu trả lời (${answers.length}) không khớp với số câu hỏi (${numQuestions})`, "error")
     return false
   }
 
-  // Get the selected question type
-  const questionType = questionElement.querySelector("#questionType")?.value
-
-  // Validate number of answers based on selected type
-  if (questionType === "map") {
-    for (let i = 0; i < numQuestions; i++) {
-      const radioButtons = questionElement.querySelectorAll(`input[name="correctAnswer${i}"]`)
-      const selectedRadio = Array.from(radioButtons).find((radio) => radio.checked)
-
-      if (!selectedRadio) {
-        showNotification(`Vui lòng chọn đáp án đúng cho câu ${i + 1}`, "error")
-        return false
-      }
-    }
-  } else {
-    for (let i = 0; i < numQuestions; i++) {
-      const answer = questionElement.querySelector(`#correctAnswer${i}`)?.value?.trim()
-      if (!answer) {
-        showNotification(`Vui lòng nhập đáp án đúng cho câu ${i + 1}`, "error")
-        return false
-      }
-    }
+  if (correctAnswers.length !== numQuestions) {
+    showNotification(
+      `Số lượng đáp án đúng (${correctAnswers.length}) không khớp với số câu hỏi (${numQuestions})`,
+      "error",
+    )
+    return false
   }
 
   return true
 }
 
-// Update the saveMatchingQuestions function to save questions
-function saveMatchingQuestions(container) {
-  try {
-    const count = Number.parseInt(container.querySelector("#t3-numberOfQuestions").value)
+// Thêm CSS cho form metadata
+const metadataStyles = `
+  .test-metadata-form {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .test-metadata-form .form-group {
+    margin-bottom: 15px;
+  }
+  
+  .test-metadata-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .test-metadata-form input[type="text"],
+  .test-metadata-form textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
 
-    // Validate that we have questions
-    if (count <= 0) {
-      showNotification("Vui lòng nhập số lượng câu hỏi hợp lệ", "error")
-      return
-    }
+  .test-metadata-form input[type="text"]:focus,
+  .test-metadata-form textarea:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.2);
+  }
+`
 
-    const title = container.querySelector(`#t3-questionTitle0`)?.value?.trim()
-    const people =
-      container
-        .querySelector(`#t3-people0`)
-        ?.value?.split("\n")
-        .filter((p) => p.trim()) || []
-    const responsibilities =
-      container
-        .querySelector(`#t3-responsibilities0`)
-        ?.value?.split("\n")
-        .filter((r) => r.trim()) || []
-    const correctAnswers =
-      container
-        .querySelector(`#t3-correctAnswers0`)
-        ?.value?.split("\n")
-        .filter((a) => a.trim()) || []
+// Thêm styles vào document
+const styleElement = document.createElement("style")
+styleElement.textContent = metadataStyles
+document.head.appendChild(styleElement)
 
-    // Validate inputs
-    if (!title || people.length === 0 || responsibilities.length === 0 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
-      return
-    }
+function validateQuestion(questionData, type) {
+  if (!questionData) return false
 
-    if (people.length !== correctAnswers.length) {
-      showNotification("Số lượng người và đáp án không khớp nhau", "error")
-      return
-    }
-
-    // Create question object
-    const questionData = {
-      type: "Matching",
-      content: [title, ...people, ...responsibilities],
-      correctAnswers: correctAnswers,
-      numQuestions: people.length,
-    }
-
-    // Add to test object
-    const part = Math.ceil((totalQuestions + 1) / 10)
-    if (part >= 1 && part <= 4) {
-      if (!test[`part${part}`]) {
-        test[`part${part}`] = []
-      }
-      test[`part${part}`].push(questionData)
-      totalQuestions += people.length
-      updateQuestionCount()
-    }
-
-    showNotification("Câu hỏi đã được lưu thành công!", "success")
-  } catch (error) {
-    console.error("Error saving matching questions:", error)
-    showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  switch (type) {
+    case "Plan/Map/Diagram labelling":
+      return (
+        questionData.content &&
+        questionData.content.length >= 4 && // type, instructions, image, and at least one answer
+        questionData.correctAnswers &&
+        questionData.correctAnswers.length > 0 &&
+        questionData.correctAnswers.length === questionData.content.length - 3 // subtract type, instructions, and image
+      )
+    // Add validation for other question types as needed
+    default:
+      return true
   }
 }
 
-// Update the saveT2ListeningExercise function to properly save questions
+// Declare initializeMatchingForm, initializeNoteCompletionForm, and dragEndHandler
 function initializeMatchingForm(container) {
-  const numberOfQuestionsInput = container.querySelector("#t3-numberOfQuestions")
+  const form = container.querySelector("#t3-questionForm")
   const questionsContainer = container.querySelector("#t3-questionsContainer")
+  const numberOfQuestionsInput = container.querySelector("#t3-numberOfQuestions")
   const saveButton = container.querySelector("#t3-saveButton")
-  const messageDiv = container.querySelector("#t3-message")
   const questionsPreview = container.querySelector("#t3-questionsPreview")
 
-  // Function to generate question fields
-  function generateQuestionFields() {
-    const numberOfQuestions = Number(numberOfQuestionsInput.value)
-    questionsContainer.innerHTML = ""
+  // Initialize with one question field
+  questionsContainer.innerHTML = createQuestionFields(0)
 
-    for (let i = 0; i < numberOfQuestions; i++) {
-      const questionFields = createQuestionFields(i)
-      questionsContainer.innerHTML += questionFields
+  // Update question fields when number of questions changes
+  numberOfQuestionsInput.addEventListener("change", () => {
+    const count = Number.parseInt(numberOfQuestionsInput.value)
+    let fieldsHTML = ""
+    for (let i = 0; i < count; i++) {
+      fieldsHTML += createQuestionFields(i)
     }
-  }
+    questionsContainer.innerHTML = fieldsHTML
+  })
 
-  // Initial generation of question fields
-  generateQuestionFields()
-
-  // Event listener for number of questions input
-  numberOfQuestionsInput.addEventListener("change", generateQuestionFields)
-
-  // Event listener for save button
+  // Save questions
   saveButton.addEventListener("click", () => {
     saveMatchingQuestions(container)
   })
 
-  // Event listener for preview button
-  questionsPreview.addEventListener("click", () => {
+  // Update preview
+  form.addEventListener("input", () => {
     updateMatchingPreview(container)
   })
+}
+
+function initializeNoteCompletionForm(container) {
+  const questionCountInput = container.querySelector("#t2ListeningExerciseQuestionCount")
+  const questionContainer = container.querySelector("#t2ListeningExerciseQuestionContainer")
+
+  // Function to update question fields
+  function updateQuestionFields() {
+    const questionCount = Number.parseInt(questionCountInput.value, 10)
+    let questionFieldsHTML = ""
+
+    for (let i = 1; i <= questionCount; i++) {
+      questionFieldsHTML += `
+        <div class="t2-listening-exercise-form-group">
+          <label for="t2ListeningExerciseQuestion${i}">Question ${i}:</label>
+          <div class="t2-listening-exercise-answer-fields">
+            <textarea id="t2ListeningExerciseQuestion${i}" name="question${i}" oninput="updateT2ListeningExerciseCorrectAnswerFields(${i})"></textarea>
+          </div>
+          <div class="t2-listening-exercise-correct-answers" id="t2ListeningExerciseCorrectAnswers${i}">
+            <span class="t2-listening-exercise-correct-answer-label">Correct Answers:</span>
+            <input type="text" class="t2-listening-exercise-correct-answer-input" placeholder="Answer 1">
+          </div>
+        </div>
+      `
+    }
+
+    questionContainer.innerHTML = questionFieldsHTML
+  }
+
+  // Initial call to create question fields
+  updateQuestionFields()
+
+  // Event listener for question count change
+  questionCountInput.addEventListener("change", updateQuestionFields)
+}
+
+function dragEndHandler(event) {
+  event.target.classList.remove("dragging")
 }
 
 
