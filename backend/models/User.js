@@ -1,28 +1,38 @@
-const db = require('../config/database');
-const bcrypt = require('bcrypt');
+import { query } from "../config/database.js"
+import bcrypt from "bcryptjs"
 
 class User {
-  static async create(username, email, password) {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const [result] = await db.query(
-      'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
-      [username, email, hashedPassword]
-    );
-    return { id: result.insertId, username, email };
+  // Tìm người dùng theo tên đăng nhập
+  static async findByUsername(username) {
+    const users = await query("SELECT * FROM users WHERE username = ?", [username])
+    return users[0]
   }
 
-  static async login(email, password) {
-    const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
-    if (rows.length === 0) {
-      return null;
-    }
-    const user = rows[0];
-    const isValid = await bcrypt.compare(password, user.password_hash);
-    if (!isValid) {
-      return null;
-    }
-    return { id: user.id, username: user.username, email: user.email };
+  // Tìm người dùng theo ID
+  static async findById(id) {
+    const users = await query("SELECT id, username, role, created_at FROM users WHERE id = ?", [id])
+    return users[0]
+  }
+
+  // Tạo người dùng mới
+  static async create(username, password, role = "student") {
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(password, salt)
+
+    const result = await query("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", [
+      username,
+      hashedPassword,
+      role,
+    ])
+
+    return result.insertId
+  }
+
+  // Xác minh mật khẩu
+  static async verifyPassword(password, hashedPassword) {
+    return await bcrypt.compare(password, hashedPassword)
   }
 }
 
-module.exports = User;
+export default User
+

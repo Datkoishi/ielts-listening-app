@@ -1,8 +1,17 @@
-const express = require('express');
-const router = express.Router();
-const userController = require('../controllers/userController');
+import express from "express"
+import { register, login, getCurrentUser } from "../controllers/userController.js"
+import { auth } from "../middleware/auth.js"
 
-router.post('/register', userController.registerUser);
-router.post('/login', userController.loginUser);
+const router = express.Router()
 
-module.exports = router;
+// Đăng ký người dùng mới
+router.post("/register", register)
+
+// Đăng nhập
+router.post("/login", login)
+
+// Lấy thông tin người dùng hiện tại
+router.get("/me", auth, getCurrentUser)
+
+export default router
+

@@ -1,61 +1,87 @@
-const db = require('../config/database');
+import { query } from "../config/database.js"
 
 class Test {
-  static async getAll() {
-    const [rows] = await db.query('SELECT * FROM tests');
-    return rows;
+  // Lấy tất cả bài kiểm tra
+  static async findAll() {
+    return await query(`
+      SELECT t.id, t.title, t.description, t.created_at, u.username as created_by
+      FROM tests t
+      JOIN users u ON t.created_by = u.id
+      ORDER BY t.created_at DESC
+    `)
   }
 
-  static async getById(id) {
-    const [testRows] = await db.query('SELECT * FROM tests WHERE id = ?', [id]);
-    if (testRows.length === 0) {
-      return null;
-    }
-    const test = testRows[0];
+  // Tìm bài kiểm tra theo ID
+  static async findById(id) {
+    const tests = await query(
+      `
+      SELECT t.id, t.title, t.description, t.created_at, u.username as created_by
+      FROM tests t
+      JOIN users u ON t.created_by = u.id
+      WHERE t.id = ?
+    `,
+      [id],
+    )
+    return tests[0]
+  }
 
-    const [questionRows] = await db.query(`
-      SELECT q.*, qt.name as question_type 
+  // Tạo bài kiểm tra mới
+  static async create(testData, userId) {
+    const { title, description } = testData
+    const result = await query("INSERT INTO tests (title, description, created_by) VALUES (?, ?, ?)", [
+      title,
+      description,
+      userId,
+    ])
+    return result.insertId
+  }
+
+  // Cập nhật bài kiểm tra
+  static async update(id, testData) {
+    const { title, description } = testData
+    return await query("UPDATE tests SET title = ?, description = ? WHERE id = ?", [title, description, id])
+  }
+
+  // Xóa bài kiểm tra
+  static async delete(id) {
+    return await query("DELETE FROM tests WHERE id = ?", [id])
+  }
+
+  // Lấy câu hỏi theo ID bài kiểm tra
+  static async getQuestionsByTestId(testId) {
+    return await query(
+      `
+      SELECT q.*, p.part_number
       FROM questions q
-      JOIN question_types qt ON q.question_type_id = qt.id
-      WHERE q.test_id = ?
-      ORDER BY q.part, q.id
-    `, [id]);
-
-    test.questions = questionRows;
-    return test;
+      JOIN parts p ON q.part_id = p.id
+      WHERE p.test_id = ?
+      ORDER BY p.part_number, q.id
+    `,
+      [testId],
+    )
   }
 
-  static async submitAnswers(userId, testId, answers) {
-    const [questionRows] = await db.query('SELECT id, correct_answers FROM questions WHERE test_id = ?', [testId]);
-    
-    let score = 0;
-    const totalQuestions = questionRows.length;
+  // Tạo phần mới cho bài kiểm tra
+  static async createPart(testId, partNumber, audioUrl = null) {
+    const result = await query("INSERT INTO parts (test_id, part_number, audio_url) VALUES (?, ?, ?)", [
+      testId,
+      partNumber,
+      audioUrl,
+    ])
+    return result.insertId
+  }
 
-    questionRows.forEach(question => {
-      const userAnswer = answers[`q${question.id}`];
-      const correctAnswer = JSON.parse(question.correct_answers);
-
-      if (Array.isArray(correctAnswer)) {
-        if (Array.isArray(userAnswer) && userAnswer.length === correctAnswer.length && 
-            userAnswer.every(answer => correctAnswer.includes(answer))) {
-          score++;
-        }
-      } else {
-        if (userAnswer === correctAnswer) {
-          score++;
-        }
-      }
-    });
-
-    const percentage = (score / totalQuestions) * 100;
-
-    await db.query(
-      'INSERT INTO user_progress (user_id, test_id, score, completed_at) VALUES (?, ?, ?, NOW())',
-      [userId, testId, percentage]
-    );
-
-    return { score, totalQuestions, percentage };
+  // Tạo câu hỏi mới
+  static async createQuestion(partId, questionData) {
+    const { type, content, correctAnswers } = questionData
+    return await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
+      partId,
+      type,
+      JSON.stringify(content),
+      JSON.stringify(correctAnswers),
+    ])
   }
 }
 
-module.exports = Test;
+export default Test
+
