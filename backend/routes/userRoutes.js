@@ -1,17 +1,16 @@
-import express from "express"
-import { register, login, getCurrentUser } from "../controllers/userController.js"
-import { auth } from "../middleware/auth.js"
-
+const express = require("express")
 const router = express.Router()
+const { auth } = require("../middleware/auth")
+const userController = require("../controllers/userController")
 
 // Đăng ký người dùng mới
-router.post("/register", register)
+router.post("/register", userController.register)
 
 // Đăng nhập
-router.post("/login", login)
+router.post("/login", userController.login)
 
 // Lấy thông tin người dùng hiện tại
-router.get("/me", auth, getCurrentUser)
+router.get("/me", auth, userController.getCurrentUser)
 
-export default router
+module.exports = router
 

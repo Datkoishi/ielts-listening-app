@@ -1,8 +1,8 @@
-import jwt from "jsonwebtoken"
-import User from "../models/User.js"
+const jwt = require("jsonwebtoken")
+const User = require("../models/User")
 
 // Middleware xác thực người dùng
-export const auth = (req, res, next) => {
+exports.auth = (req, res, next) => {
   const token = req.header("Authorization")?.replace("Bearer ", "")
 
   if (!token) {
@@ -19,7 +19,7 @@ export const auth = (req, res, next) => {
 }
 
 // Middleware phân quyền
-export const authorize = (...roles) => {
+exports.authorize = (...roles) => {
   return async (req, res, next) => {
     try {
       const user = await User.findById(req.user.id)

@@ -1,23 +1,22 @@
-import express from "express"
-import { getAllTests, getTestById, createTest, updateTest, deleteTest } from "../controllers/testController.js"
-import { auth, authorize } from "../middleware/auth.js"
-
+const express = require("express")
 const router = express.Router()
+const { auth, authorize } = require("../middleware/auth")
+const testController = require("../controllers/testController")
 
 // Lấy tất cả bài kiểm tra
-router.get("/", auth, getAllTests)
+router.get("/", auth, testController.getAllTests)
 
 // Lấy bài kiểm tra theo ID
-router.get("/:id", auth, getTestById)
+router.get("/:id", auth, testController.getTestById)
 
 // Tạo bài kiểm tra mới (chỉ giáo viên)
-router.post("/", auth, authorize("teacher"), createTest)
+router.post("/", auth, authorize("teacher"), testController.createTest)
 
 // Cập nhật bài kiểm tra (chỉ giáo viên)
-router.put("/:id", auth, authorize("teacher"), updateTest)
+router.put("/:id", auth, authorize("teacher"), testController.updateTest)
 
 // Xóa bài kiểm tra (chỉ giáo viên)
-router.delete("/:id", auth, authorize("teacher"), deleteTest)
+router.delete("/:id", auth, authorize("teacher"), testController.deleteTest)
 
-export default router
+module.exports = router
 

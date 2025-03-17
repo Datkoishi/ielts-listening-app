@@ -1,5 +1,5 @@
-import mysql from "mysql2/promise"
-import dotenv from "dotenv"
+const mysql = require("mysql2/promise")
+const dotenv = require("dotenv")
 
 dotenv.config()
 
@@ -13,7 +13,8 @@ const pool = mysql.createPool({
   queueLimit: 0,
 })
 
-export const connectDB = async () => {
+// Kết nối đến cơ sở dữ liệu
+exports.connectDB = async () => {
   try {
     const connection = await pool.getConnection()
     console.log("Đã kết nối thành công đến cơ sở dữ liệu MySQL")
@@ -24,7 +25,8 @@ export const connectDB = async () => {
   }
 }
 
-export const query = async (sql, params) => {
+// Hàm thực hiện truy vấn
+exports.query = async (sql, params) => {
   try {
     const [results] = await pool.execute(sql, params)
     return results
@@ -34,4 +36,5 @@ export const query = async (sql, params) => {
   }
 }
 
-export default pool
+module.exports = pool
+

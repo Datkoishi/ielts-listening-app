@@ -1,8 +1,8 @@
-import jwt from "jsonwebtoken"
-import User from "../models/User.js"
+const jwt = require("jsonwebtoken")
+const User = require("../models/User")
 
 // Đăng ký người dùng mới
-export const register = async (req, res) => {
+exports.register = async (req, res) => {
   try {
     const { username, password, role } = req.body
 
@@ -26,7 +26,7 @@ export const register = async (req, res) => {
 }
 
 // Đăng nhập
-export const login = async (req, res) => {
+exports.login = async (req, res) => {
   try {
     const { username, password } = req.body
 
@@ -57,7 +57,7 @@ export const login = async (req, res) => {
 }
 
 // Lấy thông tin người dùng hiện tại
-export const getCurrentUser = async (req, res) => {
+exports.getCurrentUser = async (req, res) => {
   try {
     const user = await User.findById(req.user.id)
     if (!user) {

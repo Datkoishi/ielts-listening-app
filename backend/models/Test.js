@@ -1,4 +1,4 @@
-import { query } from "../config/database.js"
+const { query } = require("../config/database")
 
 class Test {
   // Lấy tất cả bài kiểm tra
@@ -83,5 +83,5 @@ class Test {
   }
 }
 
-export default Test
+module.exports = Test
 

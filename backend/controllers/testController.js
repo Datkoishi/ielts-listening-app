@@ -1,8 +1,8 @@
-import Test from "../models/Test.js"
-import { query } from "../config/database.js"
+const Test = require("../models/Test")
+const { query } = require("../config/database")
 
 // Lấy tất cả bài kiểm tra
-export const getAllTests = async (req, res) => {
+exports.getAllTests = async (req, res) => {
   try {
     const tests = await Test.findAll()
     res.json(tests)
@@ -13,7 +13,7 @@ export const getAllTests = async (req, res) => {
 }
 
 // Lấy bài kiểm tra theo ID
-export const getTestById = async (req, res) => {
+exports.getTestById = async (req, res) => {
   try {
     const test = await Test.findById(req.params.id)
     if (!test) {
@@ -60,7 +60,7 @@ export const getTestById = async (req, res) => {
 }
 
 // Tạo bài kiểm tra mới
-export const createTest = async (req, res) => {
+exports.createTest = async (req, res) => {
   const { title, description, part1, part2, part3, part4 } = req.body
 
   try {
@@ -91,7 +91,7 @@ export const createTest = async (req, res) => {
 }
 
 // Cập nhật bài kiểm tra
-export const updateTest = async (req, res) => {
+exports.updateTest = async (req, res) => {
   const { id } = req.params
   const { title, description, part1, part2, part3, part4 } = req.body
 
@@ -133,7 +133,7 @@ export const updateTest = async (req, res) => {
 }
 
 // Xóa bài kiểm tra
-export const deleteTest = async (req, res) => {
+exports.deleteTest = async (req, res) => {
   try {
     const test = await Test.findById(req.params.id)
     if (!test || test.created_by !== req.user.id) {
@@ -144,6 +144,82 @@ export const deleteTest = async (req, res) => {
     res.json({ message: "Xóa bài kiểm tra thành công" })
   } catch (error) {
     console.error("Lỗi xóa bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
+  }
+}
+
+// Nhận câu trả lời từ học sinh
+exports.submitAnswers = async (req, res) => {
+  try {
+    const { testId } = req.params
+    const { answers } = req.body
+    const studentId = req.user.id
+
+    // Kiểm tra bài kiểm tra tồn tại
+    const test = await Test.findById(testId)
+    if (!test) {
+      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
+    }
+
+    // Lấy tất cả câu hỏi của bài kiểm tra
+    const questions = await Test.getQuestionsByTestId(testId)
+
+    // Kiểm tra và lưu câu trả lời
+    const results = []
+    let correctCount = 0
+
+    for (const answer of answers) {
+      const { questionId, studentAnswer } = answer
+
+      // Tìm câu hỏi tương ứng
+      const question = questions.find((q) => q.id === Number.parseInt(questionId))
+      if (!question) continue
+
+      // Lấy đáp án đúng
+      const correctAnswers = JSON.parse(question.correct_answers)
+
+      // Kiểm tra câu trả lời
+      let isCorrect = false
+      if (Array.isArray(correctAnswers)) {
+        // Nếu có nhiều đáp án đúng
+        if (Array.isArray(studentAnswer)) {
+          isCorrect =
+            studentAnswer.length === correctAnswers.length && studentAnswer.every((a) => correctAnswers.includes(a))
+        } else {
+          isCorrect = correctAnswers.includes(studentAnswer)
+        }
+      } else {
+        // Nếu chỉ có một đáp án đúng
+        isCorrect = studentAnswer === correctAnswers
+      }
+
+      // Lưu kết quả
+      await query(
+        "INSERT INTO student_answers (student_id, test_id, question_id, answer, is_correct) VALUES (?, ?, ?, ?, ?)",
+        [studentId, testId, questionId, JSON.stringify(studentAnswer), isCorrect],
+      )
+
+      results.push({
+        questionId,
+        isCorrect,
+      })
+
+      if (isCorrect) correctCount++
+    }
+
+    // Tính điểm
+    const totalQuestions = questions.length
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
+
+    res.json({
+      message: "Nộp bài thành công",
+      score,
+      correctCount,
+      totalQuestions,
+      results,
+    })
+  } catch (error) {
+    console.error("Lỗi khi nộp bài:", error.message)
     res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }

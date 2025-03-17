@@ -1,5 +1,5 @@
-import { query } from "../config/database.js"
-import bcrypt from "bcryptjs"
+const { query } = require("../config/database")
+const bcrypt = require("bcryptjs")
 
 class User {
   // Tìm người dùng theo tên đăng nhập
@@ -34,5 +34,5 @@ class User {
   }
 }
 
-export default User
+module.exports = User
 
