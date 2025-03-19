@@ -14,10 +14,10 @@ body {
   }
   .selection-page,
   .test-creation-page {
-    background-color: #fff;
-    padding: 20px;
+    background-color: #f9f9f9;
+    padding: 25px;
     border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
   }
   .question-types {
     display: grid;
@@ -54,11 +54,12 @@ body {
     margin-right: 5px;
   }
   .part {
-    background-color: #fff;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    border: 1px solid #ccc;
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   }
   .question {
     background-color: #f9f9f9;
@@ -103,12 +104,13 @@ body {
   .part-header {
     background-color: #003366;
     color: #fff;
-    padding: 15px;
-    margin-bottom: 15px;
-    border-radius: 4px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
   }
   .part-header h2 {
     margin: 0;
@@ -931,7 +933,6 @@ body {
     width: 100%;
     border-collapse: collapse;
   }
-  
   .t1-ielts-creator .t1-answer-grid th,
   .t1-ielts-creator .t1-answer-grid td {
     border: 1px solid #ccc;
@@ -1000,11 +1001,11 @@ body {
   
   /* Styles for test management */
   .test-metadata {
-    background-color: #f9f9f9;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
+    background-color: white;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   }
   
   .test-actions {
@@ -1053,6 +1054,55 @@ body {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+  }
+  
+  .question-type-modal .modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 8px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  }
+  
+  .question-type-modal h2 {
+    color: #003366;
+    margin-top: 0;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  .question-type-modal .question-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+  }
+  
+  .question-type-btn {
+    background-color: #e6f2ff;
+    color: #003366;
+    border: 1px solid #003366;
+    padding: 15px;
+    margin: 0;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .question-type-btn:hover {
+    background-color: #003366;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .question-type-btn i {
+    margin-right: 10px;
+    font-size: 18px;
   }
   
   .question-type-btn {
@@ -1111,6 +1161,179 @@ body {
   
   .parts-container {
     margin-bottom: 20px;
+  }
+  
+  /* Add styles for the add question button to make it more prominent */
+  .add-question-button {
+    background-color: #4caf50 !important;
+    color: white;
+    font-size: 16px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 0;
+  }
+  
+  .add-question-button:hover {
+    background-color: #45a049 !important;
+  }
+  
+  .add-question-button i {
+    margin-right: 8px;
+  }
+  
+  /* Thêm CSS mới cho giao diện theo mẫu */
+  .test-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
+    overflow: hidden;
+  }
+  
+  .test-header {
+    background-color: #ffffff;
+    color: #003366;
+    padding: 15px 20px;
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .test-icon {
+    margin-right: 10px;
+    color: #003366;
+  }
+  
+  .part-header {
+    background-color: #003366;
+    color: #ffffff;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+  }
+  
+  .part-icon {
+    margin-right: 10px;
+  }
+  
+  .question-types-container {
+    padding: 0;
+  }
+  
+  .question-type-item {
+    border-bottom: 1px solid #e0e0e0;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .question-type-label {
+    display: flex;
+    align-items: center;
+    font-weight: 500;
+    color: #333;
+  }
+  
+  .question-type-icon {
+    margin-right: 10px;
+    width: 20px;
+    display: inline-block;
+    text-align: center;
+  }
+  
+  .add-question-btn {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    margin: 0;
+  }
+  
+  .add-question-btn i {
+    margin-right: 5px;
+  }
+  
+  .add-question-btn:hover {
+    background-color: #004080;
+  }
+  
+  .navigation-buttons {
+    display: flex;
+    justify-content: space-between;
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+  }
+  
+  .nav-btn {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0;
+  }
+  
+  .prev-btn i {
+    margin-right: 5px;
+  }
+  
+  .next-btn i {
+    margin-left: 5px;
+  }
+  
+  .save-button-container {
+    padding: 15px 20px;
+    border-top: 1px solid #e0e0e0;
+  }
+  
+  .save-btn {
+    background-color: #003366;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin: 0;
+  }
+  
+  .save-btn i {
+    margin-right: 8px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .question-type-item {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .add-question-btn {
+      margin-top: 10px;
+      align-self: flex-start;
+    }
   }
   
   

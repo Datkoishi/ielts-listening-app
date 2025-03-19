@@ -3,7 +3,7 @@ const MAX_QUESTIONS = 40
 const PARTS = 4
 
 // Biến toàn cục
-let selectedTypes = []
+const selectedTypes = []
 let currentPart = 1
 const totalQuestions = 0
 let audioFile = null
@@ -22,25 +22,11 @@ const test = {
 // Khởi tạo sự kiện khi trang được tải
 document.addEventListener("DOMContentLoaded", () => {
   // Thêm sự kiện cho các nút chính
-  const startTestBtn = document.getElementById("startTestBtn")
-  if (startTestBtn) {
-    startTestBtn.addEventListener("click", startTestCreation)
-  }
-
-  const previousPartBtn = document.getElementById("previousPartBtn")
-  if (previousPartBtn) {
-    previousPartBtn.addEventListener("click", previousPart)
-  }
-
-  const nextPartBtn = document.getElementById("nextPartBtn")
-  if (nextPartBtn) {
-    nextPartBtn.addEventListener("click", nextPart)
-  }
-
-  const saveTestBtn = document.getElementById("saveTestBtn")
-  if (saveTestBtn) {
-    saveTestBtn.addEventListener("click", saveTest)
-  }
+  // Remove this entire event listener since it's now handled in index.js
+  // document.getElementById("startTestBtn").addEventListener("click", startTestCreation)
+  // document.getElementById("previousPartBtn").addEventListener("click", previousPart)
+  // document.getElementById("nextPartBtn").addEventListener("click", nextPart)
+  // document.getElementById("saveTestBtn").addEventListener("click", saveTest)
 
   // Tạo và thêm các nút bổ sung
   const testCreationPage = document.getElementById("testCreationPage")
@@ -96,8 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
   setupAudioHandlers()
 })
 
-// Bắt đầu quá trình tạo bài kiểm tra
+// Bắt đầu tạo bài kiểm tra - COMMENTING OUT THIS FUNCTION AS WE'LL USE THE ONE FROM test-management.js
+/*
 function startTestCreation() {
+  console.log("Starting test creation...");
   selectedTypes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map((cb) => cb.value)
   if (selectedTypes.length === 0) {
     alert("Vui lòng chọn ít nhất một loại câu hỏi.")
@@ -107,8 +95,17 @@ function startTestCreation() {
   document.getElementById("testCreationPage").classList.remove("hidden")
   renderTestCreation()
 }
+*/
 
-// Hiển thị giao diện tạo bài kiểm tra
+// Make sure these functions are available globally
+// window.startTestCreation = startTestCreation; // COMMENTING OUT
+window.previousPart = previousPart
+window.nextPart = nextPart
+window.saveTest = saveTest
+// window.renderTestCreation = renderTestCreation; // COMMENTING OUT
+
+// Hiển thị giao diện tạo bài kiểm tra - COMMENTING OUT THIS FUNCTION AS WE'LL USE THE ONE FROM test-management.js
+/*
 function renderTestCreation() {
   const testContent = document.getElementById("testContent")
   if (!testContent) {
@@ -146,6 +143,7 @@ function renderTestCreation() {
   // Hiển thị các câu hỏi hiện có cho phần hiện tại
   displayExistingQuestions(currentPart)
 }
+*/
 
 // Chuyển đến phần trước
 function previousPart() {
@@ -378,4 +376,19 @@ function renderQuestionTypes(element) {
 function displayExistingQuestions(part) {
   console.warn("displayExistingQuestions function is a placeholder.")
 }
+
+// Make sure these functions are exposed to the global window object
+window.previousPart = previousPart
+window.nextPart = nextPart
+window.saveTest = saveTest
+window.previewEntireTest = previewEntireTest
+window.exportTest = exportTest
+window.importTest = importTest
+window.saveQuestionSet = saveQuestionSet
+window.showTestList = showTestList
+window.fetchQuestionTypes = fetchQuestionTypes
+window.renderQuestionTypes = renderQuestionTypes
+window.displayExistingQuestions = displayExistingQuestions
+window.updateTestMetadata = updateTestMetadata
+window.showNotification = showNotification
 

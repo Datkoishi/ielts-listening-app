@@ -80,55 +80,135 @@ let test = {
   
   // Hiển thị giao diện tạo bài kiểm tra
   function renderTestCreation() {
+    console.log("Rendering test creation form from test-management.js")
     const testContent = document.getElementById("testContent")
+    if (!testContent) {
+      console.error("testContent element not found!")
+      return
+    }
+  
+    // Cập nhật metadata bài kiểm tra
     testContent.innerHTML = `
-      <div class="test-metadata">
-        <div class="form-group">
-          <label for="testTitle"><i class="fas fa-heading"></i> Tiêu đề bài kiểm tra:</label>
-          <input type="text" id="testTitle" value="${test.title}" placeholder="Nhập tiêu đề bài kiểm tra">
+      <div class="test-card">
+        <div class="test-header">
+          <span class="test-icon"><i class="fas fa-pencil-alt"></i></span>
+          <span>IELTS Listening Test</span>
         </div>
-        <div class="form-group">
-          <label for="testDescription"><i class="fas fa-info-circle"></i> Mô tả:</label>
-          <textarea id="testDescription" placeholder="Nhập mô tả bài kiểm tra">${test.description}</textarea>
-        </div>
-        <div class="question-count">Tổng số câu hỏi: ${totalQuestions}</div>
-      </div>
-      <div class="parts-container">
+        
         <div class="part-header">
-          <h2><i class="fas fa-list-ol"></i> Phần ${currentPart}</h2>
-          <div class="part-actions">
-            <button onclick="addQuestion()"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
+          <span class="part-icon"><i class="fas fa-list"></i></span>
+          <span>Part ${currentPart}</span>
+        </div>
+        
+        <div class="question-types-container">
+          <!-- One answer -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-check-circle"></i></span>
+              <span>One answer</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Một đáp án')">
+              <i class="fas fa-plus"></i> Add One answer Question
+            </button>
+          </div>
+          
+          <!-- More than one answer -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-check-double"></i></span>
+              <span>More than one answer</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Nhiều đáp án')">
+              <i class="fas fa-plus"></i> Add More than one answer Question
+            </button>
+          </div>
+          
+          <!-- Matching -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-link"></i></span>
+              <span>Matching</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Ghép nối')">
+              <i class="fas fa-plus"></i> Add Matching Question
+            </button>
+          </div>
+          
+          <!-- Plan/Map/Diagram labelling -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-map-marker-alt"></i></span>
+              <span>Plan/Map/Diagram labelling</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Ghi nhãn Bản đồ/Sơ đồ')">
+              <i class="fas fa-plus"></i> Add Plan/Map/Diagram labelling Question
+            </button>
+          </div>
+          
+          <!-- Note Completion -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-sticky-note"></i></span>
+              <span>Note Completion</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành ghi chú')">
+              <i class="fas fa-plus"></i> Add Note Completion Question
+            </button>
+          </div>
+          
+          <!-- Form/Table Completion -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-table"></i></span>
+              <span>Form/Table Completion</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành bảng/biểu mẫu')">
+              <i class="fas fa-plus"></i> Add Form/Table Completion Question
+            </button>
+          </div>
+          
+          <!-- Flow chart Completion -->
+          <div class="question-type-item">
+            <div class="question-type-label">
+              <span class="question-type-icon"><i class="fas fa-project-diagram"></i></span>
+              <span>Flow chart Completion</span>
+            </div>
+            <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành lưu đồ')">
+              <i class="fas fa-plus"></i> Add Flow chart Completion Question
+            </button>
           </div>
         </div>
-        <div id="part${currentPart}" class="part"></div>
-      </div>
-      <div class="test-actions">
-        <button onclick="previewEntireTest()"><i class="fas fa-eye"></i> Xem trước</button>
-        <button onclick="exportTest()"><i class="fas fa-file-export"></i> Xuất</button>
-        <button onclick="importTest()"><i class="fas fa-file-import"></i> Nhập</button>
-        <button onclick="showTestList()"><i class="fas fa-list"></i> Danh sách bài kiểm tra</button>
-        <button onclick="createNewTest()"><i class="fas fa-file"></i> Tạo mới</button>
-        <button onclick="duplicateTest()"><i class="fas fa-copy"></i> Sao chép</button>
-        <button onclick="generateTestPDF()"><i class="fas fa-file-pdf"></i> Tạo PDF</button>
+        
+        <div class="navigation-buttons">
+          <button class="nav-btn prev-btn" onclick="previousPart()">
+            <i class="fas fa-arrow-left"></i> Previous Part
+          </button>
+          <button class="nav-btn next-btn" onclick="nextPart()">
+            Next Part <i class="fas fa-arrow-right"></i>
+          </button>
+        </div>
+        
+        <div class="save-button-container">
+          <button class="save-btn" onclick="saveTest()">
+            <i class="fas fa-save"></i> Save Test
+          </button>
+        </div>
       </div>
     `
   
-    // Cập nhật tiêu đề và mô tả khi người dùng thay đổi
-    document.getElementById("testTitle").addEventListener("change", function () {
-      test.title = this.value
-    })
-  
-    document.getElementById("testDescription").addEventListener("change", function () {
-      test.description = this.value
-    })
-  
-    // Hiển thị câu hỏi trong phần hiện tại
+    // Hiển thị câu hỏi trong phần hiện tại nếu có
     renderQuestionsForCurrentPart()
   }
   
   // Hiển thị câu hỏi cho phần hiện tại
   function renderQuestionsForCurrentPart() {
+    console.log(`Rendering questions for part ${currentPart}`)
     const part = document.getElementById(`part${currentPart}`)
+    if (!part) {
+      console.error(`part${currentPart} element not found!`)
+      return
+    }
+  
     part.innerHTML = ""
   
     if (!test[`part${currentPart}`] || test[`part${currentPart}`].length === 0) {
@@ -1386,6 +1466,7 @@ let test = {
   
   // Thêm câu hỏi mới
   function addQuestion() {
+    console.log("addQuestion function called")
     // Hiển thị modal chọn loại câu hỏi
     const modal = document.createElement("div")
     modal.className = "question-type-modal"
@@ -1517,8 +1598,126 @@ let test = {
     showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${currentPart}`, "success")
   }
   
-  // Khởi tạo khi trang tải xong
+  // Xóa các hàm liên quan đến đăng nhập/đăng ký
+  // Tìm và xóa hàm showLoginForm
+  // function showLoginForm() {
+  // const loginModal = document.createElement("div")
+  // loginModal.className = "login-modal"
+  // loginModal.innerHTML = `
+  //   <div class="login-content">
+  //     <h2>Login</h2>
+  //     <form id="loginForm">
+  //       <div class="form-group">
+  //         <label for="username">Username:</label>
+  //         <input type="text" id="username" required>
+  //       </div>
+  //       <div class="form-group">
+  //         <label for="password">Password:</label>
+  //         <input type="password" id="password" required>
+  //       </div>
+  //       <button type="submit">Login</button>
+  //     </form>
+  //     <p>Don't have an account? <a href="#" id="showRegisterForm">Register</a></p>
+  //     <div id="loginMessage" class="message"></div>
+  //   </div>
+  // `
+  
+  // document.body.appendChild(loginModal)
+  
+  // // Handle login form submission
+  // document.getElementById("loginForm").addEventListener("submit", (e) => {
+  //   e.preventDefault()
+  //   const username = document.getElementById("username").value
+  //   const password = document.getElementById("password").value
+  
+  //   login(username, password)
+  //     .then(() => {
+  //       document.body.removeChild(loginModal)
+  //       showNotification("Login successful", "success")
+  //     })
+  //     .catch((error) => {
+  //       document.getElementById("loginMessage").textContent = error.message
+  //       document.getElementById("loginMessage").className = "message error"
+  //     })
+  // })
+  
+  // // Handle switch to register form
+  // document.getElementById("showRegisterForm").addEventListener("click", (e) => {
+  //   e.preventDefault()
+  //   document.body.removeChild(loginModal)
+  //   showRegisterForm()
+  // })
+  // }
+  
+  // // Xóa hàm showRegisterForm
+  // function showRegisterForm() {
+  // const registerModal = document.createElement("div")
+  // registerModal.className = "register-modal"
+  // registerModal.innerHTML = `
+  //   <div class="register-content">
+  //     <h2>Register</h2>
+  //     <form id="registerForm">
+  //       <div class="form-group">
+  //         <label for="regUsername">Username:</label>
+  //         <input type="text" id="regUsername" required>
+  //       </div>
+  //       <div class="form-group">
+  //         <label for="regPassword">Password:</label>
+  //         <input type="password" id="regPassword" required>
+  //       </div>
+  //       <div class="form-group">
+  //         <label for="regConfirmPassword">Confirm Password:</label>
+  //         <input type="password" id="regConfirmPassword" required>
+  //       </div>
+  //       <button type="submit">Register</button>
+  //     </form>
+  //     <p>Already have an account? <a href="#" id="showLoginForm">Login</a></p>
+  //     <div id="registerMessage" class="message"></div>
+  //   </div>
+  // `
+  
+  // document.body.appendChild(registerModal)
+  
+  // // Handle register form submission
+  // document.getElementById("registerForm").addEventListener("submit", (e) => {
+  //   e.preventDefault()
+  //   const username = document.getElementById("regUsername").value
+  //   const password = document.getElementById("regPassword").value
+  //   const confirmPassword = document.getElementById("regConfirmPassword").value
+  
+  //   if (password !== confirmPassword) {
+  //     document.getElementById("registerMessage").textContent = "Passwords do not match"
+  //     document.getElementById("registerMessage").className = "message error"
+  //     return
+  //   }
+  
+  //   register(username, password, "teacher")
+  //     .then(() => {
+  //       document.body.removeChild(registerModal)
+  //       showNotification("Registration successful", "success")
+  //     })
+  //     .catch((error) => {
+  //       document.getElementById("registerMessage").textContent = error.message
+  //       document.getElementById("registerMessage").className = "message error"
+  //     })
+  // })
+  
+  // // Handle switch to login form
+  // document.getElementById("showLoginForm").addEventListener("click", (e) => {
+  //   e.preventDefault()
+  //   document.body.removeChild(registerModal)
+  //   showLoginForm()
+  // })
+  // }
+  
+  // Sửa đổi hàm document.addEventListener("DOMContentLoaded", ...) để loại bỏ kiểm tra đăng nhập
   document.addEventListener("DOMContentLoaded", () => {
+    // Xóa kiểm tra đăng nhập
+    // if (!isLoggedIn()) {
+    //   showLoginForm()
+    //   return
+    // }
+  
     // Thêm sự kiện cho nút bắt đầu tạo bài kiểm tra
     const startButton = document.querySelector(".selection-page button")
     if (startButton) {
@@ -1556,6 +1755,38 @@ let test = {
     // Hiển thị giao diện tạo bài kiểm tra
     currentPart = 1
     renderTestCreation()
+  
+    // Automatically show question creation form for the first selected type
+    if (selectedTypes.length > 0) {
+      console.log("Automatically creating question form for: " + selectedTypes[0])
+      createNewQuestion(selectedTypes[0])
+    }
   }
+  
+  // Make functions available globally
+  window.previewEntireTest = previewEntireTest
+  window.exportTest = exportTest
+  window.importTest = importTest
+  window.showTestList = showTestList
+  window.createNewTest = createNewTest
+  window.duplicateTest = duplicateTest
+  window.generateTestPDF = generateTestPDF
+  window.addQuestion = addQuestion
+  window.deleteQuestion = deleteQuestion
+  window.renderTestCreation = renderTestCreation
+  window.startTestCreation = startTestCreation
+  window.createNewQuestion = createNewQuestion
+  
+  // Make sure the startTestCreation and renderTestCreation functions are properly exposed to the global window object
+  window.startTestCreation = startTestCreation
+  window.renderTestCreation = renderTestCreation
+  
+  // Add this at the end of the file to ensure all functions are properly exposed
+  window.previousPart = previousPart
+  window.nextPart = nextPart
+  window.saveTest = saveTest
+  window.createNewQuestion = createNewQuestion
+  window.deleteQuestion = deleteQuestion
+  window.addQuestion = addQuestion
   
   

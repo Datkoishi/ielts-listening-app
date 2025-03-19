@@ -503,3 +503,13 @@ function initializeFlowChartCompletionForm(questionDiv) {
   // Thêm logic khởi tạo nếu cần
 }
 
+// Make sure these functions are exposed to the global window object
+window.addQuestion = addQuestion
+window.deleteQuestion = deleteQuestion
+window.renderQuestionTypes = renderQuestionTypes
+window.getIconForType = getIconForType
+window.displayExistingQuestions = displayExistingQuestions
+window.fetchQuestionTypes = fetchQuestionTypes
+window.updateQuestionCount = updateQuestionCount
+window.renumberQuestions = renumberQuestions
+

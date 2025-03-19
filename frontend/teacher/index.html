@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IELTS Listening Test Creator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="../teacher/css/styles.css">
 </head>
 <body>
     <div class="selection-page" id="selectionPage">
@@ -43,16 +43,16 @@
         </div>
         <button id="startTestBtn"><i class="fas fa-play"></i> Tạo bài kiểm tra</button>
     </div>
-
+  
     <div class="test-creation-page hidden" id="testCreationPage">
         <h1><i class="fas fa-pencil-alt"></i> IELTS Listening Test</h1>
         <div id="testContent"></div>
         <div class="nav-buttons">
-            <button id="previousPartBtn" onclick="previousPart()"><i class="fas fa-arrow-left"></i> Phần trước</button>
-            <button id="nextPartBtn" onclick="nextPart()">Phần tiếp theo <i class="fas fa-arrow-right"></i></button>
+            <button id="previousPartBtn"><i class="fas fa-arrow-left"></i> Phần trước</button>
+            <button id="nextPartBtn">Phần tiếp theo <i class="fas fa-arrow-right"></i></button>
         </div>
         <div class="test-actions">
-            <button id="saveTestBtn" onclick="saveTest()"><i class="fas fa-save"></i> Lưu bài kiểm tra</button>
+            <button id="saveTestBtn"><i class="fas fa-save"></i> Lưu bài kiểm tra</button>
             <button id="previewTestBtn" onclick="previewEntireTest()"><i class="fas fa-eye"></i> Xem trước</button>
             <button id="exportTestBtn" onclick="exportTest()"><i class="fas fa-file-export"></i> Xuất</button>
             <button id="importTestBtn" onclick="importTest()"><i class="fas fa-file-import"></i> Nhập</button>
@@ -60,10 +60,13 @@
             <button id="createNewTestBtn" onclick="createNewTest()"><i class="fas fa-file"></i> Tạo mới</button>
         </div>
     </div>
-
-    <script src="js/script.js"></script>
-    <script src="js/client-integration.js"></script>
-    <script src="js/test-management.js"></script>
+            <script src="../teacher/js/client-integration.js"></script>
+            <script src="../teacher/js/form-handlers.js"></script>
+            <script src="../teacher/js/index.js"></script>
+            <script src="../teacher/js/main.js"></script>
+            <script src="../teacher/js/question-types.js"></script>
+            <script src="../teacher/js/test-management.js"></script>
+    
 </body>
 </html>
 

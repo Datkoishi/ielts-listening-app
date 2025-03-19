@@ -18,77 +18,22 @@ function removeToken() {
 
 // Kiểm tra đã đăng nhập chưa
 function isLoggedIn() {
-  return !!getToken()
+  return true // Luôn trả về true để bỏ qua kiểm tra đăng nhập
 }
 
 // Lấy thông tin người dùng hiện tại
 async function getCurrentUser() {
-  try {
-    const response = await fetch(`${API_URL}/users/me`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error("Không thể lấy thông tin người dùng")
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error("Lỗi khi lấy thông tin người dùng:", error)
-    return null
-  }
+  return { id: 1, username: "teacher", role: "teacher" } // Trả về người dùng mặc định
 }
 
-// Đăng nhập
+// Đăng nhập - không cần nữa
 async function login(username, password) {
-  try {
-    const response = await fetch(`${API_URL}/users/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || "Đăng nhập thất bại")
-    }
-
-    saveToken(data.token)
-    return true
-  } catch (error) {
-    console.error("Lỗi đăng nhập:", error)
-    throw error
-  }
+  return true // Luôn trả về thành công
 }
 
-// Đăng ký
+// Đăng ký - không cần nữa
 async function register(username, password, role = "teacher") {
-  try {
-    const response = await fetch(`${API_URL}/users/register`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, password, role }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.message || "Đăng ký thất bại")
-    }
-
-    saveToken(data.token)
-    return true
-  } catch (error) {
-    console.error("Lỗi đăng ký:", error)
-    throw error
-  }
+  return true // Luôn trả về thành công
 }
 
 // Lưu bài kiểm tra lên server
@@ -98,7 +43,6 @@ async function saveTestToServer(testData) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
       },
       body: JSON.stringify(testData),
     })
@@ -119,11 +63,7 @@ async function saveTestToServer(testData) {
 // Lấy danh sách bài kiểm tra
 async function getTests() {
   try {
-    const response = await fetch(`${API_URL}/tests`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
-    })
+    const response = await fetch(`${API_URL}/tests`)
 
     if (!response.ok) {
       throw new Error("Không thể lấy danh sách bài kiểm tra")
@@ -139,11 +79,7 @@ async function getTests() {
 // Lấy chi tiết bài kiểm tra theo ID
 async function getTestById(testId) {
   try {
-    const response = await fetch(`${API_URL}/tests/${testId}`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
-    })
+    const response = await fetch(`${API_URL}/tests/${testId}`)
 
     if (!response.ok) {
       throw new Error("Không thể lấy thông tin bài kiểm tra")
@@ -163,7 +99,6 @@ async function updateTest(testId, testData) {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${getToken()}`,
       },
       body: JSON.stringify(testData),
     })
@@ -186,9 +121,6 @@ async function deleteTest(testId) {
   try {
     const response = await fetch(`${API_URL}/tests/${testId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${getToken()}`,
-      },
     })
 
     const data = await response.json()
