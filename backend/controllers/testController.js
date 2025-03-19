@@ -4,7 +4,11 @@ const { query } = require("../config/database")
 // Lấy tất cả bài kiểm tra
 exports.getAllTests = async (req, res) => {
   try {
-    const tests = await Test.findAll()
+    const tests = await query(`
+      SELECT t.id, t.title, t.description, t.created_at
+      FROM tests t
+      ORDER BY t.created_at DESC
+    `)
     res.json(tests)
   } catch (error) {
     console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
@@ -15,8 +19,16 @@ exports.getAllTests = async (req, res) => {
 // Lấy bài kiểm tra theo ID
 exports.getTestById = async (req, res) => {
   try {
-    const test = await Test.findById(req.params.id)
-    if (!test) {
+    const test = await query(
+      `
+      SELECT t.id, t.title, t.description, t.created_at
+      FROM tests t
+      WHERE t.id = ?
+    `,
+      [req.params.id],
+    )
+
+    if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
@@ -43,16 +55,11 @@ exports.getTestById = async (req, res) => {
           [part.id],
         )
 
-        // Loại bỏ đáp án đúng cho học sinh
-        if (req.user.role === "student") {
-          questions.forEach((q) => delete q.correct_answers)
-        }
-
         return { ...part, questions }
       }),
     )
 
-    res.json({ ...test, parts: partsWithQuestions })
+    res.json({ ...test[0], parts: partsWithQuestions })
   } catch (error) {
     console.error("Lỗi lấy bài kiểm tra:", error.message)
     res.status(500).json({ message: "Lỗi máy chủ" })
@@ -67,16 +74,25 @@ exports.createTest = async (req, res) => {
     await query("START TRANSACTION")
 
     // Tạo bài kiểm tra
-    const testId = await Test.create({ title, description }, req.user.id)
+    const result = await query("INSERT INTO tests (title, description) VALUES (?, ?)", [title, description])
+
+    const testId = result.insertId
 
     // Tạo các phần và câu hỏi
     for (let i = 1; i <= 4; i++) {
       const partData = req.body[`part${i}`]
       if (partData?.length > 0) {
-        const partId = await Test.createPart(testId, i)
+        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
+
+        const partId = partResult.insertId
 
         for (const question of partData) {
-          await Test.createQuestion(partId, question)
+          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
+            partId,
+            question.type,
+            JSON.stringify(question.content),
+            JSON.stringify(question.correctAnswers),
+          ])
         }
       }
     }
@@ -98,15 +114,8 @@ exports.updateTest = async (req, res) => {
   try {
     await query("START TRANSACTION")
 
-    // Kiểm tra quyền sở hữu
-    const test = await Test.findById(id)
-    if (!test || test.created_by !== req.user.id) {
-      await query("ROLLBACK")
-      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra hoặc không có quyền" })
-    }
-
     // Cập nhật bài kiểm tra
-    await Test.update(id, { title, description })
+    await query("UPDATE tests SET title = ?, description = ? WHERE id = ?", [title, description, id])
 
     // Xóa các phần và câu hỏi hiện có
     await query("DELETE FROM parts WHERE test_id = ?", [id])
@@ -115,10 +124,17 @@ exports.updateTest = async (req, res) => {
     for (let i = 1; i <= 4; i++) {
       const partData = req.body[`part${i}`]
       if (partData?.length > 0) {
-        const partId = await Test.createPart(id, i)
+        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, i])
+
+        const partId = partResult.insertId
 
         for (const question of partData) {
-          await Test.createQuestion(partId, question)
+          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
+            partId,
+            question.type,
+            JSON.stringify(question.content),
+            JSON.stringify(question.correctAnswers),
+          ])
         }
       }
     }
@@ -135,12 +151,7 @@ exports.updateTest = async (req, res) => {
 // Xóa bài kiểm tra
 exports.deleteTest = async (req, res) => {
   try {
-    const test = await Test.findById(req.params.id)
-    if (!test || test.created_by !== req.user.id) {
-      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra hoặc không có quyền" })
-    }
-
-    await Test.delete(req.params.id)
+    await query("DELETE FROM tests WHERE id = ?", [req.params.id])
     res.json({ message: "Xóa bài kiểm tra thành công" })
   } catch (error) {
     console.error("Lỗi xóa bài kiểm tra:", error.message)
@@ -152,17 +163,25 @@ exports.deleteTest = async (req, res) => {
 exports.submitAnswers = async (req, res) => {
   try {
     const { testId } = req.params
-    const { answers } = req.body
-    const studentId = req.user.id
+    const { answers, studentId } = req.body
 
     // Kiểm tra bài kiểm tra tồn tại
-    const test = await Test.findById(testId)
-    if (!test) {
+    const test = await query("SELECT id FROM tests WHERE id = ?", [testId])
+    if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
     // Lấy tất cả câu hỏi của bài kiểm tra
-    const questions = await Test.getQuestionsByTestId(testId)
+    const questions = await query(
+      `
+      SELECT q.*, p.part_number
+      FROM questions q
+      JOIN parts p ON q.part_id = p.id
+      WHERE p.test_id = ?
+      ORDER BY p.part_number, q.id
+    `,
+      [testId],
+    )
 
     // Kiểm tra và lưu câu trả lời
     const results = []
@@ -196,7 +215,7 @@ exports.submitAnswers = async (req, res) => {
       // Lưu kết quả
       await query(
         "INSERT INTO student_answers (student_id, test_id, question_id, answer, is_correct) VALUES (?, ?, ?, ?, ?)",
-        [studentId, testId, questionId, JSON.stringify(studentAnswer), isCorrect],
+        [studentId || 0, testId, questionId, JSON.stringify(studentAnswer), isCorrect],
       )
 
       results.push({

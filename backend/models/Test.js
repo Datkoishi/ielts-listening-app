@@ -4,9 +4,8 @@ class Test {
   // Lấy tất cả bài kiểm tra
   static async findAll() {
     return await query(`
-      SELECT t.id, t.title, t.description, t.created_at, u.username as created_by
+      SELECT t.id, t.title, t.description, t.created_at
       FROM tests t
-      JOIN users u ON t.created_by = u.id
       ORDER BY t.created_at DESC
     `)
   }
@@ -15,9 +14,8 @@ class Test {
   static async findById(id) {
     const tests = await query(
       `
-      SELECT t.id, t.title, t.description, t.created_at, u.username as created_by
+      SELECT t.id, t.title, t.description, t.created_at
       FROM tests t
-      JOIN users u ON t.created_by = u.id
       WHERE t.id = ?
     `,
       [id],
@@ -26,13 +24,9 @@ class Test {
   }
 
   // Tạo bài kiểm tra mới
-  static async create(testData, userId) {
+  static async create(testData) {
     const { title, description } = testData
-    const result = await query("INSERT INTO tests (title, description, created_by) VALUES (?, ?, ?)", [
-      title,
-      description,
-      userId,
-    ])
+    const result = await query("INSERT INTO tests (title, description) VALUES (?, ?)", [title, description])
     return result.insertId
   }
 

@@ -1,22 +1,24 @@
 const express = require("express")
 const router = express.Router()
-const { auth, authorize } = require("../middleware/auth")
 const testController = require("../controllers/testController")
 
 // Lấy tất cả bài kiểm tra
-router.get("/", auth, testController.getAllTests)
+router.get("/", testController.getAllTests)
 
 // Lấy bài kiểm tra theo ID
-router.get("/:id", auth, testController.getTestById)
+router.get("/:id", testController.getTestById)
 
-// Tạo bài kiểm tra mới (chỉ giáo viên)
-router.post("/", auth, authorize("teacher"), testController.createTest)
+// Tạo bài kiểm tra mới
+router.post("/", testController.createTest)
 
-// Cập nhật bài kiểm tra (chỉ giáo viên)
-router.put("/:id", auth, authorize("teacher"), testController.updateTest)
+// Cập nhật bài kiểm tra
+router.put("/:id", testController.updateTest)
 
-// Xóa bài kiểm tra (chỉ giáo viên)
-router.delete("/:id", auth, authorize("teacher"), testController.deleteTest)
+// Xóa bài kiểm tra
+router.delete("/:id", testController.deleteTest)
+
+// Nhận câu trả lời từ học sinh
+router.post("/:testId/submit", testController.submitAnswers)
 
 module.exports = router
 
