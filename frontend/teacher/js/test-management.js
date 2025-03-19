@@ -107,6 +107,19 @@ let test = {
   
     // Cập nhật metadata bài kiểm tra
     testContent.innerHTML = `
+      <div class="test-metadata-form">
+        <div class="form-group">
+          <label for="testTitle">Tiêu đề bài kiểm tra:</label>
+          <input type="text" id="testTitle" required 
+            value="${test.title || ""}"
+            onchange="updateTestMetadata('title', this.value)">
+        </div>
+        <div class="form-group">
+          <label for="testDescription">Mô tả (không bắt buộc):</label>
+          <textarea id="testDescription" rows="2"
+            onchange="updateTestMetadata('description', this.value)">${test.description || ""}</textarea>
+        </div>
+      </div>
       <div class="test-card">
         <div class="test-header">
           <span class="test-icon"><i class="fas fa-pencil-alt"></i></span>
@@ -125,7 +138,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-check-circle"></i></span>
               <span>Một đáp án</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Một đáp án')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi một đáp án
             </button>
           </div>
@@ -136,7 +149,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-check-double"></i></span>
               <span>Nhiều đáp án</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Nhiều đáp án')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi nhiều đáp án
             </button>
           </div>
@@ -147,7 +160,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-link"></i></span>
               <span>Ghép nối</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Ghép nối')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi ghép nối
             </button>
           </div>
@@ -158,7 +171,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-map-marker-alt"></i></span>
               <span>Ghi nhãn Bản đồ/Sơ đồ</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Ghi nhãn Bản đồ/Sơ đồ')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi ghi nhãn
             </button>
           </div>
@@ -169,7 +182,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-sticky-note"></i></span>
               <span>Hoàn thành ghi chú</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành ghi chú')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành ghi chú
             </button>
           </div>
@@ -180,7 +193,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-table"></i></span>
               <span>Hoàn thành bảng/biểu mẫu</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành bảng/biểu mẫu')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành bảng
             </button>
           </div>
@@ -191,7 +204,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-project-diagram"></i></span>
               <span>Hoàn thành lưu đồ</span>
             </div>
-            <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành lưu đồ')">
+            <button class="add-question-btn" onclick="window.addQuestion()">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành lưu đồ
             </button>
           </div>
@@ -207,7 +220,7 @@ let test = {
         </div>
         
         <div class="save-button-container">
-          <button class="save-btn" onclick="saveTest()">
+          <button class="save-btn" onclick="window.saveTest()">
             <i class="fas fa-save"></i> Lưu bài kiểm tra
           </button>
         </div>
@@ -244,7 +257,7 @@ let test = {
   
     let questionIndex = 0
     for (let i = 1; i < window.currentPart; i++) {
-      questionIndex += test[`part${i}`].length
+      questionIndex += test[`part${i}`] ? test[`part${i}`].length : 0
     }
   
     test[`part${window.currentPart}`].forEach((question, index) => {
@@ -253,7 +266,7 @@ let test = {
       questionDiv.innerHTML = `
         <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionIndex + index + 1}</h4>
         <h3>${question.type}</h3>
-        <button class="delete-question" onclick="deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
+        <button class="delete-question" onclick="window.deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
         ${renderQuestionContent(question)}
       `
       part.appendChild(questionDiv)
@@ -1548,6 +1561,7 @@ let test = {
   
   // Tạo câu hỏi mới dựa trên loại
   function createNewQuestion(questionType) {
+    console.log("Creating new question of type:", questionType)
     const newQuestion = {
       type: questionType,
       content: [],
@@ -1617,6 +1631,9 @@ let test = {
     }
   
     // Thêm câu hỏi mới vào phần hiện tại
+    if (!test[`part${window.currentPart}`]) {
+      test[`part${window.currentPart}`] = []
+    }
     test[`part${window.currentPart}`].push(newQuestion)
   
     // Cập nhật tổng số câu hỏi
@@ -1824,5 +1841,12 @@ let test = {
   window.createNewQuestion = createNewQuestion
   window.deleteQuestion = deleteQuestion
   window.addQuestion = addQuestion
+  
+  function updateTestMetadata(field, value) {
+    test[field] = value
+    console.log(`Updated test ${field} to:`, value)
+  }
+  
+  window.updateTestMetadata = updateTestMetadata
   
   

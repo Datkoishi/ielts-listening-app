@@ -69,6 +69,67 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   
+    // Make sure addQuestion is available globally
+    window.addQuestion = () => {
+      console.log("Global addQuestion called")
+  
+      // Create modal for question type selection
+      const modal = document.createElement("div")
+      modal.className = "question-type-modal"
+      modal.style.position = "fixed"
+      modal.style.top = "0"
+      modal.style.left = "0"
+      modal.style.width = "100%"
+      modal.style.height = "100%"
+      modal.style.backgroundColor = "rgba(0,0,0,0.5)"
+      modal.style.display = "flex"
+      modal.style.justifyContent = "center"
+      modal.style.alignItems = "center"
+      modal.style.zIndex = "1000"
+  
+      modal.innerHTML = `
+        <div class="modal-content" style="background-color: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
+          <span class="close-button" style="float: right; font-size: 24px; cursor: pointer;">&times;</span>
+          <h2>Chọn loại câu hỏi</h2>
+          <div class="question-types" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="question-type-btn" data-type="Một đáp án"><i class="fas fa-check-circle"></i> Một đáp án</button>
+            <button class="question-type-btn" data-type="Nhiều đáp án"><i class="fas fa-check-double"></i> Nhiều đáp án</button>
+            <button class="question-type-btn" data-type="Ghép nối"><i class="fas fa-link"></i> Ghép nối</button>
+            <button class="question-type-btn" data-type="Ghi nhãn Bản đồ/Sơ đồ"><i class="fas fa-map-marker-alt"></i> Ghi nhãn Bản đồ/Sơ đồ</button>
+            <button class="question-type-btn" data-type="Hoàn thành ghi chú"><i class="fas fa-sticky-note"></i> Hoàn thành ghi chú</button>
+            <button class="question-type-btn" data-type="Hoàn thành bảng/biểu mẫu"><i class="fas fa-table"></i> Hoàn thành bảng/biểu mẫu</button>
+            <button class="question-type-btn" data-type="Hoàn thành lưu đồ"><i class="fas fa-project-diagram"></i> Hoàn thành lưu đồ</button>
+          </div>
+        </div>
+      `
+  
+      document.body.appendChild(modal)
+  
+      // Handle close button
+      const closeButton = modal.querySelector(".close-button")
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(modal)
+      })
+  
+      // Handle question type selection
+      const typeButtons = modal.querySelectorAll(".question-type-btn")
+      typeButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const questionType = button.dataset.type
+          console.log("Selected question type:", questionType)
+  
+          if (typeof window.createNewQuestion === "function") {
+            window.createNewQuestion(questionType)
+          } else {
+            console.error("createNewQuestion function not found")
+            alert(`Không thể tạo câu hỏi loại: ${questionType}. Hàm createNewQuestion không tồn tại.`)
+          }
+  
+          document.body.removeChild(modal)
+        })
+      })
+    }
+  
     // Initialize currentPart in the global scope
     window.currentPart = 1
   
@@ -93,6 +154,12 @@ document.addEventListener("DOMContentLoaded", () => {
       script.src = scripts[index]
       script.onload = () => {
         console.log(`Loaded: ${scripts[index]}`)
+  
+        // If this is the test-management.js script, save a reference to its addQuestion function
+        if (scripts[index] === "js/test-management.js" && typeof window.addQuestion === "function") {
+          window.test_management_addQuestion = window.addQuestion
+        }
+  
         loadScripts(index + 1)
       }
       script.onerror = (error) => {
@@ -154,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     <div class="part-header">
                       <span class="part-icon"><i class="fas fa-list"></i></span>
-                      <span>Part 1</span>
+                      <span>Phần 1</span>
                     </div>
                     <div class="question-types-container">
                       ${selectedTypes
@@ -165,8 +232,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             <span class="question-type-icon"><i class="fas fa-check-circle"></i></span>
                             <span>${type}</span>
                           </div>
-                          <button class="add-question-btn" onclick="addQuestion('${type}', 1)">
-                            <i class="fas fa-plus"></i> Add Question
+                          <button class="add-question-btn" onclick="window.addQuestion()">
+                            <i class="fas fa-plus"></i> Thêm câu hỏi
                           </button>
                         </div>
                       `,
