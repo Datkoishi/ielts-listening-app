@@ -1,59 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IELTS Listening Test Creator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="../teacher/css/styles.css">
+    <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
     <div class="selection-page" id="selectionPage">
         <h1><i class="fas fa-headphones"></i> IELTS Listening Test Creator</h1>
-        <p>Select question types to include in your test:</p>
-        <div class="question-types">
-            <div class="question-type">
-                <input type="checkbox" id="oneAnswer" value="One answer">
-                <label for="oneAnswer"><i class="fas fa-check-circle"></i> One answer</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="multipleAnswers" value="More than one answer">
-                <label for="multipleAnswers"><i class="fas fa-check-double"></i> More than one answer</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="matching" value="Matching">
-                <label for="matching"><i class="fas fa-link"></i> Matching</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="labelling" value="Plan/Map/Diagram labelling">
-                <label for="labelling"><i class="fas fa-map-marker-alt"></i> Plan/Map/Diagram labelling</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="noteCompletion" value="Note Completion">
-                <label for="noteCompletion"><i class="fas fa-sticky-note"></i> Note Completion</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="formCompletion" value="Form/Table Completion">
-                <label for="formCompletion"><i class="fas fa-table"></i> Form/Table Completion</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="flowchartCompletion" value="Flow chart Completion">
-                <label for="flowchartCompletion"><i class="fas fa-project-diagram"></i> Flow chart Completion</label>
-            </div>
+        <p>Chọn loại câu hỏi để đưa vào bài kiểm tra của bạn:</p>
+        <div class="question-types" id="questionTypes">
+            <!-- Question types will be dynamically added here -->
         </div>
-        <button onclick="startTestCreation()"><i class="fas fa-play"></i> Create Test</button>
+        <button id="startTestBtn"><i class="fas fa-play"></i> Tạo bài kiểm tra</button>
     </div>
 
     <div class="test-creation-page hidden" id="testCreationPage">
         <h1><i class="fas fa-pencil-alt"></i> IELTS Listening Test</h1>
         <div id="testContent"></div>
         <div class="nav-buttons">
-            <button onclick="previousPart()"><i class="fas fa-arrow-left"></i> Previous Part</button>
-            <button onclick="nextPart()">Next Part <i class="fas fa-arrow-right"></i></button>
+            <button id="previousPartBtn"><i class="fas fa-arrow-left"></i> Phần trước</button>
+            <button id="nextPartBtn">Phần tiếp theo <i class="fas fa-arrow-right"></i></button>
         </div>
-        <button onclick="saveTest()"><i class="fas fa-save"></i> Save Test</button>
+        <button id="saveTestBtn"><i class="fas fa-save"></i> Lưu bài kiểm tra</button>
+        <div class="action-buttons">
+            <button id="previewTestBtn"><i class="fas fa-eye"></i> Xem trước bài kiểm tra</button>
+            <button id="exportTestBtn"><i class="fas fa-file-export"></i> Xuất bài kiểm tra</button>
+            <button id="importTestBtn"><i class="fas fa-file-import"></i> Nhập bài kiểm tra</button>
+            <button id="saveQuestionSetBtn"><i class="fas fa-save"></i> Lưu bộ câu hỏi</button>
+            <button id="loadTestListBtn"><i class="fas fa-list"></i> Danh sách bài kiểm tra</button>
+            <button id="audioUploadBtn"><i class="fas fa-music"></i> Tải lên âm thanh</button>
+        </div>
     </div>
-    <script src="../teacher/js/script.js"></script>
-    <script src="../teacher/js/client-integration.js"></script>
-    
-        </body></html>
+
+    <script src="js/main.js"></script>
+    <script src="js/question-types.js"></script>
+    <script src="js/form-handlers.js"></script>
+    <script src="js/test-management.js"></script>
+</body>
+</html>
