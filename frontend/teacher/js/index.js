@@ -2,6 +2,76 @@
 document.addEventListener("DOMContentLoaded", () => {
     console.log("Loading JavaScript modules...")
   
+    // Define global navigation functions first to ensure they're available
+    window.previousPart = () => {
+      console.log("Global previousPart called")
+      if (window.currentPart > 1) {
+        window.currentPart--
+        console.log("Moving to previous part:", window.currentPart)
+        if (typeof window.renderTestCreation === "function") {
+          window.renderTestCreation()
+        } else {
+          console.error("renderTestCreation function not found")
+          // Fallback implementation
+          const partHeader = document.querySelector(".part-header span:last-child")
+          if (partHeader) {
+            partHeader.textContent = `Phần ${window.currentPart}`
+          }
+  
+          // Update visibility of part containers
+          for (let i = 1; i <= 4; i++) {
+            const partDiv = document.getElementById(`part${i}`)
+            if (partDiv) {
+              partDiv.style.display = i === window.currentPart ? "block" : "none"
+            }
+          }
+        }
+      } else {
+        console.log("Already at first part")
+        if (typeof window.showNotification === "function") {
+          window.showNotification("Đây đã là phần đầu tiên", "info")
+        } else {
+          alert("Đây đã là phần đầu tiên")
+        }
+      }
+    }
+  
+    window.nextPart = () => {
+      console.log("Global nextPart called")
+      if (window.currentPart < 4) {
+        window.currentPart++
+        console.log("Moving to next part:", window.currentPart)
+        if (typeof window.renderTestCreation === "function") {
+          window.renderTestCreation()
+        } else {
+          console.error("renderTestCreation function not found")
+          // Fallback implementation
+          const partHeader = document.querySelector(".part-header span:last-child")
+          if (partHeader) {
+            partHeader.textContent = `Phần ${window.currentPart}`
+          }
+  
+          // Update visibility of part containers
+          for (let i = 1; i <= 4; i++) {
+            const partDiv = document.getElementById(`part${i}`)
+            if (partDiv) {
+              partDiv.style.display = i === window.currentPart ? "block" : "none"
+            }
+          }
+        }
+      } else {
+        console.log("Already at last part")
+        if (typeof window.showNotification === "function") {
+          window.showNotification("Đây đã là phần cuối cùng", "info")
+        } else {
+          alert("Đây đã là phần cuối cùng")
+        }
+      }
+    }
+  
+    // Initialize currentPart in the global scope
+    window.currentPart = 1
+  
     // Define the order of script loading
     const scripts = [
       "js/client-integration.js",
@@ -123,8 +193,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const previousPartBtn = document.getElementById("previousPartBtn")
       if (previousPartBtn) {
         previousPartBtn.addEventListener("click", () => {
+          console.log("Previous part button clicked")
           if (typeof window.previousPart === "function") {
             window.previousPart()
+          } else {
+            console.error("previousPart function not found in window object")
           }
         })
       }
@@ -132,8 +205,11 @@ document.addEventListener("DOMContentLoaded", () => {
       const nextPartBtn = document.getElementById("nextPartBtn")
       if (nextPartBtn) {
         nextPartBtn.addEventListener("click", () => {
+          console.log("Next part button clicked")
           if (typeof window.nextPart === "function") {
             window.nextPart()
+          } else {
+            console.error("nextPart function not found in window object")
           }
         })
       }
@@ -143,6 +219,8 @@ document.addEventListener("DOMContentLoaded", () => {
         saveTestBtn.addEventListener("click", () => {
           if (typeof window.saveTest === "function") {
             window.saveTest()
+          } else {
+            console.error("saveTest function not found in window object")
           }
         })
       }

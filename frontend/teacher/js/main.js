@@ -147,54 +147,66 @@ function renderTestCreation() {
 
 // Chuyển đến phần trước
 function previousPart() {
-  if (currentPart > 1) {
-    // Ẩn phần hiện tại
-    const currentPartElement = document.getElementById(`part${currentPart}`)
-    if (currentPartElement) {
-      currentPartElement.style.display = "none"
-    }
+  console.log("previousPart called from main.js, current part:", currentPart)
+  if (typeof window.previousPart === "function") {
+    window.previousPart()
+  } else {
+    console.log("Using local previousPart implementation")
+    if (currentPart > 1) {
+      // Ẩn phần hiện tại
+      const currentPartElement = document.getElementById(`part${currentPart}`)
+      if (currentPartElement) {
+        currentPartElement.style.display = "none"
+      }
 
-    // Hiển thị phần trước
-    currentPart--
-    const previousPartElement = document.getElementById(`part${currentPart}`)
-    if (previousPartElement) {
-      previousPartElement.style.display = "block"
-    }
+      // Hiển thị phần trước
+      currentPart--
+      const previousPartElement = document.getElementById(`part${currentPart}`)
+      if (previousPartElement) {
+        previousPartElement.style.display = "block"
+      }
 
-    // Cập nhật tiêu đề phần
-    const partHeader = document.querySelector(".part-header h2")
-    if (partHeader) {
-      partHeader.innerHTML = `<i class="fas fa-list-ol"></i> Phần ${currentPart}`
+      // Cập nhật tiêu đề phần
+      const partHeader = document.querySelector(".part-header h2")
+      if (partHeader) {
+        partHeader.innerHTML = `<i class="fas fa-list-ol"></i> Phần ${currentPart}`
+      }
     }
   }
 }
 
 // Chuyển đến phần tiếp theo
 function nextPart() {
-  if (currentPart < 4) {
-    // Ẩn phần hiện tại
-    const currentPartElement = document.getElementById(`part${currentPart}`)
-    if (currentPartElement) {
-      currentPartElement.style.display = "none"
-    }
+  console.log("nextPart called from main.js, current part:", currentPart)
+  if (typeof window.nextPart === "function") {
+    window.nextPart()
+  } else {
+    console.log("Using local nextPart implementation")
+    if (currentPart < 4) {
+      // Ẩn phần hiện tại
+      const currentPartElement = document.getElementById(`part${currentPart}`)
+      if (currentPartElement) {
+        currentPartElement.style.display = "none"
+      }
 
-    // Hiển thị phần tiếp theo
-    currentPart++
-    const nextPartElement = document.getElementById(`part${currentPart}`)
-    if (nextPartElement) {
-      nextPartElement.style.display = "block"
-    }
+      // Hiển thị phần tiếp theo
+      currentPart++
+      const nextPartElement = document.getElementById(`part${currentPart}`)
+      if (nextPartElement) {
+        nextPartElement.style.display = "block"
+      }
 
-    // Cập nhật tiêu đề phần
-    const partHeader = document.querySelector(".part-header h2")
-    if (partHeader) {
-      partHeader.innerHTML = `<i class="fas fa-list-ol"></i> Phần ${currentPart}`
-    }
+      // Cập nhật tiêu đề phần
+      const partHeader = document.querySelector(".part-header h2")
+      if (partHeader) {
+        partHeader.innerHTML = `<i class="fas fa-list-ol"></i> Phần ${currentPart}`
+      }
 
-    // Nếu phần này chưa được hiển thị, hiển thị nó
-    if (!nextPartElement.querySelector(".question-type-selector")) {
-      renderQuestionTypes(nextPartElement)
-      displayExistingQuestions(currentPart)
+      // Nếu phần này chưa được hiển thị, hiển thị nó
+      if (!nextPartElement.querySelector(".question-type-selector")) {
+        renderQuestionTypes(nextPartElement)
+        displayExistingQuestions(currentPart)
+      }
     }
   }
 }

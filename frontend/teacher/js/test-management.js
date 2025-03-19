@@ -8,7 +8,8 @@ let test = {
     part4: [],
   }
   let totalQuestions = 0
-  let currentPart = 1
+  // Use window.currentPart instead of local currentPart
+  // let currentPart = 1
   const MAX_QUESTIONS = 50 // Giới hạn số lượng câu hỏi tối đa là 50
   
   // Hàm hiển thị thông báo
@@ -80,11 +81,28 @@ let test = {
   
   // Hiển thị giao diện tạo bài kiểm tra
   function renderTestCreation() {
-    console.log("Rendering test creation form from test-management.js")
+    console.log("Rendering test creation form from test-management.js for part:", window.currentPart)
     const testContent = document.getElementById("testContent")
     if (!testContent) {
       console.error("testContent element not found!")
       return
+    }
+  
+    // Create part containers if they don't exist
+    for (let i = 1; i <= 4; i++) {
+      if (!document.getElementById(`part${i}`)) {
+        const partDiv = document.createElement("div")
+        partDiv.id = `part${i}`
+        partDiv.className = "part"
+        partDiv.style.display = i === window.currentPart ? "block" : "none"
+        testContent.appendChild(partDiv)
+        console.log(`Created part container for part ${i}`)
+      } else {
+        // Update visibility of existing part containers
+        const partDiv = document.getElementById(`part${i}`)
+        partDiv.style.display = i === window.currentPart ? "block" : "none"
+        console.log(`Updated visibility for part ${i}: ${i === window.currentPart ? "visible" : "hidden"}`)
+      }
     }
   
     // Cập nhật metadata bài kiểm tra
@@ -97,7 +115,7 @@ let test = {
         
         <div class="part-header">
           <span class="part-icon"><i class="fas fa-list"></i></span>
-          <span>Part ${currentPart}</span>
+          <span>Phần ${window.currentPart}</span>
         </div>
         
         <div class="question-types-container">
@@ -105,10 +123,10 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-check-circle"></i></span>
-              <span>One answer</span>
+              <span>Một đáp án</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Một đáp án')">
-              <i class="fas fa-plus"></i> Add One answer Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi một đáp án
             </button>
           </div>
           
@@ -116,10 +134,10 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-check-double"></i></span>
-              <span>More than one answer</span>
+              <span>Nhiều đáp án</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Nhiều đáp án')">
-              <i class="fas fa-plus"></i> Add More than one answer Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi nhiều đáp án
             </button>
           </div>
           
@@ -127,10 +145,10 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-link"></i></span>
-              <span>Matching</span>
+              <span>Ghép nối</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Ghép nối')">
-              <i class="fas fa-plus"></i> Add Matching Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi ghép nối
             </button>
           </div>
           
@@ -138,10 +156,10 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-map-marker-alt"></i></span>
-              <span>Plan/Map/Diagram labelling</span>
+              <span>Ghi nhãn Bản đồ/Sơ đồ</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Ghi nhãn Bản đồ/Sơ đồ')">
-              <i class="fas fa-plus"></i> Add Plan/Map/Diagram labelling Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi ghi nhãn
             </button>
           </div>
           
@@ -149,10 +167,10 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-sticky-note"></i></span>
-              <span>Note Completion</span>
+              <span>Hoàn thành ghi chú</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành ghi chú')">
-              <i class="fas fa-plus"></i> Add Note Completion Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành ghi chú
             </button>
           </div>
           
@@ -160,10 +178,10 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-table"></i></span>
-              <span>Form/Table Completion</span>
+              <span>Hoàn thành bảng/biểu mẫu</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành bảng/biểu mẫu')">
-              <i class="fas fa-plus"></i> Add Form/Table Completion Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành bảng
             </button>
           </div>
           
@@ -171,30 +189,38 @@ let test = {
           <div class="question-type-item">
             <div class="question-type-label">
               <span class="question-type-icon"><i class="fas fa-project-diagram"></i></span>
-              <span>Flow chart Completion</span>
+              <span>Hoàn thành lưu đồ</span>
             </div>
             <button class="add-question-btn" onclick="createNewQuestion('Hoàn thành lưu đồ')">
-              <i class="fas fa-plus"></i> Add Flow chart Completion Question
+              <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành lưu đồ
             </button>
           </div>
         </div>
         
         <div class="navigation-buttons">
-          <button class="nav-btn prev-btn" onclick="previousPart()">
-            <i class="fas fa-arrow-left"></i> Previous Part
+          <button class="nav-btn prev-btn" onclick="window.previousPart()">
+            <i class="fas fa-arrow-left"></i> Phần trước
           </button>
-          <button class="nav-btn next-btn" onclick="nextPart()">
-            Next Part <i class="fas fa-arrow-right"></i>
+          <button class="nav-btn next-btn" onclick="window.nextPart()">
+            Phần tiếp theo <i class="fas fa-arrow-right"></i>
           </button>
         </div>
         
         <div class="save-button-container">
           <button class="save-btn" onclick="saveTest()">
-            <i class="fas fa-save"></i> Save Test
+            <i class="fas fa-save"></i> Lưu bài kiểm tra
           </button>
         </div>
       </div>
     `
+  
+    // Re-add the part containers to the testContent
+    for (let i = 1; i <= 4; i++) {
+      const partDiv = document.getElementById(`part${i}`)
+      if (partDiv) {
+        testContent.appendChild(partDiv)
+      }
+    }
   
     // Hiển thị câu hỏi trong phần hiện tại nếu có
     renderQuestionsForCurrentPart()
@@ -202,26 +228,26 @@ let test = {
   
   // Hiển thị câu hỏi cho phần hiện tại
   function renderQuestionsForCurrentPart() {
-    console.log(`Rendering questions for part ${currentPart}`)
-    const part = document.getElementById(`part${currentPart}`)
+    console.log(`Rendering questions for part ${window.currentPart}`)
+    const part = document.getElementById(`part${window.currentPart}`)
     if (!part) {
-      console.error(`part${currentPart} element not found!`)
+      console.error(`part${window.currentPart} element not found!`)
       return
     }
   
     part.innerHTML = ""
   
-    if (!test[`part${currentPart}`] || test[`part${currentPart}`].length === 0) {
+    if (!test[`part${window.currentPart}`] || test[`part${window.currentPart}`].length === 0) {
       part.innerHTML = `<div class="no-questions">Không có câu hỏi nào trong phần này. Nhấn "Thêm câu hỏi" để bắt đầu.</div>`
       return
     }
   
     let questionIndex = 0
-    for (let i = 1; i < currentPart; i++) {
+    for (let i = 1; i < window.currentPart; i++) {
       questionIndex += test[`part${i}`].length
     }
   
-    test[`part${currentPart}`].forEach((question, index) => {
+    test[`part${window.currentPart}`].forEach((question, index) => {
       const questionDiv = document.createElement("div")
       questionDiv.className = "question"
       questionDiv.innerHTML = `
@@ -472,7 +498,7 @@ let test = {
   // Xóa câu hỏi
   function deleteQuestion(index) {
     if (confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
-      test[`part${currentPart}`].splice(index, 1)
+      test[`part${window.currentPart}`].splice(index, 1)
       updateQuestionCount()
       renderQuestionsForCurrentPart()
       showNotification("Đã xóa câu hỏi thành công", "success")
@@ -481,8 +507,10 @@ let test = {
   
   // Chuyển đến phần trước
   function previousPart() {
-    if (currentPart > 1) {
-      currentPart--
+    console.log("previousPart called, current part:", window.currentPart)
+    if (window.currentPart > 1) {
+      window.currentPart--
+      console.log("Moving to previous part:", window.currentPart)
       renderTestCreation()
     } else {
       showNotification("Đây đã là phần đầu tiên", "info")
@@ -491,8 +519,10 @@ let test = {
   
   // Chuyển đến phần tiếp theo
   function nextPart() {
-    if (currentPart < 4) {
-      currentPart++
+    console.log("nextPart called, current part:", window.currentPart)
+    if (window.currentPart < 4) {
+      window.currentPart++
+      console.log("Moving to next part:", window.currentPart)
       renderTestCreation()
     } else {
       showNotification("Đây đã là phần cuối cùng", "info")
@@ -830,7 +860,7 @@ let test = {
         }
   
         // Hiển thị phần 1 mặc định
-        currentPart = 1
+        window.currentPart = 1
         renderTestCreation()
       })
       .catch((error) => {
@@ -894,7 +924,7 @@ let test = {
           updateQuestionCount()
   
           // Hiển thị phần 1 mặc định
-          currentPart = 1
+          window.currentPart = 1
           renderTestCreation()
   
           showNotification(`Đã nhập bài kiểm tra "${test.title}" thành công`, "success")
@@ -1131,7 +1161,7 @@ let test = {
   
       // Đặt lại biến toàn cục
       totalQuestions = 0
-      currentPart = 1
+      window.currentPart = 1
   
       // Hiển thị trang chọn loại câu hỏi
       document.getElementById("testCreationPage").classList.add("hidden")
@@ -1587,7 +1617,7 @@ let test = {
     }
   
     // Thêm câu hỏi mới vào phần hiện tại
-    test[`part${currentPart}`].push(newQuestion)
+    test[`part${window.currentPart}`].push(newQuestion)
   
     // Cập nhật tổng số câu hỏi
     updateQuestionCount()
@@ -1595,7 +1625,7 @@ let test = {
     // Hiển thị lại câu hỏi
     renderQuestionsForCurrentPart()
   
-    showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${currentPart}`, "success")
+    showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${window.currentPart}`, "success")
   }
   
   // Xóa các hàm liên quan đến đăng nhập/đăng ký
@@ -1753,7 +1783,7 @@ let test = {
     }
   
     // Hiển thị giao diện tạo bài kiểm tra
-    currentPart = 1
+    window.currentPart = 1
     renderTestCreation()
   
     // Automatically show question creation form for the first selected type
@@ -1762,6 +1792,12 @@ let test = {
       createNewQuestion(selectedTypes[0])
     }
   }
+  
+  // Expose functions to window object
+  window.renderTestCreation = renderTestCreation
+  window.showNotification = showNotification
+  window.updateQuestionCount = updateQuestionCount
+  window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
   
   // Make functions available globally
   window.previewEntireTest = previewEntireTest
