@@ -556,4 +556,45 @@ const showNotification = (message, type) => {
     container.querySelector("#t3-questionsPreview").innerHTML = previewHTML
   }
   
+  // Dummy implementations to satisfy the calls
+  function initializePlanMapDiagram(container) {
+    console.log("initializePlanMapDiagram called")
+  }
+  
+  function initializeNoteCompletionForm(container) {
+    console.log("initializeNoteCompletionForm called")
+  }
+  
+  function initializeFormTableCompletionForm(container) {
+    console.log("initializeFormTableCompletionForm called")
+  }
+  
+  function initializeFlowChartCompletionForm(container) {
+    console.log("initializeFlowChartCompletionForm called")
+  }
+  
+  // Make sure these functions are properly exported to the window object
+  // Add this at the end of the file
+  
+  // Modify the window exports to avoid circular references
+  // Export form creation functions to window object
+  window.createOneAnswerFormOriginal = createOneAnswerForm
+  window.createMultipleAnswerFormOriginal = createMultipleAnswerForm
+  window.createMatchingFormOriginal = createMatchingForm
+  window.createPlanMapDiagramFormOriginal = createPlanMapDiagramForm
+  window.createNoteCompletionFormOriginal = createNoteCompletionForm
+  window.createFormTableCompletionFormOriginal = createFormTableCompletionForm
+  window.createFlowChartCompletionFormOriginal = createFlowChartCompletionForm
+  
+  // Export form initialization functions to window object
+  window.initializeOneAnswerForm = initializeOneAnswerForm
+  window.initializeMultipleAnswerForm = initializeMultipleAnswerForm
+  window.initializeMatchingForm = initializeMatchingForm
+  window.initializePlanMapDiagram = initializePlanMapDiagram
+  window.initializeNoteCompletionForm = initializeNoteCompletionForm
+  window.initializeFormTableCompletionForm = initializeFormTableCompletionForm
+  window.initializeFlowChartCompletionForm = initializeFlowChartCompletionForm
+  
+  console.log("Form handlers loaded and exported to window object")
+  
   

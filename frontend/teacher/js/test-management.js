@@ -125,7 +125,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-check-circle"></i></span>
               <span>Một đáp án</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Một đáp án')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Một đáp án')">
               <i class="fas fa-plus"></i> Thêm câu hỏi một đáp án
             </button>
           </div>
@@ -136,7 +136,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-check-double"></i></span>
               <span>Nhiều đáp án</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Nhiều đáp án')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Nhiều đáp án')">
               <i class="fas fa-plus"></i> Thêm câu hỏi nhiều đáp án
             </button>
           </div>
@@ -147,7 +147,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-link"></i></span>
               <span>Ghép nối</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Ghép nối')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Ghép nối')">
               <i class="fas fa-plus"></i> Thêm câu hỏi ghép nối
             </button>
           </div>
@@ -158,7 +158,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-map-marker-alt"></i></span>
               <span>Ghi nhãn Bản đồ/Sơ đồ</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Ghi nhãn Bản đồ/Sơ đồ')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Ghi nhãn Bản đồ/Sơ đồ')">
               <i class="fas fa-plus"></i> Thêm câu hỏi ghi nhãn
             </button>
           </div>
@@ -169,7 +169,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-sticky-note"></i></span>
               <span>Hoàn thành ghi chú</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Hoàn thành ghi chú')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Hoàn thành ghi chú')">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành ghi chú
             </button>
           </div>
@@ -180,7 +180,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-table"></i></span>
               <span>Hoàn thành bảng/biểu mẫu</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Hoàn thành bảng/biểu mẫu')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Hoàn thành bảng/biểu mẫu')">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành bảng
             </button>
           </div>
@@ -191,7 +191,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-project-diagram"></i></span>
               <span>Hoàn thành lưu đồ</span>
             </div>
-            <button class="add-question-btn" onclick="addQuestion('Hoàn thành lưu đồ')">
+            <button class="add-question-btn" onclick="addQuestionDirectly('Hoàn thành lưu đồ')">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành lưu đồ
             </button>
           </div>
@@ -1518,6 +1518,27 @@ let test = {
   
     try {
       console.log("Creating new question of type:", questionType)
+  
+      // Make sure the part container exists
+      const partId = `part${window.currentPart}`
+      let partElement = document.getElementById(partId)
+  
+      if (!partElement) {
+        console.warn(`Part element ${partId} not found, creating it`)
+        partElement = document.createElement("div")
+        partElement.id = partId
+        partElement.className = "part"
+        partElement.style.display = "block"
+  
+        const testContent = document.getElementById("testContent")
+        if (testContent) {
+          testContent.appendChild(partElement)
+        } else {
+          throw new Error("Test content container not found")
+        }
+      }
+  
+      // Create a new question object
       const newQuestion = {
         type: questionType,
         content: [],
@@ -1597,8 +1618,110 @@ let test = {
       // Update the total question count
       updateQuestionCount()
   
-      // Render the questions for the current part to update the UI
-      renderQuestionsForCurrentPart()
+      // Create the question form in the DOM
+      const questionDiv = document.createElement("div")
+      questionDiv.className = "question"
+  
+      // Add question header
+      const questionNumber = test[`part${window.currentPart}`].length
+      questionDiv.innerHTML = `
+        <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+        <h3>${getIconForType(questionType)} ${questionType}</h3>
+        <button class="delete-question" onclick="deleteQuestion(${questionNumber - 1})"><i class="fas fa-trash"></i></button>
+      `
+  
+      // Add the appropriate form based on type
+      let formHTML = ""
+      switch (questionType) {
+        case "Một đáp án":
+          formHTML =
+            typeof window.createOneAnswerForm === "function" ? window.createOneAnswerForm() : createOneAnswerForm()
+          break
+        case "Nhiều đáp án":
+          formHTML =
+            typeof window.createMultipleAnswerForm === "function"
+              ? window.createMultipleAnswerForm()
+              : createMultipleAnswerForm()
+          break
+        case "Ghép nối":
+          formHTML = typeof window.createMatchingForm === "function" ? window.createMatchingForm() : createMatchingForm()
+          break
+        case "Ghi nhãn Bản đồ/Sơ đồ":
+          formHTML =
+            typeof window.createPlanMapDiagramForm === "function"
+              ? window.createPlanMapDiagramForm()
+              : createPlanMapDiagramForm()
+          break
+        case "Hoàn thành ghi chú":
+          formHTML =
+            typeof window.createNoteCompletionForm === "function"
+              ? window.createNoteCompletionForm()
+              : createNoteCompletionForm()
+          break
+        case "Hoàn thành bảng/biểu mẫu":
+          formHTML =
+            typeof window.createFormTableCompletionForm === "function"
+              ? window.createFormTableCompletionForm()
+              : createFormTableCompletionForm()
+          break
+        case "Hoàn thành lưu đồ":
+          formHTML =
+            typeof window.createFlowChartCompletionForm === "function"
+              ? window.createFlowChartCompletionForm()
+              : createFlowChartCompletionForm()
+          break
+        default:
+          formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
+      }
+  
+      // Add form HTML to question div
+      questionDiv.innerHTML += formHTML
+  
+      // Append the question div to the part element
+      partElement.appendChild(questionDiv)
+  
+      // Initialize form functionality based on type
+      try {
+        switch (questionType) {
+          case "Một đáp án":
+            if (typeof window.initializeOneAnswerForm === "function") {
+              window.initializeOneAnswerForm(questionDiv)
+            }
+            break
+          case "Nhiều đáp án":
+            if (typeof window.initializeMultipleAnswerForm === "function") {
+              window.initializeMultipleAnswerForm(questionDiv)
+            }
+            break
+          case "Ghép nối":
+            if (typeof window.initializeMatchingForm === "function") {
+              window.initializeMatchingForm(questionDiv)
+            }
+            break
+          case "Ghi nhãn Bản đồ/Sơ đồ":
+            if (typeof window.initializePlanMapDiagram === "function") {
+              window.initializePlanMapDiagram(questionDiv)
+            }
+            break
+          case "Hoàn thành ghi chú":
+            if (typeof window.initializeNoteCompletionForm === "function") {
+              window.initializeNoteCompletionForm(questionDiv)
+            }
+            break
+          case "Hoàn thành bảng/biểu mẫu":
+            if (typeof window.initializeFormTableCompletionForm === "function") {
+              window.initializeFormTableCompletionForm(questionDiv)
+            }
+            break
+          case "Hoàn thành lưu đồ":
+            if (typeof window.initializeFlowChartCompletionForm === "function") {
+              window.initializeFlowChartCompletionForm(questionDiv)
+            }
+            break
+        }
+      } catch (error) {
+        console.error("Error initializing form:", error)
+      }
   
       console.log(`Added new ${questionType} question to part ${window.currentPart}`)
       showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${window.currentPart}`, "success")
@@ -1710,5 +1833,170 @@ let test = {
     renderTestCreation: typeof window.renderTestCreation,
     startTestCreation: typeof window.startTestCreation,
   })
+  
+  // Declare the missing form creation functions
+  function createOneAnswerForm() {
+    return `
+      <div class="t3-question-creator">
+        <form class="t3-one-answer-form">
+          <div class="t3-form-group">
+            <label for="t3-questionText">Nội dung câu hỏi:</label>
+            <input type="text" id="t3-questionText" name="questionText" required>
+          </div>
+          <div class="t3-form-group">
+            <label for="t3-options">Lựa chọn (mỗi lựa chọn một dòng):</label>
+            <textarea id="t3-options" name="options" rows="4" required></textarea>
+          </div>
+          <div class="t3-form-group">
+            <label for="t3-correctAnswer">Đáp án đúng:</label>
+            <input type="text" id="t3-correctAnswer" name="correctAnswer" required>
+          </div>
+        </form>
+      </div>
+    `
+  }
+  
+  function createMultipleAnswerForm() {
+    return `
+      <div class="t4-container">
+        <form id="t4-questionForm">
+          <div class="t4-form-group">
+            <label for="t4-questionText">Nội dung câu hỏi:</label>
+            <input type="text" id="t4-questionText" name="questionText" required>
+          </div>
+          <div class="t4-form-group">
+            <label for="t4-options">Lựa chọn (mỗi lựa chọn một dòng):</label>
+            <textarea id="t4-options" name="options" rows="4" required></textarea>
+          </div>
+          <div class="t4-form-group">
+            <label for="t4-correctAnswers">Đáp án đúng (các số cách nhau bằng dấu phẩy):</label>
+            <input type="text" id="t4-correctAnswers" name="correctAnswers" required>
+          </div>
+        </form>
+      </div>
+    `
+  }
+  
+  function createMatchingForm() {
+    return `
+      <div class="t3-question-creator">
+        <form id="t3-questionForm">
+          <div class="t3-form-group">
+            <label for="t3-questionTitle">Tiêu đề câu hỏi:</label>
+            <input type="text" id="t3-questionTitle" name="questionTitle" required>
+          </div>
+          <div class="t3-form-group">
+            <label for="t3-people">Người (mỗi người một dòng):</label>
+            <textarea id="t3-people" name="people" required></textarea>
+          </div>
+          <div class="t3-form-group">
+            <label for="t3-responsibilities">Trách nhiệm (mỗi trách nhiệm một dòng):</label>
+            <textarea id="t3-responsibilities" name="responsibilities" required></textarea>
+          </div>
+          <div class="t3-form-group">
+            <label for="t3-correctAnswers">Đáp án đúng (mỗi đáp án một dòng, theo thứ tự người):</label>
+            <textarea id="t3-correctAnswers" name="correctAnswers" required></textarea>
+          </div>
+        </form>
+      </div>
+    `
+  }
+  
+  function createPlanMapDiagramForm() {
+    return `
+      <div class="t1-ielts-creator">
+        <form id="questionForm">
+          <div class="t1-form-group">
+            <label for="questionType">Loại câu hỏi:</label>
+            <select id="questionType" required>
+              <option value="map">Ghi nhãn Bản đồ</option>
+              <option value="ship">Sơ đồ Tàu</option>
+              <option value="technical">Sơ đồ Kỹ thuật</option>
+            </select>
+          </div>
+          <div class="t1-form-group">
+            <label for="instructions">Hướng dẫn:</label>
+            <textarea id="instructions" rows="3" required></textarea>
+          </div>
+          <div class="t1-form-group">
+            <label for="imageFile">Hình ảnh:</label>
+            <input type="file" id="imageFile" name="imageFile" accept="image/*" required>
+          </div>
+          <div id="answerInputs">
+            </div>
+            <button type="button" onclick="addAnswerInput()">Thêm câu trả lời</button>
+        </form>
+      </div>
+    `
+  }
+  
+  function createNoteCompletionForm() {
+    return `
+      <div class="t2-listening-exercise-app">
+        <div class="t2-listening-exercise-container">
+          <div class="t2-listening-exercise-form-container">
+            <form id="t2ListeningExerciseForm">
+              <div class="t2-listening-exercise-form-group">
+                <label for="t2ListeningExerciseInstructions">Hướng dẫn:</label>
+                <input type="text" id="t2ListeningExerciseInstructions" name="instructions">
+              </div>
+              <div class="t2-listening-exercise-form-group">
+                <label for="t2ListeningExerciseTopic">Chủ đề:</label>
+                <input type="text" id="t2ListeningExerciseTopic" name="topic">
+              </div>
+              <div id="t2ListeningExerciseQuestionContainer">
+                </div>
+                <button type="button" onclick="addListeningExerciseQuestion()">Thêm câu hỏi</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    `
+  }
+  
+  function createFormTableCompletionForm() {
+    return `
+      <div class="t6-ielts-listening-creator">
+        <div id="tableSection" class="t6-question-container">
+          <textarea id="tableInstruction" rows="2"></textarea>
+          <table id="fareTable">
+            <tr>
+              <th>Phương tiện</th>
+              <th>Giá tiền mặt</th>
+              <th>Giá thẻ</th>
+              <th>Thao tác</th>
+            </tr>
+          </table>
+          <button id="addRowBtn">Thêm hàng</button>
+        </div>
+      </div>
+    `
+  }
+  
+  function createFlowChartCompletionForm() {
+    return `
+      <div class="t7-ielts-flow-chart-creator">
+        <form id="teacherForm">
+          <label for="title">Tiêu đề:</label>
+          <input type="text" id="title" name="title" required>
+  
+          <label for="instructions">Hướng dẫn:</label>
+          <textarea id="instructions" name="instructions" required></textarea>
+  
+          <div id="questionForms">
+            <div class="t7-question-form">
+              <h3>Câu hỏi 1</h3>
+              <label for="flowItems1">Các mục lưu đồ (mỗi mục một dòng, sử dụng ___ cho khoảng trống):</label>
+              <textarea id="flowItems1" name="flowItems1" required></textarea>
+              <label for="options1">Lựa chọn (mỗi lựa chọn một dòng):</label>
+              <textarea id="options1" name="options1" required></textarea>
+              <label for="correctAnswers1">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
+              <input type="text" id="correctAnswers1" name="correctAnswers1" required>
+            </div>
+          </div>
+        </form>
+      </div>
+    `
+  }
   
   
