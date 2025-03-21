@@ -1,1 +1,164 @@
+Thought for 2 seconds### IELTS Listening Test Creator
+
+## Giới thiệu
+
+IELTS Listening Test Creator là một ứng dụng web cho phép giáo viên tạo, quản lý và chia sẻ các bài kiểm tra IELTS Listening một cách dễ dàng. Ứng dụng hỗ trợ nhiều loại câu hỏi khác nhau, giúp giáo viên tạo ra các bài kiểm tra đa dạng và phù hợp với định dạng IELTS chính thức.
+
+## Tính năng
+
+- **Tạo bài kiểm tra**: Tạo bài kiểm tra IELTS Listening với 4 phần theo chuẩn IELTS
+- **Nhiều loại câu hỏi**: Hỗ trợ 7 loại câu hỏi phổ biến trong IELTS Listening:
+
+- Một đáp án
+- Nhiều đáp án
+- Ghép nối
+- Ghi nhãn Bản đồ/Sơ đồ
+- Hoàn thành ghi chú
+- Hoàn thành bảng/biểu mẫu
+- Hoàn thành lưu đồ
+
+
+
+- **Quản lý bài kiểm tra**: Lưu, tải, xuất và nhập bài kiểm tra
+- **Xem trước**: Xem trước bài kiểm tra để kiểm tra trước khi sử dụng
+- **Giao diện thân thiện**: Giao diện người dùng trực quan, dễ sử dụng
+
+
+## Cài đặt
+
+### Yêu cầu hệ thống
+
+- Node.js (v14.0.0 trở lên)
+- MySQL (v5.7 trở lên)
+
+
+
+## Hướng dẫn sử dụng
+
+### Tạo bài kiểm tra mới
+
+1. Truy cập trang chủ và nhấn vào nút "Tạo bài kiểm tra"
+2. Chọn các loại câu hỏi bạn muốn sử dụng trong bài kiểm tra
+3. Nhấn "Tạo bài kiểm tra" để bắt đầu
+
+
+### Thêm câu hỏi
+
+1. Chọn phần bạn muốn thêm câu hỏi (Phần 1-4)
+2. Nhấn vào nút "Thêm câu hỏi" tương ứng với loại câu hỏi bạn muốn thêm
+3. Điền thông tin câu hỏi vào form
+4. Nhấn "Lưu câu hỏi" để thêm câu hỏi vào bài kiểm tra
+
+
+### Lưu bài kiểm tra
+
+1. Sau khi hoàn thành việc thêm câu hỏi, nhấn nút "Lưu bài kiểm tra"
+2. Bài kiểm tra sẽ được lưu vào cơ sở dữ liệu và có thể truy cập sau này
+
+
+### Xuất/Nhập bài kiểm tra
+
+- Nhấn nút "Xuất" để tải bài kiểm tra dưới dạng file JSON
+- Nhấn nút "Nhập" để tải lên bài kiểm tra từ file JSON đã lưu trước đó
+
+
+### Xem trước bài kiểm tra
+
+- Nhấn nút "Xem trước" để xem bài kiểm tra hoàn chỉnh trước khi sử dụng
+
+
+## Cấu trúc dự án
+
+```plaintext
+ielts-listening-test-creator/
+├── backend/
+│   ├── config/
+│   │   └── database.js
+│   ├── controllers/
+│   │   └── testController.js
+│   ├── models/
+│   │   └── Test.js
+│   ├── routes/
+│   │   └── testRoutes.js
+│   ├── database.sql
+│   └── server.js
+├── frontend/
+│   ├── student/
+│   │   ├── css/
+│   │   ├── js/
+│   │   └── index.html
+│   ├── teacher/
+│   │   ├── css/
+│   │   │   └── styles.css
+│   │   ├── js/
+│   │   │   ├── client-integration.js
+│   │   │   ├── form-handlers.js
+│   │   │   ├── index.js
+│   │   │   ├── main.js
+│   │   │   ├── question-types.js
+│   │   │   └── test-management.js
+│   │   └── index.html
+│   └── index.html
+├── .env
+├── package.json
+└── README.md
+```
+
+## Công nghệ sử dụng
+
+- **Frontend**: HTML, CSS, JavaScript, Font Awesome
+- **Backend**: Node.js, Express.js
+- **Cơ sở dữ liệu**: MySQL
+- **API**: RESTful API
+
+
+## Các chức năng chính
+
+### Phía giáo viên
+
+- Tạo và quản lý bài kiểm tra
+- Thêm, sửa, xóa câu hỏi
+- Xuất/nhập bài kiểm tra
+- Xem trước bài kiểm tra
+
+
+### Phía học sinh
+
+- Làm bài kiểm tra
+- Xem kết quả và đáp án đúng
+- Theo dõi tiến độ học tập
+
+
+## Phát triển trong tương lai
+
+- Thêm tính năng tải lên file âm thanh cho bài kiểm tra
+- Hỗ trợ thêm các loại câu hỏi khác
+- Tích hợp hệ thống phân tích kết quả và thống kê
+- Phát triển ứng dụng di động
+
+
+## Đóng góp
+
+Chúng tôi rất hoan nghênh mọi đóng góp để cải thiện dự án. Nếu bạn muốn đóng góp, vui lòng:
+
+1. Fork repository
+2. Tạo branch mới (`git checkout -b feature/amazing-feature`)
+3. Commit thay đổi của bạn (`git commit -m 'Add some amazing feature'`)
+4. Push lên branch (`git push origin feature/amazing-feature`)
+5. Tạo Pull Request
+
+
+## Giấy phép
+
+Dự án này được phân phối dưới giấy phép MIT. Xem file `LICENSE` để biết thêm chi tiết.
+
+## Liên hệ
+
+Nếu bạn có bất kỳ câu hỏi hoặc góp ý nào, vui lòng liên hệ:
+
+
+
+
+---
+
 
