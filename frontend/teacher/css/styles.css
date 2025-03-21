@@ -1263,6 +1263,8 @@ body {
     display: flex;
     align-items: center;
     margin: 0;
+    white-space: nowrap;
+    min-width: 180px;
   }
   
   .add-question-btn i {

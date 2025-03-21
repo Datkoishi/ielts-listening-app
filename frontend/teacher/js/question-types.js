@@ -1,9 +1,9 @@
 // Khai báo các biến toàn cục
 const selectedTypes = [] // Mảng chứa các loại câu hỏi đã chọn
-const currentPart = 1 // Phần hiện tại của bài kiểm tra
+// let currentPart = 1 // Phần hiện tại của bài kiểm tra - Sử dụng window.currentPart thay thế
 let totalQuestions = 0 // Tổng số câu hỏi đã thêm
 const MAX_QUESTIONS = 40 // Số lượng câu hỏi tối đa cho phép
-const test = {} // Khai báo biến test
+// const test = {} // Khai báo biến test - Sử dụng biến test từ test-management.js
 
 // Lấy danh sách loại câu hỏi từ server hoặc sử dụng danh sách đã định nghĩa
 function fetchQuestionTypes() {
@@ -53,8 +53,8 @@ function renderQuestionTypes(container) {
     questionDiv.className = "question-type-selector"
     questionDiv.innerHTML = `
       <h3>${getIconForType(type)} ${type}</h3>
-      <button class="add-question-btn" onclick="addQuestion('${type}', ${currentPart})">
-        <i class="fas fa-plus"></i> Thêm câu hỏi ${type}
+      <button class="add-question-btn" onclick="createNewQuestionDirectly('${type}')">
+        <i class="fas fa-plus"></i> Thêm câu hỏi
       </button>
     `
     container.appendChild(questionDiv)
@@ -75,87 +75,6 @@ function getIconForType(type) {
   return icons[type] || '<i class="fas fa-question"></i>'
 }
 
-// Thêm câu hỏi mới
-function addQuestion(type, partNumber) {
-  if (totalQuestions >= MAX_QUESTIONS) {
-    alert("Bạn đã đạt đến giới hạn tối đa 40 câu hỏi.")
-    return
-  }
-
-  const part = document.getElementById(`part${partNumber}`)
-  const questionNumber = totalQuestions + 1
-  const questionDiv = document.createElement("div")
-  questionDiv.className = "question"
-
-  // Thêm tiêu đề loại câu hỏi
-  const typeHeader = document.createElement("h3")
-  typeHeader.innerHTML = `${getIconForType(type)} ${type}`
-  questionDiv.appendChild(typeHeader)
-
-  // Thêm số câu hỏi và nút xóa
-  questionDiv.innerHTML += `
-    <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-    <button class="delete-question" onclick="deleteQuestion(this)"><i class="fas fa-trash"></i></button>
-  `
-
-  // Thêm form phù hợp dựa trên loại
-  switch (type) {
-    case "Một đáp án":
-      questionDiv.innerHTML += createOneAnswerForm()
-      break
-    case "Nhiều đáp án":
-      questionDiv.innerHTML += createMultipleAnswerForm()
-      break
-    case "Ghép nối":
-      questionDiv.innerHTML += createMatchingForm()
-      break
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      questionDiv.innerHTML += createPlanMapDiagramForm()
-      break
-    case "Hoàn thành ghi chú":
-      questionDiv.innerHTML += createNoteCompletionForm()
-      break
-    case "Hoàn thành bảng/biểu mẫu":
-      questionDiv.innerHTML += createFormTableCompletionForm()
-      break
-    case "Hoàn thành lưu đồ":
-      questionDiv.innerHTML += createFlowChartCompletionForm()
-      break
-    default:
-      console.error("Loại câu hỏi không xác định:", type)
-      return
-  }
-
-  part.appendChild(questionDiv)
-  totalQuestions++
-  updateQuestionCount()
-
-  // Khởi tạo chức năng form dựa trên loại
-  switch (type) {
-    case "Một đáp án":
-      initializeOneAnswerForm(questionDiv)
-      break
-    case "Nhiều đáp án":
-      initializeMultipleAnswerForm(questionDiv)
-      break
-    case "Ghép nối":
-      initializeMatchingForm(questionDiv)
-      break
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      initializePlanMapDiagram(questionDiv)
-      break
-    case "Hoàn thành ghi chú":
-      initializeNoteCompletionForm(questionDiv)
-      break
-    case "Hoàn thành bảng/biểu mẫu":
-      initializeFormTableCompletionForm(questionDiv)
-      break
-    case "Hoàn thành lưu đồ":
-      initializeFlowChartCompletionForm(questionDiv)
-      break
-  }
-}
-
 // Xóa câu hỏi
 function deleteQuestion(button) {
   const questionDiv = button.closest(".question")
@@ -167,8 +86,8 @@ function deleteQuestion(button) {
   const index = questions.indexOf(questionDiv)
 
   // Xóa khỏi đối tượng bài kiểm tra nếu là câu hỏi hiện có
-  if (index !== -1 && test[`part${partNumber}`] && test[`part${partNumber}`][index]) {
-    test[`part${partNumber}`].splice(index, 1)
+  if (index !== -1 && window.test && window.test[`part${partNumber}`] && window.test[`part${partNumber}`][index]) {
+    window.test[`part${partNumber}`].splice(index, 1)
   }
 
   questionDiv.remove()
@@ -198,7 +117,7 @@ function displayExistingQuestions(partNumber) {
   const partElement = document.getElementById(`part${partNumber}`)
   if (!partElement) return
 
-  const existingQuestions = test[`part${partNumber}`] || []
+  const existingQuestions = window.test && window.test[`part${partNumber}`] ? window.test[`part${partNumber}`] : []
 
   existingQuestions.forEach((question, index) => {
     const questionDiv = document.createElement("div")
@@ -340,176 +259,11 @@ function renderTableRows(data) {
   return rows
 }
 
-// Các hàm tạo form cho từng loại câu hỏi
-function createOneAnswerForm() {
-  return `
-    <div class="one-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" required>
-      <label>Lựa chọn:</label>
-      <input type="text" name="option1" required><br>
-      <input type="text" name="option2" required><br>
-      <input type="text" name="option3" required><br>
-      <input type="text" name="option4" required><br>
-      <label for="correctAnswer">Đáp án đúng:</label>
-      <select id="correctAnswer" name="correctAnswer" required>
-        <option value="1">Lựa chọn 1</option>
-        <option value="2">Lựa chọn 2</option>
-        <option value="3">Lựa chọn 3</option>
-        <option value="4">Lựa chọn 4</option>
-      </select>
-    </div>
-  `
-}
-
-function createMultipleAnswerForm() {
-  return `
-    <div class="multiple-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" required>
-      <label>Lựa chọn:</label>
-      <input type="text" name="option1" required><br>
-      <input type="text" name="option2" required><br>
-      <input type="text" name="option3" required><br>
-      <input type="text" name="option4" required><br>
-      <label for="correctAnswers">Đáp án đúng (chọn nhiều):</label><br>
-      <input type="checkbox" id="correctAnswer1" name="correctAnswers" value="1">
-      <label for="correctAnswer1">Lựa chọn 1</label><br>
-      <input type="checkbox" id="correctAnswer2" name="correctAnswers" value="2">
-      <label for="correctAnswer2">Lựa chọn 2</label><br>
-      <input type="checkbox" id="correctAnswer3" name="correctAnswers" value="3">
-      <label for="correctAnswer3">Lựa chọn 3</label><br>
-      <input type="checkbox" id="correctAnswer4" name="correctAnswers" value="4">
-      <label for="correctAnswer4">Lựa chọn 4</label>
-    </div>
-  `
-}
-
-function createMatchingForm() {
-  return `
-    <div class="matching-form">
-      <label for="title">Tiêu đề:</label>
-      <input type="text" id="title" name="title" required>
-      <label>Mục:</label>
-      <input type="text" name="item1" required><br>
-      <input type="text" name="item2" required><br>
-      <input type="text" name="item3" required><br>
-      <label>Ghép nối:</label>
-      <input type="text" name="match1" required><br>
-      <input type="text" name="match2" required><br>
-      <input type="text" name="match3" required><br>
-      <label for="correctMatches">Ghép nối đúng (ví dụ: 1-A, 2-B, 3-C):</label>
-      <input type="text" id="correctMatches" name="correctMatches" required>
-    </div>
-  `
-}
-
-function createPlanMapDiagramForm() {
-  return `
-    <div class="plan-map-diagram-form">
-      <label for="type">Loại:</label>
-      <input type="text" id="type" name="type" required>
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label for="image">Hình ảnh:</label>
-      <input type="file" id="image" name="image" accept="image/*" required>
-      <label for="labels">Nhãn (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="labels" name="labels" required>
-      <label for="correctAnswers">Đáp án đúng (ví dụ: A, B, C):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
-    </div>
-  `
-}
-
-function createNoteCompletionForm() {
-  return `
-    <div class="note-completion-form">
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label for="topic">Chủ đề:</label>
-      <input type="text" id="topic" name="topic" required>
-      <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-      <textarea name="note1" required></textarea><br>
-      <textarea name="note2" required></textarea><br>
-      <textarea name="note3" required></textarea><br>
-      <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
-    </div>
-  `
-}
-
-function createFormTableCompletionForm() {
-  return `
-    <div class="form-table-completion-form">
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label>Hàng 1 (cách nhau bằng dấu phẩy):</label>
-      <input type="text" name="row1" required><br>
-      <label>Hàng 2 (cách nhau bằng dấu phẩy):</label>
-      <input type="text" name="row2" required><br>
-      <label>Hàng 3 (cách nhau bằng dấu phẩy):</label>
-      <input type="text" name="row3" required><br>
-      <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
-    </div>
-  `
-}
-
-function createFlowChartCompletionForm() {
-  return `
-    <div class="flow-chart-completion-form">
-      <label for="title">Tiêu đề:</label>
-      <input type="text" id="title" name="title" required>
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label>Mục (sử dụng ___ cho chỗ trống):</label>
-      <input type="text" name="item1" required><br>
-      <input type="text" name="item2" required><br>
-      <input type="text" name="item3" required><br>
-      <label for="options">Lựa chọn (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="options" name="options" required>
-      <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
-    </div>
-  `
-}
-
-// Các hàm khởi tạo form cho từng loại câu hỏi (nếu cần)
-function initializeOneAnswerForm(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
-function initializeMultipleAnswerForm(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
-function initializeMatchingForm(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
-function initializePlanMapDiagram(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
-function initializeNoteCompletionForm(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
-function initializeFormTableCompletionForm(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
-function initializeFlowChartCompletionForm(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
-}
-
 // Make sure these functions are exposed to the global window object
-window.addQuestion = addQuestion
-window.deleteQuestion = deleteQuestion
+window.fetchQuestionTypes = fetchQuestionTypes
 window.renderQuestionTypes = renderQuestionTypes
 window.getIconForType = getIconForType
 window.displayExistingQuestions = displayExistingQuestions
-window.fetchQuestionTypes = fetchQuestionTypes
 window.updateQuestionCount = updateQuestionCount
 window.renumberQuestions = renumberQuestions
 

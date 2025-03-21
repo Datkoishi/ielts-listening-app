@@ -107,19 +107,6 @@ let test = {
   
     // Cập nhật metadata bài kiểm tra
     testContent.innerHTML = `
-      <div class="test-metadata-form">
-        <div class="form-group">
-          <label for="testTitle">Tiêu đề bài kiểm tra:</label>
-          <input type="text" id="testTitle" required 
-            value="${test.title || ""}"
-            onchange="updateTestMetadata('title', this.value)">
-        </div>
-        <div class="form-group">
-          <label for="testDescription">Mô tả (không bắt buộc):</label>
-          <textarea id="testDescription" rows="2"
-            onchange="updateTestMetadata('description', this.value)">${test.description || ""}</textarea>
-        </div>
-      </div>
       <div class="test-card">
         <div class="test-header">
           <span class="test-icon"><i class="fas fa-pencil-alt"></i></span>
@@ -138,7 +125,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-check-circle"></i></span>
               <span>Một đáp án</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Một đáp án')">
               <i class="fas fa-plus"></i> Thêm câu hỏi một đáp án
             </button>
           </div>
@@ -149,7 +136,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-check-double"></i></span>
               <span>Nhiều đáp án</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Nhiều đáp án')">
               <i class="fas fa-plus"></i> Thêm câu hỏi nhiều đáp án
             </button>
           </div>
@@ -160,7 +147,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-link"></i></span>
               <span>Ghép nối</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Ghép nối')">
               <i class="fas fa-plus"></i> Thêm câu hỏi ghép nối
             </button>
           </div>
@@ -171,7 +158,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-map-marker-alt"></i></span>
               <span>Ghi nhãn Bản đồ/Sơ đồ</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Ghi nhãn Bản đồ/Sơ đồ')">
               <i class="fas fa-plus"></i> Thêm câu hỏi ghi nhãn
             </button>
           </div>
@@ -182,7 +169,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-sticky-note"></i></span>
               <span>Hoàn thành ghi chú</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Hoàn thành ghi chú')">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành ghi chú
             </button>
           </div>
@@ -193,7 +180,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-table"></i></span>
               <span>Hoàn thành bảng/biểu mẫu</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Hoàn thành bảng/biểu mẫu')">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành bảng
             </button>
           </div>
@@ -204,7 +191,7 @@ let test = {
               <span class="question-type-icon"><i class="fas fa-project-diagram"></i></span>
               <span>Hoàn thành lưu đồ</span>
             </div>
-            <button class="add-question-btn" onclick="window.addQuestion()">
+            <button class="add-question-btn" onclick="addQuestion('Hoàn thành lưu đồ')">
               <i class="fas fa-plus"></i> Thêm câu hỏi hoàn thành lưu đồ
             </button>
           </div>
@@ -248,29 +235,47 @@ let test = {
       return
     }
   
+    // Clear the part container
     part.innerHTML = ""
   
+    // Check if there are any questions in this part
     if (!test[`part${window.currentPart}`] || test[`part${window.currentPart}`].length === 0) {
       part.innerHTML = `<div class="no-questions">Không có câu hỏi nào trong phần này. Nhấn "Thêm câu hỏi" để bắt đầu.</div>`
       return
     }
   
+    // Calculate the starting question index for this part
     let questionIndex = 0
     for (let i = 1; i < window.currentPart; i++) {
-      questionIndex += test[`part${i}`] ? test[`part${i}`].length : 0
+      questionIndex += test[`part${i}`]?.length || 0
     }
   
+    // Render each question in this part
     test[`part${window.currentPart}`].forEach((question, index) => {
       const questionDiv = document.createElement("div")
       questionDiv.className = "question"
       questionDiv.innerHTML = `
         <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionIndex + index + 1}</h4>
-        <h3>${question.type}</h3>
-        <button class="delete-question" onclick="window.deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
+        <h3>${getIconForType(question.type)} ${question.type}</h3>
+        <button class="delete-question" onclick="deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
         ${renderQuestionContent(question)}
       `
       part.appendChild(questionDiv)
     })
+  }
+  
+  // Helper function to get icon for question type
+  function getIconForType(type) {
+    const icons = {
+      "Một đáp án": '<i class="fas fa-check-circle"></i>',
+      "Nhiều đáp án": '<i class="fas fa-check-double"></i>',
+      "Ghép nối": '<i class="fas fa-link"></i>',
+      "Ghi nhãn Bản đồ/Sơ đồ": '<i class="fas fa-map-marker-alt"></i>',
+      "Hoàn thành ghi chú": '<i class="fas fa-sticky-note"></i>',
+      "Hoàn thành bảng/biểu mẫu": '<i class="fas fa-table"></i>',
+      "Hoàn thành lưu đồ": '<i class="fas fa-project-diagram"></i>',
+    }
+    return icons[type] || '<i class="fas fa-question"></i>'
   }
   
   // Hiển thị nội dung câu hỏi dựa trên loại
@@ -1507,264 +1512,104 @@ let test = {
     return isValid
   }
   
-  // Thêm câu hỏi mới
-  function addQuestion() {
-    console.log("addQuestion function called")
-    // Hiển thị modal chọn loại câu hỏi
-    const modal = document.createElement("div")
-    modal.className = "question-type-modal"
-    modal.style.position = "fixed"
-    modal.style.top = "0"
-    modal.style.left = "0"
-    modal.style.width = "100%"
-    modal.style.height = "100%"
-    modal.style.backgroundColor = "rgba(0,0,0,0.5)"
-    modal.style.display = "flex"
-    modal.style.justifyContent = "center"
-    modal.style.alignItems = "center"
-    modal.style.zIndex = "1000"
+  // Thêm câu hỏi trực tiếp
+  function addQuestionDirectly(questionType) {
+    console.log("addQuestionDirectly function called with type:", questionType)
   
-    modal.innerHTML = `
-      <div class="modal-content" style="background-color: white; padding: 20px; border-radius: 8px; max-width: 500px; width: 90%;">
-        <span class="close-button" style="float: right; font-size: 24px; cursor: pointer;">&times;</span>
-        <h2>Chọn loại câu hỏi</h2>
-        <div class="question-types" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <button class="question-type-btn" data-type="Một đáp án"><i class="fas fa-check-circle"></i> Một đáp án</button>
-          <button class="question-type-btn" data-type="Nhiều đáp án"><i class="fas fa-check-double"></i> Nhiều đáp án</button>
-          <button class="question-type-btn" data-type="Ghép nối"><i class="fas fa-link"></i> Ghép nối</button>
-          <button class="question-type-btn" data-type="Ghi nhãn Bản đồ/Sơ đồ"><i class="fas fa-map-marker-alt"></i> Ghi nhãn Bản đồ/Sơ đồ</button>
-          <button class="question-type-btn" data-type="Hoàn thành ghi chú"><i class="fas fa-sticky-note"></i> Hoàn thành ghi chú</button>
-          <button class="question-type-btn" data-type="Hoàn thành bảng/biểu mẫu"><i class="fas fa-table"></i> Hoàn thành bảng/biểu mẫu</button>
-          <button class="question-type-btn" data-type="Hoàn thành lưu đồ"><i class="fas fa-project-diagram"></i> Hoàn thành lưu đồ</button>
-        </div>
-      </div>
-    `
+    try {
+      console.log("Creating new question of type:", questionType)
+      const newQuestion = {
+        type: questionType,
+        content: [],
+        correctAnswers: [],
+      }
   
-    document.body.appendChild(modal)
+      // Initialize default content based on question type
+      switch (questionType) {
+        case "Một đáp án":
+          newQuestion.content = ["Nhập câu hỏi ở đây", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"]
+          newQuestion.correctAnswers = "Lựa chọn A"
+          break
+        case "Nhiều đáp án":
+          newQuestion.content = ["Nhập câu hỏi ở đây", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"]
+          newQuestion.correctAnswers = ["1", "2"]
+          break
+        case "Ghép nối":
+          newQuestion.content = ["Tiêu đề câu hỏi", "Mục 1", "Mục 2", "Mục 3", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
+          newQuestion.correctAnswers = ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
+          break
+        case "Ghi nhãn Bản đồ/Sơ đồ":
+          newQuestion.content = [
+            "map",
+            "Hướng dẫn ghi nhãn bản đồ",
+            "/placeholder.svg?height=300&width=400",
+            "Nhãn 1",
+            "Nhãn 2",
+            "Nhãn 3",
+          ]
+          newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
+          break
+        case "Hoàn thành ghi chú":
+          newQuestion.content = [
+            "Hoàn thành ghi chú dưới đây",
+            "Chủ đề ghi chú",
+            "Ghi chú 1 với [ANSWER]",
+            "Ghi chú 2 với [ANSWER]",
+            "Ghi chú 3 với [ANSWER]",
+          ]
+          newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
+          break
+        case "Hoàn thành bảng/biểu mẫu":
+          newQuestion.content = [
+            "Hoàn thành bảng dưới đây",
+            "Hàng 1 Cột 1",
+            "Hàng 1 Cột 2",
+            "Hàng 1 Cột 3",
+            "Hàng 2 Cột 1",
+            "Hàng 2 Cột 2",
+            "Hàng 2 Cột 3",
+          ]
+          newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2"]
+          break
+        case "Hoàn thành lưu đồ":
+          newQuestion.content = [
+            "Tiêu đề lưu đồ",
+            "Hoàn thành lưu đồ dưới đây",
+            "Bước 1: ___",
+            "Bước 2: ___",
+            "Bước 3: ___",
+            "Lựa chọn A",
+            "Lựa chọn B",
+            "Lựa chọn C",
+          ]
+          newQuestion.correctAnswers = ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
+          break
+      }
   
-    // Xử lý nút đóng
-    const closeButton = modal.querySelector(".close-button")
-    closeButton.addEventListener("click", () => {
-      document.body.removeChild(modal)
-    })
+      // Make sure the part array exists
+      if (!test[`part${window.currentPart}`]) {
+        test[`part${window.currentPart}`] = []
+      }
   
-    // Xử lý nút chọn loại câu hỏi
-    const typeButtons = modal.querySelectorAll(".question-type-btn")
-    typeButtons.forEach((button) => {
-      button.addEventListener("click", () => {
-        const questionType = button.dataset.type
-        createNewQuestion(questionType)
-        document.body.removeChild(modal)
-      })
-    })
+      // Add the new question to the current part
+      test[`part${window.currentPart}`].push(newQuestion)
+  
+      // Update the total question count
+      updateQuestionCount()
+  
+      // Render the questions for the current part to update the UI
+      renderQuestionsForCurrentPart()
+  
+      console.log(`Added new ${questionType} question to part ${window.currentPart}`)
+      showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${window.currentPart}`, "success")
+    } catch (error) {
+      console.error("Error creating question:", error)
+      showNotification(`Lỗi khi tạo câu hỏi: ${error.message}`, "error")
+    }
   }
-  
-  // Tạo câu hỏi mới dựa trên loại
-  function createNewQuestion(questionType) {
-    console.log("Creating new question of type:", questionType)
-    const newQuestion = {
-      type: questionType,
-      content: [],
-      correctAnswers: [],
-    }
-  
-    // Khởi tạo nội dung mặc định dựa trên loại câu hỏi
-    switch (questionType) {
-      case "Một đáp án":
-        newQuestion.content = ["Nhập câu hỏi ở đây", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"]
-        newQuestion.correctAnswers = "Lựa chọn A"
-        break
-      case "Nhiều đáp án":
-        newQuestion.content = ["Nhập câu hỏi ở đây", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"]
-        newQuestion.correctAnswers = ["1", "2"]
-        break
-      case "Ghép nối":
-        newQuestion.content = ["Tiêu đề câu hỏi", "Mục 1", "Mục 2", "Mục 3", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
-        newQuestion.correctAnswers = ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
-        break
-      case "Ghi nhãn Bản đồ/Sơ đồ":
-        newQuestion.content = [
-          "map",
-          "Hướng dẫn ghi nhãn bản đồ",
-          "/placeholder.svg?height=300&width=400",
-          "Nhãn 1",
-          "Nhãn 2",
-          "Nhãn 3",
-        ]
-        newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
-        break
-      case "Hoàn thành ghi chú":
-        newQuestion.content = [
-          "Hoàn thành ghi chú dưới đây",
-          "Chủ đề ghi chú",
-          "Ghi chú 1 với [ANSWER]",
-          "Ghi chú 2 với [ANSWER]",
-          "Ghi chú 3 với [ANSWER]",
-        ]
-        newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
-        break
-      case "Hoàn thành bảng/biểu mẫu":
-        newQuestion.content = [
-          "Hoàn thành bảng dưới đây",
-          "Hàng 1 Cột 1",
-          "Hàng 1 Cột 2",
-          "Hàng 1 Cột 3",
-          "Hàng 2 Cột 1",
-          "Hàng 2 Cột 2",
-          "Hàng 2 Cột 3",
-        ]
-        newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2"]
-        break
-      case "Hoàn thành lưu đồ":
-        newQuestion.content = [
-          "Tiêu đề lưu đồ",
-          "Hoàn thành lưu đồ dưới đây",
-          "Bước 1: ___",
-          "Bước 2: ___",
-          "Bước 3: ___",
-          "Lựa chọn A",
-          "Lựa chọn B",
-          "Lựa chọn C",
-        ]
-        newQuestion.correctAnswers = ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
-        break
-    }
-  
-    // Thêm câu hỏi mới vào phần hiện tại
-    if (!test[`part${window.currentPart}`]) {
-      test[`part${window.currentPart}`] = []
-    }
-    test[`part${window.currentPart}`].push(newQuestion)
-  
-    // Cập nhật tổng số câu hỏi
-    updateQuestionCount()
-  
-    // Hiển thị lại câu hỏi
-    renderQuestionsForCurrentPart()
-  
-    showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${window.currentPart}`, "success")
-  }
-  
-  // Xóa các hàm liên quan đến đăng nhập/đăng ký
-  // Tìm và xóa hàm showLoginForm
-  // function showLoginForm() {
-  // const loginModal = document.createElement("div")
-  // loginModal.className = "login-modal"
-  // loginModal.innerHTML = `
-  //   <div class="login-content">
-  //     <h2>Login</h2>
-  //     <form id="loginForm">
-  //       <div class="form-group">
-  //         <label for="username">Username:</label>
-  //         <input type="text" id="username" required>
-  //       </div>
-  //       <div class="form-group">
-  //         <label for="password">Password:</label>
-  //         <input type="password" id="password" required>
-  //       </div>
-  //       <button type="submit">Login</button>
-  //     </form>
-  //     <p>Don't have an account? <a href="#" id="showRegisterForm">Register</a></p>
-  //     <div id="loginMessage" class="message"></div>
-  //   </div>
-  // `
-  
-  // document.body.appendChild(loginModal)
-  
-  // // Handle login form submission
-  // document.getElementById("loginForm").addEventListener("submit", (e) => {
-  //   e.preventDefault()
-  //   const username = document.getElementById("username").value
-  //   const password = document.getElementById("password").value
-  
-  //   login(username, password)
-  //     .then(() => {
-  //       document.body.removeChild(loginModal)
-  //       showNotification("Login successful", "success")
-  //     })
-  //     .catch((error) => {
-  //       document.getElementById("loginMessage").textContent = error.message
-  //       document.getElementById("loginMessage").className = "message error"
-  //     })
-  // })
-  
-  // // Handle switch to register form
-  // document.getElementById("showRegisterForm").addEventListener("click", (e) => {
-  //   e.preventDefault()
-  //   document.body.removeChild(loginModal)
-  //   showRegisterForm()
-  // })
-  // }
-  
-  // // Xóa hàm showRegisterForm
-  // function showRegisterForm() {
-  // const registerModal = document.createElement("div")
-  // registerModal.className = "register-modal"
-  // registerModal.innerHTML = `
-  //   <div class="register-content">
-  //     <h2>Register</h2>
-  //     <form id="registerForm">
-  //       <div class="form-group">
-  //         <label for="regUsername">Username:</label>
-  //         <input type="text" id="regUsername" required>
-  //       </div>
-  //       <div class="form-group">
-  //         <label for="regPassword">Password:</label>
-  //         <input type="password" id="regPassword" required>
-  //       </div>
-  //       <div class="form-group">
-  //         <label for="regConfirmPassword">Confirm Password:</label>
-  //         <input type="password" id="regConfirmPassword" required>
-  //       </div>
-  //       <button type="submit">Register</button>
-  //     </form>
-  //     <p>Already have an account? <a href="#" id="showLoginForm">Login</a></p>
-  //     <div id="registerMessage" class="message"></div>
-  //   </div>
-  // `
-  
-  // document.body.appendChild(registerModal)
-  
-  // // Handle register form submission
-  // document.getElementById("registerForm").addEventListener("submit", (e) => {
-  //   e.preventDefault()
-  //   const username = document.getElementById("regUsername").value
-  //   const password = document.getElementById("regPassword").value
-  //   const confirmPassword = document.getElementById("regConfirmPassword").value
-  
-  //   if (password !== confirmPassword) {
-  //     document.getElementById("registerMessage").textContent = "Passwords do not match"
-  //     document.getElementById("registerMessage").className = "message error"
-  //     return
-  //   }
-  
-  //   register(username, password, "teacher")
-  //     .then(() => {
-  //       document.body.removeChild(registerModal)
-  //       showNotification("Registration successful", "success")
-  //     })
-  //     .catch((error) => {
-  //       document.getElementById("registerMessage").textContent = error.message
-  //       document.getElementById("registerMessage").className = "message error"
-  //     })
-  // })
-  
-  // // Handle switch to login form
-  // document.getElementById("showLoginForm").addEventListener("click", (e) => {
-  //   e.preventDefault()
-  //   document.body.removeChild(registerModal)
-  //   showLoginForm()
-  // })
-  // }
   
   // Sửa đổi hàm document.addEventListener("DOMContentLoaded", ...) để loại bỏ kiểm tra đăng nhập
   document.addEventListener("DOMContentLoaded", () => {
-    // Xóa kiểm tra đăng nhập
-    // if (!isLoggedIn()) {
-    //   showLoginForm()
-    //   return
-    // }
-  
     // Thêm sự kiện cho nút bắt đầu tạo bài kiểm tra
     const startButton = document.querySelector(".selection-page button")
     if (startButton) {
@@ -1806,7 +1651,7 @@ let test = {
     // Automatically show question creation form for the first selected type
     if (selectedTypes.length > 0) {
       console.log("Automatically creating question form for: " + selectedTypes[0])
-      createNewQuestion(selectedTypes[0])
+      addQuestionDirectly(selectedTypes[0])
     }
   }
   
@@ -1824,29 +1669,46 @@ let test = {
   window.createNewTest = createNewTest
   window.duplicateTest = duplicateTest
   window.generateTestPDF = generateTestPDF
-  window.addQuestion = addQuestion
+  window.addQuestionDirectly = addQuestionDirectly
   window.deleteQuestion = deleteQuestion
   window.renderTestCreation = renderTestCreation
   window.startTestCreation = startTestCreation
-  window.createNewQuestion = createNewQuestion
   
-  // Make sure the startTestCreation and renderTestCreation functions are properly exposed to the global window object
+  //
   window.startTestCreation = startTestCreation
   window.renderTestCreation = renderTestCreation
   
-  // Add this at the end of the file to ensure all functions are properly exposed
+  // Add this at the end of the file to ensure all functions are properly exposed to the global window object:
+  
+  // Make sure all functions are available globally
+  window.addQuestionDirectly = addQuestionDirectly
+  window.renderTestCreation = renderTestCreation
+  window.startTestCreation = startTestCreation
   window.previousPart = previousPart
   window.nextPart = nextPart
   window.saveTest = saveTest
-  window.createNewQuestion = createNewQuestion
   window.deleteQuestion = deleteQuestion
-  window.addQuestion = addQuestion
+  window.showNotification = showNotification
+  window.updateQuestionCount = updateQuestionCount
+  window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
+  window.previewEntireTest = previewEntireTest
+  window.exportTest = exportTest
+  window.importTest = importTest
+  window.showTestList = showTestList
+  window.createNewTest = createNewTest
+  window.duplicateTest = duplicateTest
+  window.generateTestPDF = generateTestPDF
   
-  function updateTestMetadata(field, value) {
-    test[field] = value
-    console.log(`Updated test ${field} to:`, value)
+  // Initialize currentPart in the global scope if it doesn't exist
+  if (typeof window.currentPart === "undefined") {
+    window.currentPart = 1
   }
   
-  window.updateTestMetadata = updateTestMetadata
+  console.log("test-management.js loaded successfully")
+  console.log("Functions exposed to window:", {
+    addQuestionDirectly: typeof window.addQuestionDirectly,
+    renderTestCreation: typeof window.renderTestCreation,
+    startTestCreation: typeof window.startTestCreation,
+  })
   
   
