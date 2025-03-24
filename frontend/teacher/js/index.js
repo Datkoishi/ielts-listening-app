@@ -23,7 +23,86 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.head.appendChild(script)
   }
+
+  // Add global event listener for delete buttons using event delegation
+  document.body.addEventListener("click", (event) => {
+    const target = event.target
+
+    // Check if the clicked element is a delete button or its icon
+    if (
+      target.classList.contains("delete-question") ||
+      (target.tagName === "I" && target.parentElement.classList.contains("delete-question"))
+    ) {
+      // Get the actual button (might be the icon's parent)
+      const deleteButton = target.classList.contains("delete-question") ? target : target.parentElement
+
+      // Find the question container
+      const questionDiv = deleteButton.closest(".question")
+      if (!questionDiv) {
+        console.error("Could not find parent question div")
+        return
+      }
+
+      // Find the part container
+      const partDiv = questionDiv.closest(".part")
+      if (!partDiv) {
+        console.error("Could not find parent part div")
+        return
+      }
+
+      // Get the part number from the part div's id
+      const partId = partDiv.id
+      const partNumber = Number.parseInt(partId.replace("part", ""))
+
+      // Get the index of the question within its part
+      const questions = Array.from(partDiv.querySelectorAll(".question"))
+      const questionIndex = questions.indexOf(questionDiv)
+
+      console.log(`Deleting question at index ${questionIndex} in part ${partNumber}`)
+
+      // Confirm deletion
+      if (confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
+        try {
+          // Remove the question from the test object
+          if (
+            window.test &&
+            window.test[`part${partNumber}`] &&
+            questionIndex >= 0 &&
+            questionIndex < window.test[`part${partNumber}`].length
+          ) {
+            window.test[`part${partNumber}`].splice(questionIndex, 1)
+
+            // Remove the question from the DOM
+            questionDiv.remove()
+
+            // Update the UI
+            if (typeof window.updateQuestionCount === "function") {
+              window.updateQuestionCount()
+            }
+
+            // Re-render the questions if needed
+            if (typeof window.renderQuestionsForCurrentPart === "function") {
+              window.renderQuestionsForCurrentPart()
+            }
+
+            alert("Đã xóa câu hỏi thành công")
+          } else {
+            console.error("Invalid question index or test structure", {
+              test: window.test,
+              partKey: `part${partNumber}`,
+              questionIndex: questionIndex,
+            })
+            alert("Không thể xóa câu hỏi. Dữ liệu không hợp lệ.")
+          }
+        } catch (error) {
+          console.error("Error deleting question:", error)
+          alert("Lỗi khi xóa câu hỏi: " + error.message)
+        }
+      }
+    }
+  })
 })
+
 // Ensure all necessary functions are defined in the global scope
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM content loaded")
@@ -243,42 +322,175 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Add question number and delete button
     const questionNumber = (window.test[`part${window.currentPart}`] || []).length + 1
+
+    // Create the question content
     questionDiv.innerHTML = `
-  <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-  <h3>${getIconForType(questionType)} ${questionType}</h3>
-  <button class="delete-question" onclick="deleteQuestion(${questionNumber - 1})"><i class="fas fa-trash"></i></button>
-`
+    <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+    <h3>${getIconForType(questionType)} ${questionType}</h3>
+    <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
+  `
 
     // Add the appropriate form based on type
     let formHTML = ""
+
+    // Use a more direct approach to create forms
     switch (questionType) {
       case "Một đáp án":
-        formHTML = createOneAnswerForm()
+        formHTML = `
+        <div class="one-answer-form">
+          <label for="question">Câu hỏi:</label>
+          <input type="text" id="question" name="question" required>
+          <label>Lựa chọn:</label>
+          <input type="text" name="option1" required><br>
+          <input type="text" name="option2" required><br>
+          <input type="text" name="option3" required><br>
+          <input type="text" name="option4" required><br>
+          <label for="correctAnswer">Đáp án đúng:</label>
+          <select id="correctAnswer" name="correctAnswer" required>
+            <option value="1">Lựa chọn 1</option>
+            <option value="2">Lựa chọn 2</option>
+            <option value="3">Lựa chọn 3</option>
+            <option value="4">Lựa chọn 4</option>
+          </select>
+          <button type="button" onclick="saveOneAnswerQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       case "Nhiều đáp án":
-        formHTML = createMultipleAnswerForm()
+        formHTML = `
+        <div class="multiple-answer-form">
+          <label for="question">Câu hỏi:</label>
+          <input type="text" id="question" name="question" required>
+          <label>Lựa chọn:</label>
+          <input type="text" name="option1" required><br>
+          <input type="text" name="option2" required><br>
+          <input type="text" name="option3" required><br>
+          <input type="text" name="option4" required><br>
+          <label>Đáp án đúng (chọn nhiều):</label><br>
+          <input type="checkbox" id="correctAnswer1" name="correctAnswers" value="1">
+          <label for="correctAnswer1">Lựa chọn 1</label><br>
+          <input type="checkbox" id="correctAnswer2" name="correctAnswers" value="2">
+          <label for="correctAnswer2">Lựa chọn 2</label><br>
+          <input type="checkbox" id="correctAnswer3" name="correctAnswers" value="3">
+          <label for="correctAnswer3">Lựa chọn 3</label><br>
+          <input type="checkbox" id="correctAnswer4" name="correctAnswers" value="4">
+          <label for="correctAnswer4">Lựa chọn 4</label>
+          <button type="button" onclick="saveMultipleAnswerQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       case "Ghép nối":
-        formHTML = createMatchingForm()
+        formHTML = `
+        <div class="matching-form">
+          <label for="title">Tiêu đề:</label>
+          <input type="text" id="title" name="title" required>
+          <label>Mục:</label>
+          <input type="text" name="item1" required><br>
+          <input type="text" name="item2" required><br>
+          <input type="text" name="item3" required><br>
+          <label>Ghép nối:</label>
+          <input type="text" name="match1" required><br>
+          <input type="text" name="match2" required><br>
+          <input type="text" name="match3" required><br>
+          <label for="correctMatches">Ghép nối đúng (ví dụ: 1-A, 2-B, 3-C):</label>
+          <input type="text" id="correctMatches" name="correctMatches" required>
+          <button type="button" onclick="saveMatchingQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       case "Ghi nhãn Bản đồ/Sơ đồ":
-        formHTML = createPlanMapDiagramForm()
+        formHTML = `
+        <div class="plan-map-diagram-form">
+          <label for="type">Loại:</label>
+          <select id="type" name="type" required>
+            <option value="map">Ghi nhãn Bản đồ</option>
+            <option value="ship">Sơ đồ Tàu</option>
+            <option value="technical">Sơ đồ Kỹ thuật</option>
+          </select>
+          <label for="instructions">Hướng dẫn:</label>
+          <input type="text" id="instructions" name="instructions" required>
+          <label for="image">Hình ảnh:</label>
+          <input type="file" id="image" name="image" accept="image/*" required>
+          <div id="labels-container">
+            <label for="label1">Nhãn 1:</label>
+            <input type="text" id="label1" name="label1" required>
+            <label for="answer1">Đáp án 1:</label>
+            <input type="text" id="answer1" name="answer1" required>
+          </div>
+          <button type="button" onclick="addLabel()">Thêm nhãn</button>
+          <button type="button" onclick="savePlanMapDiagramQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       case "Hoàn thành ghi chú":
-        formHTML = createNoteCompletionForm()
+        formHTML = `
+        <div class="note-completion-form">
+          <label for="instructions">Hướng dẫn:</label>
+          <input type="text" id="instructions" name="instructions" required>
+          <label for="topic">Chủ đề:</label>
+          <input type="text" id="topic" name="topic" required>
+          <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+          <textarea name="note1" required></textarea><br>
+          <textarea name="note2" required></textarea><br>
+          <textarea name="note3" required></textarea><br>
+          <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
+          <input type="text" id="correctAnswers" name="correctAnswers" required>
+          <button type="button" onclick="saveNoteCompletionQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       case "Hoàn thành bảng/biểu mẫu":
-        formHTML = createFormTableCompletionForm()
+        formHTML = `
+        <div class="form-table-completion-form">
+          <label for="instructions">Hướng dẫn:</label>
+          <input type="text" id="instructions" name="instructions" required>
+          <table id="formTable">
+            <tr>
+              <th>Cột 1</th>
+              <th>Cột 2</th>
+              <th>Cột 3</th>
+              <th>Đáp án</th>
+            </tr>
+            <tr>
+              <td><input type="text" name="cell1_1" required></td>
+              <td><input type="text" name="cell1_2" required></td>
+              <td><input type="text" name="cell1_3" required></td>
+              <td><input type="text" name="answer1" required></td>
+            </tr>
+          </table>
+          <button type="button" onclick="addTableRow()">Thêm hàng</button>
+          <button type="button" onclick="saveFormTableCompletionQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       case "Hoàn thành lưu đồ":
-        formHTML = createFlowChartCompletionForm()
+        formHTML = `
+        <div class="flow-chart-completion-form">
+          <label for="title">Tiêu đề:</label>
+          <input type="text" id="title" name="title" required>
+          <label for="instructions">Hướng dẫn:</label>
+          <input type="text" id="instructions" name="instructions" required>
+          <label>Mục (sử dụng ___ cho chỗ trống):</label>
+          <input type="text" name="item1" required><br>
+          <input type="text" name="item2" required><br>
+          <input type="text" name="item3" required><br>
+          <label for="options">Lựa chọn (cách nhau bằng dấu phẩy):</label>
+          <input type="text" id="options" name="options" required>
+          <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
+          <input type="text" id="correctAnswers" name="correctAnswers" required>
+          <button type="button" onclick="saveFlowChartCompletionQuestion(this)">Lưu câu hỏi</button>
+        </div>
+      `
         break
       default:
         formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
     }
 
-    // Add form HTML to question div
-    questionDiv.innerHTML += formHTML
+    // Create form container and add form HTML
+    const formContainer = document.createElement("div")
+    formContainer.className = "question-form-container"
+    formContainer.innerHTML = formHTML
+    questionDiv.appendChild(formContainer)
 
     // Make sure the part element is visible
     partElement.style.display = "block"
@@ -381,33 +593,27 @@ window.renderQuestionsForCurrentPart = () => {
   questions.forEach((question, index) => {
     const questionDiv = document.createElement("div")
     questionDiv.className = "question"
+
+    // Create question content
     questionDiv.innerHTML = `
       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${index + 1}</h4>
       <h3><i class="fas fa-check-circle"></i> ${question.type}</h3>
-      <button class="delete-question" onclick="deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
+      <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
       <div class="question-content">
         <p><strong>Nội dung:</strong> ${question.content[0]}</p>
         <p><strong>Đáp án:</strong> ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(", ") : question.correctAnswers}</p>
       </div>
     `
+
     partElement.appendChild(questionDiv)
   })
 }
 
-// Simple implementation of deleteQuestion
+// Simple implementation of deleteQuestion - this is now handled by the event delegation approach
 window.deleteQuestion = (index) => {
-  console.log("Deleting question at index:", index)
-
-  if (confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
-    window.test[`part${window.currentPart}`].splice(index, 1)
-    window.renderQuestionsForCurrentPart()
-
-    if (typeof window.showNotification === "function") {
-      window.showNotification("Đã xóa câu hỏi thành công", "success")
-    } else {
-      alert("Đã xóa câu hỏi thành công")
-    }
-  }
+  console.log("Legacy deleteQuestion called with index:", index)
+  // This function is kept for backward compatibility but the actual deletion
+  // is now handled by the event delegation approach
 }
 
 // Simple implementation of showNotification
@@ -710,5 +916,189 @@ window.saveMultipleAnswerQuestion = (button) => {
 
   // Show success message
   window.showNotification("Câu hỏi đã được lưu thành công!", "success")
+}
+
+// Add these save functions for the other question types
+window.saveMatchingQuestion = (button) => {
+  const form = button.closest(".matching-form")
+  const title = form.querySelector('[name="title"]').value
+  const items = [
+    form.querySelector('[name="item1"]').value,
+    form.querySelector('[name="item2"]').value,
+    form.querySelector('[name="item3"]').value,
+  ]
+  const matches = [
+    form.querySelector('[name="match1"]').value,
+    form.querySelector('[name="match2"]').value,
+    form.querySelector('[name="match3"]').value,
+  ]
+  const correctMatches = form
+    .querySelector('[name="correctMatches"]')
+    .value.split(",")
+    .map((m) => m.trim())
+
+  // Create question object
+  const questionData = {
+    type: "Ghép nối",
+    content: [title, ...items, ...matches],
+    correctAnswers: correctMatches,
+  }
+
+  // Update the test object
+  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
+  window.test[`part${window.currentPart}`][questionIndex] = questionData
+
+  // Show success message
+  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
+}
+
+window.savePlanMapDiagramQuestion = (button) => {
+  const form = button.closest(".plan-map-diagram-form")
+  const type = form.querySelector('[name="type"]').value
+  const instructions = form.querySelector('[name="instructions"]').value
+
+  // For simplicity, we'll use a placeholder image URL
+  const imageUrl = "/placeholder.svg?height=300&width=400"
+
+  const labels = [form.querySelector('[name="label1"]').value]
+  const answers = [form.querySelector('[name="answer1"]').value]
+
+  // Create question object
+  const questionData = {
+    type: "Ghi nhãn Bản đồ/Sơ đồ",
+    content: [type, instructions, imageUrl, ...labels],
+    correctAnswers: answers,
+  }
+
+  // Update the test object
+  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
+  window.test[`part${window.currentPart}`][questionIndex] = questionData
+
+  // Show success message
+  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
+}
+
+window.saveNoteCompletionQuestion = (button) => {
+  const form = button.closest(".note-completion-form")
+  const instructions = form.querySelector('[name="instructions"]').value
+  const topic = form.querySelector('[name="topic"]').value
+  const notes = [
+    form.querySelector('[name="note1"]').value,
+    form.querySelector('[name="note2"]').value,
+    form.querySelector('[name="note3"]').value,
+  ]
+  const correctAnswers = form
+    .querySelector('[name="correctAnswers"]')
+    .value.split(",")
+    .map((a) => a.trim())
+
+  // Create question object
+  const questionData = {
+    type: "Hoàn thành ghi chú",
+    content: [instructions, topic, ...notes],
+    correctAnswers: correctAnswers,
+  }
+
+  // Update the test object
+  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
+  window.test[`part${window.currentPart}`][questionIndex] = questionData
+
+  // Show success message
+  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
+}
+
+window.saveFormTableCompletionQuestion = (button) => {
+  const form = button.closest(".form-table-completion-form")
+  const instructions = form.querySelector('[name="instructions"]').value
+
+  // Get table data
+  const rows = form.querySelectorAll("#formTable tr:not(:first-child)")
+  const tableData = []
+  const answers = []
+
+  rows.forEach((row) => {
+    const cells = row.querySelectorAll("input")
+    tableData.push(cells[0].value, cells[1].value, cells[2].value)
+    answers.push(cells[3].value)
+  })
+
+  // Create question object
+  const questionData = {
+    type: "Hoàn thành bảng/biểu mẫu",
+    content: [instructions, ...tableData],
+    correctAnswers: answers,
+  }
+
+  // Update the test object
+  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
+  window.test[`part${window.currentPart}`][questionIndex] = questionData
+
+  // Show success message
+  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
+}
+
+window.saveFlowChartCompletionQuestion = (button) => {
+  const form = button.closest(".flow-chart-completion-form")
+  const title = form.querySelector('[name="title"]').value
+  const instructions = form.querySelector('[name="instructions"]').value
+  const items = [
+    form.querySelector('[name="item1"]').value,
+    form.querySelector('[name="item2"]').value,
+    form.querySelector('[name="item3"]').value,
+  ]
+  const options = form
+    .querySelector('[name="options"]')
+    .value.split(",")
+    .map((o) => o.trim())
+  const correctAnswers = form
+    .querySelector('[name="correctAnswers"]')
+    .value.split(",")
+    .map((a) => a.trim())
+
+  // Create question object
+  const questionData = {
+    type: "Hoàn thành lưu đồ",
+    content: [title, instructions, ...items, ...options],
+    correctAnswers: correctAnswers,
+  }
+
+  // Update the test object
+  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
+  window.test[`part${window.currentPart}`][questionIndex] = questionData
+
+  // Show success message
+  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
+}
+
+// Helper function to add a new row to the form table
+window.addTableRow = () => {
+  const formTable = document.getElementById("formTable")
+  if (!formTable) return
+
+  const newRow = formTable.insertRow()
+  newRow.innerHTML = `
+    <td><input type="text" name="cell_new" required></td>
+    <td><input type="text" name="cell_new" required></td>
+    <td><input type="text" name="cell_new" required></td>
+    <td><input type="text" name="answer_new" required></td>
+  `
+}
+
+// Helper function to add a new label to the plan/map/diagram form
+window.addLabel = () => {
+  const container = document.getElementById("labels-container")
+  if (!container) return
+
+  const labelCount = container.querySelectorAll('input[id^="label"]').length + 1
+
+  const labelGroup = document.createElement("div")
+  labelGroup.innerHTML = `
+    <label for="label${labelCount}">Nhãn ${labelCount}:</label>
+    <input type="text" id="label${labelCount}" name="label${labelCount}" required>
+    <label for="answer${labelCount}">Đáp án ${labelCount}:</label>
+    <input type="text" id="answer${labelCount}" name="answer${labelCount}" required>
+  `
+
+  container.appendChild(labelGroup)
 }
 
