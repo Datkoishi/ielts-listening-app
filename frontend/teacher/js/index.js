@@ -167,10 +167,11 @@ document.addEventListener("DOMContentLoaded", () => {
     window.renderTestCreation()
 
     // Automatically create first question of selected type
-    if (selectedTypes.length > 0 && typeof window.addQuestionDirectly === "function") {
-      console.log("Creating first question of type:", selectedTypes[0])
-      window.addQuestionDirectly(selectedTypes[0])
-    }
+    // if (selectedTypes.length > 0 && typeof window.addQuestionDirectly === "function") {
+    //   console.log("Creating first question of type:", selectedTypes[0])
+    //   window.addQuestionDirectly(selectedTypes[0])
+    // }
+    console.log("Test creation started. Click 'Add Question' to create your first question.")
   }
 
   // Define other necessary functions
