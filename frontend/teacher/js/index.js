@@ -325,10 +325,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Create the question content
     questionDiv.innerHTML = `
-    <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-    <h3>${getIconForType(questionType)} ${questionType}</h3>
-    <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
-  `
+      <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+      <h3>${getIconForType(questionType)} ${questionType}</h3>
+      <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
+    `
 
     // Add the appropriate form based on type
     let formHTML = ""
@@ -337,150 +337,332 @@ document.addEventListener("DOMContentLoaded", () => {
     switch (questionType) {
       case "Một đáp án":
         formHTML = `
-        <div class="one-answer-form">
-          <label for="question">Câu hỏi:</label>
-          <input type="text" id="question" name="question" required>
-          <label>Lựa chọn:</label>
-          <input type="text" name="option1" required><br>
-          <input type="text" name="option2" required><br>
-          <input type="text" name="option3" required><br>
-          <input type="text" name="option4" required><br>
-          <label for="correctAnswer">Đáp án đúng:</label>
-          <select id="correctAnswer" name="correctAnswer" required>
-            <option value="1">Lựa chọn 1</option>
-            <option value="2">Lựa chọn 2</option>
-            <option value="3">Lựa chọn 3</option>
-            <option value="4">Lựa chọn 4</option>
-          </select>
-          <button type="button" onclick="saveOneAnswerQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+          <div class="one-answer-form">
+            <div class="form-group">
+              <label for="question">Câu hỏi:</label>
+              <input type="text" id="question" name="question" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Lựa chọn:</label>
+              <div id="options-container">
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 1">
+                </div>
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 2">
+                </div>
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 3">
+                </div>
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 4">
+                </div>
+              </div>
+              <button type="button" class="add-option-btn" onclick="addOption(this)">
+                <i class="fas fa-plus"></i> Thêm lựa chọn
+              </button>
+            </div>
+            
+            <div class="form-group">
+              <label for="correctAnswer">Đáp án đúng:</label>
+              <select id="correctAnswer" name="correctAnswer" required>
+                <option value="">-- Chọn đáp án đúng --</option>
+                <option value="0">Lựa chọn 1</option>
+                <option value="1">Lựa chọn 2</option>
+                <option value="2">Lựa chọn 3</option>
+                <option value="3">Lựa chọn 4</option>
+              </select>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="saveOneAnswerQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
+          </div>
+        `
         break
       case "Nhiều đáp án":
         formHTML = `
-        <div class="multiple-answer-form">
-          <label for="question">Câu hỏi:</label>
-          <input type="text" id="question" name="question" required>
-          <label>Lựa chọn:</label>
-          <input type="text" name="option1" required><br>
-          <input type="text" name="option2" required><br>
-          <input type="text" name="option3" required><br>
-          <input type="text" name="option4" required><br>
-          <label>Đáp án đúng (chọn nhiều):</label><br>
-          <input type="checkbox" id="correctAnswer1" name="correctAnswers" value="1">
-          <label for="correctAnswer1">Lựa chọn 1</label><br>
-          <input type="checkbox" id="correctAnswer2" name="correctAnswers" value="2">
-          <label for="correctAnswer2">Lựa chọn 2</label><br>
-          <input type="checkbox" id="correctAnswer3" name="correctAnswers" value="3">
-          <label for="correctAnswer3">Lựa chọn 3</label><br>
-          <input type="checkbox" id="correctAnswer4" name="correctAnswers" value="4">
-          <label for="correctAnswer4">Lựa chọn 4</label>
-          <button type="button" onclick="saveMultipleAnswerQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+          <div class="multiple-answer-form">
+            <div class="form-group">
+              <label for="question">Câu hỏi:</label>
+              <input type="text" id="question" name="question" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Lựa chọn:</label>
+              <div id="options-container">
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 1">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="correctAnswers" value="0"> Đáp án đúng
+                  </label>
+                </div>
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 2">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="correctAnswers" value="1"> Đáp án đúng
+                  </label>
+                </div>
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 3">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="correctAnswers" value="2"> Đáp án đúng
+                  </label>
+                </div>
+                <div class="option-item">
+                  <input type="text" name="option" required placeholder="Lựa chọn 4">
+                  <label class="checkbox-label">
+                    <input type="checkbox" name="correctAnswers" value="3"> Đáp án đúng
+                  </label>
+                </div>
+              </div>
+              <button type="button" class="add-option-btn" onclick="addMultipleOption(this)">
+                <i class="fas fa-plus"></i> Thêm lựa chọn
+              </button>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="saveMultipleAnswerQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
+          </div>
+        `
         break
       case "Ghép nối":
         formHTML = `
-        <div class="matching-form">
-          <label for="title">Tiêu đề:</label>
-          <input type="text" id="title" name="title" required>
-          <label>Mục:</label>
-          <input type="text" name="item1" required><br>
-          <input type="text" name="item2" required><br>
-          <input type="text" name="item3" required><br>
-          <label>Ghép nối:</label>
-          <input type="text" name="match1" required><br>
-          <input type="text" name="match2" required><br>
-          <input type="text" name="match3" required><br>
-          <label for="correctMatches">Ghép nối đúng (ví dụ: 1-A, 2-B, 3-C):</label>
-          <input type="text" id="correctMatches" name="correctMatches" required>
-          <button type="button" onclick="saveMatchingQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+          <div class="matching-form">
+            <div class="form-group">
+              <label for="title">Tiêu đề:</label>
+              <input type="text" id="title" name="title" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Các mục ghép nối:</label>
+              <div id="matching-container">
+                <div class="matching-pair">
+                  <div class="matching-item">
+                    <label>Mục:</label>
+                    <input type="text" name="item" required>
+                  </div>
+                  <div class="matching-match">
+                    <label>Ghép với:</label>
+                    <input type="text" name="match" required>
+                  </div>
+                </div>
+                <div class="matching-pair">
+                  <div class="matching-item">
+                    <label>Mục:</label>
+                    <input type="text" name="item" required>
+                  </div>
+                  <div class="matching-match">
+                    <label>Ghép với:</label>
+                    <input type="text" name="match" required>
+                  </div>
+                </div>
+                <div class="matching-pair">
+                  <div class="matching-item">
+                    <label>Mục:</label>
+                    <input type="text" name="item" required>
+                  </div>
+                  <div class="matching-match">
+                    <label>Ghép với:</label>
+                    <input type="text" name="match" required>
+                  </div>
+                </div>
+              </div>
+              <button type="button" class="add-matching-btn" onclick="addMatchingPair(this)">
+                <i class="fas fa-plus"></i> Thêm cặp ghép nối
+              </button>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="saveMatchingQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
+          </div>
+        `
         break
       case "Ghi nhãn Bản đồ/Sơ đồ":
         formHTML = `
-        <div class="plan-map-diagram-form">
-          <label for="type">Loại:</label>
-          <select id="type" name="type" required>
-            <option value="map">Ghi nhãn Bản đồ</option>
-            <option value="ship">Sơ đồ Tàu</option>
-            <option value="technical">Sơ đồ Kỹ thuật</option>
-          </select>
-          <label for="instructions">Hướng dẫn:</label>
-          <input type="text" id="instructions" name="instructions" required>
-          <label for="image">Hình ảnh:</label>
-          <input type="file" id="image" name="image" accept="image/*" required>
-          <div id="labels-container">
-            <label for="label1">Nhãn 1:</label>
-            <input type="text" id="label1" name="label1" required>
-            <label for="answer1">Đáp án 1:</label>
-            <input type="text" id="answer1" name="answer1" required>
+          <div class="plan-map-diagram-form">
+            <div class="form-group">
+              <label for="type">Loại:</label>
+              <select id="type" name="type" required>
+                <option value="map">Ghi nhãn Bản đồ</option>
+                <option value="ship">Sơ đồ Tàu</option>
+                <option value="technical">Sơ đồ Kỹ thuật</option>
+              </select>
+            </div>
+            
+            <div class="form-group">
+              <label for="instructions">Hướng dẫn:</label>
+              <textarea id="instructions" name="instructions" required rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+              <label for="image">Hình ảnh:</label>
+              <input type="file" id="image" name="image" accept="image/*" required>
+              <div class="image-preview"></div>
+            </div>
+            
+            <div class="form-group">
+              <label>Nhãn và đáp án:</label>
+              <div id="labels-container">
+                <div class="label-item">
+                  <input type="text" name="label" required placeholder="Nhãn 1">
+                  <input type="text" name="answer" required placeholder="Đáp án 1">
+                </div>
+                <div class="label-item">
+                  <input type="text" name="label" required placeholder="Nhãn 2">
+                  <input type="text" name="answer" required placeholder="Đáp án 2">
+                </div>
+                <div class="label-item">
+                  <input type="text" name="label" required placeholder="Nhãn 3">
+                  <input type="text" name="answer" required placeholder="Đáp án 3">
+                </div>
+              </div>
+              <button type="button" class="add-label-btn" onclick="addLabel(this)">
+                <i class="fas fa-plus"></i> Thêm nhãn
+              </button>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="savePlanMapDiagramQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
           </div>
-          <button type="button" onclick="addLabel()">Thêm nhãn</button>
-          <button type="button" onclick="savePlanMapDiagramQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+        `
         break
       case "Hoàn thành ghi chú":
         formHTML = `
-        <div class="note-completion-form">
-          <label for="instructions">Hướng dẫn:</label>
-          <input type="text" id="instructions" name="instructions" required>
-          <label for="topic">Chủ đề:</label>
-          <input type="text" id="topic" name="topic" required>
-          <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-          <textarea name="note1" required></textarea><br>
-          <textarea name="note2" required></textarea><br>
-          <textarea name="note3" required></textarea><br>
-          <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-          <input type="text" id="correctAnswers" name="correctAnswers" required>
-          <button type="button" onclick="saveNoteCompletionQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+          <div class="note-completion-form">
+            <div class="form-group">
+              <label for="instructions">Hướng dẫn:</label>
+              <input type="text" id="instructions" name="instructions" required value="Hoàn thành ghi chú. Viết MỘT TỪ VÀ/HOẶC MỘT SỐ vào mỗi khoảng trống.">
+            </div>
+            
+            <div class="form-group">
+              <label for="topic">Chủ đề:</label>
+              <input type="text" id="topic" name="topic" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+              <div id="notes-container">
+                <div class="note-item">
+                  <textarea name="note" required rows="2" placeholder="Ghi chú 1 với [ANSWER] cho chỗ trống"></textarea>
+                  <input type="text" name="noteAnswer" required placeholder="Đáp án cho [ANSWER]">
+                </div>
+                <div class="note-item">
+                  <textarea name="note" required rows="2" placeholder="Ghi chú 2 với [ANSWER] cho chỗ trống"></textarea>
+                  <input type="text" name="noteAnswer" required placeholder="Đáp án cho [ANSWER]">
+                </div>
+                <div class="note-item">
+                  <textarea name="note" required rows="2" placeholder="Ghi chú 3 với [ANSWER] cho chỗ trống"></textarea>
+                  <input type="text" name="noteAnswer" required placeholder="Đáp án cho [ANSWER]">
+                </div>
+              </div>
+              <button type="button" class="add-note-btn" onclick="addNote(this)">
+                <i class="fas fa-plus"></i> Thêm ghi chú
+              </button>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="saveNoteCompletionQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
+          </div>
+        `
         break
       case "Hoàn thành bảng/biểu mẫu":
         formHTML = `
-        <div class="form-table-completion-form">
-          <label for="instructions">Hướng dẫn:</label>
-          <input type="text" id="instructions" name="instructions" required>
-          <table id="formTable">
-            <tr>
-              <th>Cột 1</th>
-              <th>Cột 2</th>
-              <th>Cột 3</th>
-              <th>Đáp án</th>
-            </tr>
-            <tr>
-              <td><input type="text" name="cell1_1" required></td>
-              <td><input type="text" name="cell1_2" required></td>
-              <td><input type="text" name="cell1_3" required></td>
-              <td><input type="text" name="answer1" required></td>
-            </tr>
-          </table>
-          <button type="button" onclick="addTableRow()">Thêm hàng</button>
-          <button type="button" onclick="saveFormTableCompletionQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+          <div class="form-table-completion-form">
+            <div class="form-group">
+              <label for="instructions">Hướng dẫn:</label>
+              <input type="text" id="instructions" name="instructions" required value="Hoàn thành bảng. Viết KHÔNG QUÁ MỘT TỪ VÀ/HOẶC MỘT SỐ cho mỗi khoảng trống.">
+            </div>
+            
+            <div class="form-group">
+              <label>Bảng dữ liệu:</label>
+              <table id="formTable" class="form-table">
+                <thead>
+                  <tr>
+                    <th><input type="text" placeholder="Tiêu đề cột 1" value="Cột 1"></th>
+                    <th><input type="text" placeholder="Tiêu đề cột 2" value="Cột 2"></th>
+                    <th><input type="text" placeholder="Tiêu đề cột 3" value="Cột 3"></th>
+                    <th>Đáp án</th>
+                    <th>Thao tác</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input type="text" name="cell" required></td>
+                    <td><input type="text" name="cell" required></td>
+                    <td><input type="text" name="cell" required></td>
+                    <td><input type="text" name="answer" required placeholder="Đáp án"></td>
+                    <td><button type="button" class="delete-row-btn" onclick="deleteTableRow(this)"><i class="fas fa-trash"></i></button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="text" name="cell" required></td>
+                    <td><input type="text" name="cell" required></td>
+                    <td><input type="text" name="cell" required></td>
+                    <td><input type="text" name="answer" required placeholder="Đáp án"></td>
+                    <td><button type="button" class="delete-row-btn" onclick="deleteTableRow(this)"><i class="fas fa-trash"></i></button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button type="button" class="add-row-btn" onclick="addTableRow(this)">
+                <i class="fas fa-plus"></i> Thêm hàng
+              </button>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="saveFormTableCompletionQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
+          </div>
+        `
         break
       case "Hoàn thành lưu đồ":
         formHTML = `
-        <div class="flow-chart-completion-form">
-          <label for="title">Tiêu đề:</label>
-          <input type="text" id="title" name="title" required>
-          <label for="instructions">Hướng dẫn:</label>
-          <input type="text" id="instructions" name="instructions" required>
-          <label>Mục (sử dụng ___ cho chỗ trống):</label>
-          <input type="text" name="item1" required><br>
-          <input type="text" name="item2" required><br>
-          <input type="text" name="item3" required><br>
-          <label for="options">Lựa chọn (cách nhau bằng dấu phẩy):</label>
-          <input type="text" id="options" name="options" required>
-          <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-          <input type="text" id="correctAnswers" name="correctAnswers" required>
-          <button type="button" onclick="saveFlowChartCompletionQuestion(this)">Lưu câu hỏi</button>
-        </div>
-      `
+          <div class="flow-chart-completion-form">
+            <div class="form-group">
+              <label for="title">Tiêu đề:</label>
+              <input type="text" id="title" name="title" required>
+            </div>
+            
+            <div class="form-group">
+              <label for="instructions">Hướng dẫn:</label>
+              <input type="text" id="instructions" name="instructions" required value="Hoàn thành lưu đồ dưới đây. Viết KHÔNG QUÁ BA TỪ cho mỗi khoảng trống.">
+            </div>
+            
+            <div class="form-group">
+              <label>Các mục lưu đồ (sử dụng ___ cho chỗ trống):</label>
+              <div id="flow-items-container">
+                <div class="flow-item">
+                  <textarea name="flowItem" required rows="2" placeholder="Mục 1 (ví dụ: Bước 1: ___ vật liệu)"></textarea>
+                  <input type="text" name="flowAnswer" required placeholder="Đáp án cho ___">
+                </div>
+                <div class="flow-item">
+                  <textarea name="flowItem" required rows="2" placeholder="Mục 2 (ví dụ: Bước 2: ___ sản phẩm)"></textarea>
+                  <input type="text" name="flowAnswer" required placeholder="Đáp án cho ___">
+                </div>
+                <div class="flow-item">
+                  <textarea name="flowItem" required rows="2" placeholder="Mục 3 (ví dụ: Bước 3: ___ kết quả)"></textarea>
+                  <input type="text" name="flowAnswer" required placeholder="Đáp án cho ___">
+                </div>
+              </div>
+              <button type="button" class="add-flow-item-btn" onclick="addFlowItem(this)">
+                <i class="fas fa-plus"></i> Thêm mục lưu đồ
+              </button>
+            </div>
+            
+            <div class="form-group">
+              <label for="options">Lựa chọn (hiển thị cho học sinh):</label>
+              <textarea id="options" name="options" rows="3" placeholder="Nhập các lựa chọn, mỗi lựa chọn một dòng"></textarea>
+            </div>
+            
+            <button type="button" class="save-question-btn" onclick="saveFlowChartCompletionQuestion(this)">
+              <i class="fas fa-save"></i> Lưu câu hỏi
+            </button>
+          </div>
+        `
         break
       default:
         formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
