@@ -1384,59 +1384,49 @@ select {
   }
 }
 
-/* Add these styles at the end of the file */
-
-/* Styles for the improved question forms */
-.form-group {
-  margin-bottom: 15px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: bold;
-}
-
+/* Add these styles for dynamic form elements */
 .option-item,
-.matching-pair,
-.label-item,
-.note-item,
-.flow-item {
+.item-row,
+.match-row,
+.label-row,
+.note-row,
+.answer-row,
+.flow-item-row,
+.flow-option-row,
+.flow-answer-row {
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   position: relative;
-  padding-right: 30px;
 }
 
-.option-item input,
-.matching-item input,
-.matching-match input,
-.label-item input,
-.note-item input {
+.option-item input[type="text"],
+.item-row input[type="text"],
+.match-row input[type="text"],
+.label-row input[type="text"],
+.answer-row input[type="text"],
+.flow-item-row input[type="text"],
+.flow-option-row input[type="text"],
+.flow-answer-row input[type="text"] {
   flex: 1;
   margin-right: 10px;
 }
 
-.note-item textarea,
-.flow-item textarea {
-  flex: 1;
-  margin-right: 10px;
+.option-item input[type="radio"],
+.option-item input[type="checkbox"] {
+  margin: 0 10px;
 }
 
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
-  white-space: nowrap;
-}
-
-.checkbox-label input {
-  margin-right: 5px;
-}
-
-.remove-btn,
-.delete-row-btn {
+.remove-option-btn,
+.remove-item-btn,
+.remove-match-btn,
+.remove-label-btn,
+.remove-note-btn,
+.remove-answer-btn,
+.remove-row-btn,
+.remove-flow-item-btn,
+.remove-flow-option-btn,
+.remove-flow-answer-btn {
   background-color: #ff4d4d;
   color: white;
   border: none;
@@ -1447,23 +1437,33 @@ select {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  padding: 0;
+  margin-left: 5px;
 }
 
-.remove-btn:hover,
-.delete-row-btn:hover {
+.remove-option-btn:hover,
+.remove-item-btn:hover,
+.remove-match-btn:hover,
+.remove-label-btn:hover,
+.remove-note-btn:hover,
+.remove-answer-btn:hover,
+.remove-row-btn:hover,
+.remove-flow-item-btn:hover,
+.remove-flow-option-btn:hover,
+.remove-flow-answer-btn:hover {
   background-color: #ff3333;
 }
 
 .add-option-btn,
-.add-matching-btn,
+.add-item-btn,
+.add-match-btn,
 .add-label-btn,
 .add-note-btn,
+.add-answer-btn,
 .add-row-btn,
-.add-flow-item-btn {
+.add-flow-item-btn,
+.add-flow-option-btn,
+.add-flow-answer-btn {
   background-color: #4caf50;
   color: white;
   border: none;
@@ -1471,81 +1471,105 @@ select {
   border-radius: 4px;
   cursor: pointer;
   margin-top: 5px;
-  display: inline-flex;
-  align-items: center;
+  margin-bottom: 15px;
+  font-size: 14px;
 }
 
-.add-option-btn i,
-.add-matching-btn i,
-.add-label-btn i,
-.add-note-btn i,
-.add-row-btn i,
-.add-flow-item-btn i {
-  margin-right: 5px;
+.add-option-btn:hover,
+.add-item-btn:hover,
+.add-match-btn:hover,
+.add-label-btn:hover,
+.add-note-btn:hover,
+.add-answer-btn:hover,
+.add-row-btn:hover,
+.add-flow-item-btn:hover,
+.add-flow-option-btn:hover,
+.add-flow-answer-btn:hover {
+  background-color: #45a049;
 }
 
 .save-question-btn {
-  background-color: #003366;
+  background-color: #2196f3;
   color: white;
   border: none;
-  padding: 10px 15px;
+  padding: 8px 15px;
   border-radius: 4px;
   cursor: pointer;
   margin-top: 15px;
-  display: flex;
-  align-items: center;
+  font-size: 14px;
 }
 
-.save-question-btn i {
-  margin-right: 8px;
+.save-question-btn:hover {
+  background-color: #0b7dda;
 }
 
-.matching-pair {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
+.options-container,
+.matching-container,
+.matching-items,
+.matching-matches,
+.matching-answers,
+#labels-container,
+#notes-container,
+#answers-container,
+#flow-items-container,
+#flow-options-container,
+#flow-answers-container {
   margin-bottom: 15px;
-  padding-right: 30px;
 }
 
-.matching-item,
-.matching-match {
+.matching-container {
+  display: flex;
+  gap: 20px;
+}
+
+.matching-items,
+.matching-matches {
   flex: 1;
-  min-width: 200px;
 }
 
-.form-table {
+.item-label,
+.answer-label {
+  min-width: 80px;
+  margin-right: 10px;
+}
+
+#options-list,
+#items-list,
+#matches-list,
+#matching-answers-list,
+#note-answers-list,
+#flow-items-list,
+#flow-options-list,
+#flow-answers-list {
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+textarea[name="note"] {
+  width: 100%;
+  min-height: 60px;
+  margin-bottom: 10px;
+}
+
+#formTable {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 15px;
 }
 
-.form-table th,
-.form-table td {
+#formTable th,
+#formTable td {
   border: 1px solid #ddd;
   padding: 8px;
 }
 
-.form-table th {
+#formTable th {
   background-color: #f2f2f2;
   text-align: left;
 }
 
-.form-table input {
+#formTable input {
   width: 100%;
-  padding: 5px;
   box-sizing: border-box;
-}
-
-.image-preview {
-  margin-top: 10px;
-  max-width: 300px;
-  max-height: 200px;
-  overflow: hidden;
-}
-
-.image-preview img {
-  max-width: 100%;
-  height: auto;
 }
 
