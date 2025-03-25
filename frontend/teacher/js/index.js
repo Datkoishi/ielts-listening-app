@@ -344,19 +344,19 @@ document.addEventListener("DOMContentLoaded", () => {
           <label>Lựa chọn:</label>
           <div id="options-list">
             <div class="option-item">
-              <input type="text" name="option" required>
+              <input type="text" name="option" required placeholder="Lựa chọn 1">
               <input type="radio" name="correctAnswer" value="0" checked>
               <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
             </div>
             <div class="option-item">
-              <input type="text" name="option" required>
+              <input type="text" name="option" required placeholder="Lựa chọn 2">
               <input type="radio" name="correctAnswer" value="1">
               <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
             </div>
           </div>
           <button type="button" class="add-option-btn">Thêm lựa chọn</button>
         </div>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
+        <button type="button" class="save-question-btn">Lưu câu h��i</button>
       </div>
     `
         break
@@ -369,12 +369,12 @@ document.addEventListener("DOMContentLoaded", () => {
           <label>Lựa chọn:</label>
           <div id="options-list">
             <div class="option-item">
-              <input type="text" name="option" required>
+              <input type="text" name="option" required placeholder="Lựa chọn 1">
               <input type="checkbox" name="correctAnswer" value="0">
               <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
             </div>
             <div class="option-item">
-              <input type="text" name="option" required>
+              <input type="text" name="option" required placeholder="Lựa chọn 2">
               <input type="checkbox" name="correctAnswer" value="1">
               <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
             </div>
@@ -395,7 +395,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <label>Mục:</label>
             <div id="items-list">
               <div class="item-row">
-                <input type="text" name="item" required>
+                <input type="text" name="item" required placeholder="Mục 1">
                 <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
               </div>
             </div>
@@ -405,7 +405,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <label>Ghép nối:</label>
             <div id="matches-list">
               <div class="match-row">
-                <input type="text" name="match" required>
+                <input type="text" name="match" required placeholder="Ghép nối 1">
                 <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
               </div>
             </div>
@@ -836,348 +836,12 @@ function createNoteCompletionForm() {
       <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
       <textarea name="note1" required></textarea><br>
       <textarea name="note2" required></textarea><br>
-      <textarea name="note3" required></textarea><br>
-      <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
-      <button type="button" onclick="saveNoteCompletionQuestion(this)">Lưu câu hỏi</button>
+      <textarea name="note3" required></textarea>
     </div>
   `
 }
 
-function createFormTableCompletionForm() {
-  if (typeof window.createFormTableCompletionForm === "function") {
-    return window.createFormTableCompletionForm()
-  }
-  return `
-    <div class="form-table-completion-form">
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <table id="formTable">
-        <tr>
-          <th>Cột 1</th>
-          <th>Cột 2</th>
-          <th>Cột 3</th>
-          <th>Đáp án</th>
-        </tr>
-        <tr>
-          <td><input type="text" name="cell1_1" required></td>
-          <td><input type="text" name="cell1_2" required></td>
-          <td><input type="text" name="cell1_3" required></td>
-          <td><input type="text" name="answer1" required></td>
-        </tr>
-      </table>
-      <button type="button" onclick="addTableRow()">Thêm hàng</button>
-      <button type="button" onclick="saveFormTableCompletionQuestion(this)">Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function createFlowChartCompletionForm() {
-  if (typeof window.createFlowChartCompletionForm === "function") {
-    return window.createFlowChartCompletionForm()
-  }
-  return `
-    <div class="flow-chart-completion-form">
-      <label for="title">Tiêu đề:</label>
-      <input type="text" id="title" name="title" required>
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label>Mục (sử dụng ___ cho chỗ trống):</label>
-      <input type="text" name="item1" required><br>
-      <input type="text" name="item2" required><br>
-      <input type="text" name="item3" required><br>
-      <label for="options">Lựa chọn (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="options" name="options" required>
-      <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
-      <button type="button" onclick="saveFlowChartCompletionQuestion(this)">Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-// Form initialization functions
-function initializeOneAnswerForm(questionDiv) {
-  if (typeof window.initializeOneAnswerForm === "function") {
-    window.initializeOneAnswerForm(questionDiv)
-  }
-}
-
-function initializeMultipleAnswerForm(questionDiv) {
-  if (typeof window.initializeMultipleAnswerForm === "function") {
-    window.initializeMultipleAnswerForm(questionDiv)
-  }
-}
-
-function initializeMatchingForm(questionDiv) {
-  if (typeof window.initializeMatchingForm === "function") {
-    window.initializeMatchingForm(questionDiv)
-  }
-}
-
-function initializePlanMapDiagram(questionDiv) {
-  if (typeof window.initializePlanMapDiagram === "function") {
-    window.initializePlanMapDiagram(questionDiv)
-  }
-}
-
-function initializeNoteCompletionForm(questionDiv) {
-  if (typeof window.initializeNoteCompletionForm === "function") {
-    window.initializeNoteCompletionForm(questionDiv)
-  }
-}
-
-function initializeFormTableCompletionForm(questionDiv) {
-  if (typeof window.initializeFormTableCompletionForm === "function") {
-    window.initializeFormTableCompletionForm(questionDiv)
-  }
-}
-
-function initializeFlowChartCompletionForm(questionDiv) {
-  if (typeof window.initializeFlowChartCompletionForm === "function") {
-    window.initializeFlowChartCompletionForm(questionDiv)
-  }
-}
-
-// Save question functions
-window.saveOneAnswerQuestion = (button) => {
-  const form = button.closest(".one-answer-form")
-  const questionText = form.querySelector('[name="question"]').value
-  const options = [
-    form.querySelector('[name="option1"]').value,
-    form.querySelector('[name="option2"]').value,
-    form.querySelector('[name="option3"]').value,
-    form.querySelector('[name="option4"]').value,
-  ]
-  const correctAnswer = form.querySelector('[name="correctAnswer"]').value
-
-  // Create question object
-  const questionData = {
-    type: "Một đáp án",
-    content: [questionText, ...options],
-    correctAnswers: options[Number.parseInt(correctAnswer) - 1],
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-window.saveMultipleAnswerQuestion = (button) => {
-  const form = button.closest(".multiple-answer-form")
-  const questionText = form.querySelector('[name="question"]').value
-  const options = [
-    form.querySelector('[name="option1"]').value,
-    form.querySelector('[name="option2"]').value,
-    form.querySelector('[name="option3"]').value,
-    form.querySelector('[name="option4"]').value,
-  ]
-  const correctAnswers = Array.from(form.querySelectorAll('[name="correctAnswers"]:checked')).map(
-    (cb) => options[Number.parseInt(cb.value) - 1],
-  )
-
-  // Create question object
-  const questionData = {
-    type: "Nhiều đáp án",
-    content: [questionText, ...options],
-    correctAnswers: correctAnswers,
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-// Add these save functions for the other question types
-window.saveMatchingQuestion = (button) => {
-  const form = button.closest(".matching-form")
-  const title = form.querySelector('[name="title"]').value
-  const items = [
-    form.querySelector('[name="item1"]').value,
-    form.querySelector('[name="item2"]').value,
-    form.querySelector('[name="item3"]').value,
-  ]
-  const matches = [
-    form.querySelector('[name="match1"]').value,
-    form.querySelector('[name="match2"]').value,
-    form.querySelector('[name="match3"]').value,
-  ]
-  const correctMatches = form
-    .querySelector('[name="correctMatches"]')
-    .value.split(",")
-    .map((m) => m.trim())
-
-  // Create question object
-  const questionData = {
-    type: "Ghép nối",
-    content: [title, ...items, ...matches],
-    correctAnswers: correctMatches,
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-window.savePlanMapDiagramQuestion = (button) => {
-  const form = button.closest(".plan-map-diagram-form")
-  const type = form.querySelector('[name="type"]').value
-  const instructions = form.querySelector('[name="instructions"]').value
-
-  // For simplicity, we'll use a placeholder image URL
-  const imageUrl = "/placeholder.svg?height=300&width=400"
-
-  const labels = [form.querySelector('[name="label1"]').value]
-  const answers = [form.querySelector('[name="answer1"]').value]
-
-  // Create question object
-  const questionData = {
-    type: "Ghi nhãn Bản đồ/Sơ đồ",
-    content: [type, instructions, imageUrl, ...labels],
-    correctAnswers: answers,
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-window.saveNoteCompletionQuestion = (button) => {
-  const form = button.closest(".note-completion-form")
-  const instructions = form.querySelector('[name="instructions"]').value
-  const topic = form.querySelector('[name="topic"]').value
-  const notes = [
-    form.querySelector('[name="note1"]').value,
-    form.querySelector('[name="note2"]').value,
-    form.querySelector('[name="note3"]').value,
-  ]
-  const correctAnswers = form
-    .querySelector('[name="correctAnswers"]')
-    .value.split(",")
-    .map((a) => a.trim())
-
-  // Create question object
-  const questionData = {
-    type: "Hoàn thành ghi chú",
-    content: [instructions, topic, ...notes],
-    correctAnswers: correctAnswers,
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-window.saveFormTableCompletionQuestion = (button) => {
-  const form = button.closest(".form-table-completion-form")
-  const instructions = form.querySelector('[name="instructions"]').value
-
-  // Get table data
-  const rows = form.querySelectorAll("#formTable tr:not(:first-child)")
-  const tableData = []
-  const answers = []
-
-  rows.forEach((row) => {
-    const cells = row.querySelectorAll("input")
-    tableData.push(cells[0].value, cells[1].value, cells[2].value)
-    answers.push(cells[3].value)
-  })
-
-  // Create question object
-  const questionData = {
-    type: "Hoàn thành bảng/biểu mẫu",
-    content: [instructions, ...tableData],
-    correctAnswers: answers,
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-window.saveFlowChartCompletionQuestion = (button) => {
-  const form = button.closest(".flow-chart-completion-form")
-  const title = form.querySelector('[name="title"]').value
-  const instructions = form.querySelector('[name="instructions"]').value
-  const items = [
-    form.querySelector('[name="item1"]').value,
-    form.querySelector('[name="item2"]').value,
-    form.querySelector('[name="item3"]').value,
-  ]
-  const options = form
-    .querySelector('[name="options"]')
-    .value.split(",")
-    .map((o) => o.trim())
-  const correctAnswers = form
-    .querySelector('[name="correctAnswers"]')
-    .value.split(",")
-    .map((a) => a.trim())
-
-  // Create question object
-  const questionData = {
-    type: "Hoàn thành lưu đồ",
-    content: [title, instructions, ...items, ...options],
-    correctAnswers: correctAnswers,
-  }
-
-  // Update the test object
-  const questionIndex = Number.parseInt(button.closest(".question").querySelector("h4").textContent.match(/\d+/)[0]) - 1
-  window.test[`part${window.currentPart}`][questionIndex] = questionData
-
-  // Show success message
-  window.showNotification("Câu hỏi đã được lưu thành công!", "success")
-}
-
-// Helper function to add a new row to the form table
-window.addTableRow = () => {
-  const formTable = document.getElementById("formTable")
-  if (!formTable) return
-
-  const newRow = formTable.insertRow()
-  newRow.innerHTML = `
-    <td><input type="text" name="cell_new" required></td>
-    <td><input type="text" name="cell_new" required></td>
-    <td><input type="text" name="cell_new" required></td>
-    <td><input type="text" name="answer_new" required></td>
-  `
-}
-
-// Helper function to add a new label to the plan/map/diagram form
-window.addLabel = () => {
-  const container = document.getElementById("labels-container")
-  if (!container) return
-
-  const labelCount = container.querySelectorAll('input[id^="label"]').length + 1
-
-  const labelGroup = document.createElement("div")
-  labelGroup.innerHTML = `
-    <label for="label${labelCount}">Nhãn ${labelCount}:</label>
-    <input type="text" id="label${labelCount}" name="label${labelCount}" required>
-    <label for="answer${labelCount}">Đáp án ${labelCount}:</label>
-    <input type="text" id="answer${labelCount}" name="answer${labelCount}" required>
-  `
-
-  container.appendChild(labelGroup)
-}
-
-// Add the following function to initialize dynamic form elements
+// Initialize dynamic form elements
 function initializeDynamicFormElements(questionDiv, questionType) {
   switch (questionType) {
     case "Một đáp án":
@@ -1190,7 +854,7 @@ function initializeDynamicFormElements(questionDiv, questionType) {
       initializeMatchingForm(questionDiv)
       break
     case "Ghi nhãn Bản đồ/Sơ đồ":
-      initializePlanMapDiagram(questionDiv)
+      initializePlanMapDiagramForm(questionDiv)
       break
     case "Hoàn thành ghi chú":
       initializeNoteCompletionForm(questionDiv)
@@ -1204,182 +868,476 @@ function initializeDynamicFormElements(questionDiv, questionType) {
     default:
       console.warn("Không hỗ trợ loại câu hỏi:", questionType)
   }
+}
 
-  // Add event listeners for dynamic elements
+function initializeOneAnswerForm(questionDiv) {
   const addOptionBtn = questionDiv.querySelector(".add-option-btn")
-  if (addOptionBtn) {
-    addOptionBtn.addEventListener("click", () => {
-      const optionsList = questionDiv.querySelector("#options-list")
-      if (!optionsList) return
+  const optionsList = questionDiv.querySelector("#options-list")
 
-      const optionCount = optionsList.querySelectorAll(".option-item").length
-      const newOption = document.createElement("div")
-      newOption.className = "option-item"
-      newOption.innerHTML = `
+  if (addOptionBtn && optionsList) {
+    addOptionBtn.addEventListener("click", () => {
+      const optionCount = optionsList.children.length
+      const newOptionItem = document.createElement("div")
+      newOptionItem.className = "option-item"
+      newOptionItem.innerHTML = `
         <input type="text" name="option" required>
         <input type="radio" name="correctAnswer" value="${optionCount}">
         <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
       `
-      optionsList.appendChild(newOption)
+      optionsList.appendChild(newOptionItem)
+
+      // Initialize remove button for the new option
+      const removeButton = newOptionItem.querySelector(".remove-option-btn")
+      removeButton.addEventListener("click", () => {
+        newOptionItem.remove()
+      })
     })
   }
 
-  const addItemBtn = questionDiv.querySelector(".add-item-btn")
-  if (addItemBtn) {
-    addItemBtn.addEventListener("click", () => {
-      const itemsList = questionDiv.querySelector("#items-list")
-      if (!itemsList) return
+  // Initialize existing remove buttons
+  const removeOptionBtns = questionDiv.querySelectorAll(".remove-option-btn")
+  removeOptionBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.closest(".option-item").remove()
+    })
+  })
 
-      const newItem = document.createElement("div")
-      newItem.className = "item-row"
-      newItem.innerHTML = `
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Một đáp án")
+    })
+  }
+}
+
+function initializeMultipleAnswerForm(questionDiv) {
+  const addOptionBtn = questionDiv.querySelector(".add-option-btn")
+  const optionsList = questionDiv.querySelector("#options-list")
+
+  if (addOptionBtn && optionsList) {
+    addOptionBtn.addEventListener("click", () => {
+      const optionCount = optionsList.children.length
+      const newOptionItem = document.createElement("div")
+      newOptionItem.className = "option-item"
+      newOptionItem.innerHTML = `
+        <input type="text" name="option" required>
+        <input type="checkbox" name="correctAnswer" value="${optionCount}">
+        <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+      `
+      optionsList.appendChild(newOptionItem)
+
+      // Initialize remove button for the new option
+      const removeButton = newOptionItem.querySelector(".remove-option-btn")
+      removeButton.addEventListener("click", () => {
+        newOptionItem.remove()
+      })
+    })
+  }
+
+  // Initialize existing remove buttons
+  const removeOptionBtns = questionDiv.querySelectorAll(".remove-option-btn")
+  removeOptionBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.closest(".option-item").remove()
+    })
+  })
+
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Nhiều đáp án")
+    })
+  }
+}
+
+function initializeMatchingForm(questionDiv) {
+  const addItemBtn = questionDiv.querySelector(".add-item-btn")
+  const addMatchBtn = questionDiv.querySelector(".add-match-btn")
+  const itemsList = questionDiv.querySelector("#items-list")
+  const matchesList = questionDiv.querySelector("#matches-list")
+  const matchingAnswersList = questionDiv.querySelector("#matching-answers-list")
+
+  if (addItemBtn && itemsList && matchesList && matchingAnswersList) {
+    addItemBtn.addEventListener("click", () => {
+      const itemCount = itemsList.children.length
+      const newItemRow = document.createElement("div")
+      newItemRow.className = "item-row"
+      newItemRow.innerHTML = `
         <input type="text" name="item" required>
         <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
       `
-      itemsList.appendChild(newItem)
+      itemsList.appendChild(newItemRow)
+
+      // Initialize remove button for the new item
+      const removeButton = newItemRow.querySelector(".remove-item-btn")
+      removeButton.addEventListener("click", () => {
+        newItemRow.remove()
+        updateMatchingAnswers()
+      })
+
+      updateMatchingAnswers()
     })
-  }
 
-  const addMatchBtn = questionDiv.querySelector(".add-match-btn")
-  if (addMatchBtn) {
     addMatchBtn.addEventListener("click", () => {
-      const matchesList = questionDiv.querySelector("#matches-list")
-      if (!matchesList) return
-
-      const newMatch = document.createElement("div")
-      newMatch.className = "match-row"
-      newMatch.innerHTML = `
+      const newMatchRow = document.createElement("div")
+      newMatchRow.className = "match-row"
+      newMatchRow.innerHTML = `
         <input type="text" name="match" required>
         <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
       `
-      matchesList.appendChild(newMatch)
+      matchesList.appendChild(newMatchRow)
+
+      // Initialize remove button for the new match
+      const removeButton = newMatchRow.querySelector(".remove-match-btn")
+      removeButton.addEventListener("click", () => {
+        newMatchRow.remove()
+      })
     })
+
+    // Function to update matching answers
+    function updateMatchingAnswers() {
+      matchingAnswersList.innerHTML = ""
+      const itemCount = itemsList.children.length
+
+      for (let i = 0; i < itemCount; i++) {
+        const answerRow = document.createElement("div")
+        answerRow.className = "answer-row"
+        answerRow.innerHTML = `
+          <span class="item-label">Mục ${i + 1}:</span>
+          <input type="text" name="matchingAnswer" required>
+        `
+        matchingAnswersList.appendChild(answerRow)
+      }
+    }
+
+    // Initialize existing remove buttons for items
+    const removeItemBtns = questionDiv.querySelectorAll(".remove-item-btn")
+    removeItemBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".item-row").remove()
+        updateMatchingAnswers()
+      })
+    })
+
+    // Initialize existing remove buttons for matches
+    const removeMatchBtns = questionDiv.querySelectorAll(".remove-match-btn")
+    removeMatchBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".match-row").remove()
+      })
+    })
+
+    // Initial update of matching answers
+    updateMatchingAnswers()
   }
 
-  const addLabelBtn = questionDiv.querySelector(".add-label-btn")
-  if (addLabelBtn) {
-    addLabelBtn.addEventListener("click", () => {
-      const labelsContainer = questionDiv.querySelector("#labels-container")
-      if (!labelsContainer) return
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Ghép nối")
+    })
+  }
+}
 
-      const labelCount = labelsContainer.querySelectorAll(".label-row").length
-      const newLabel = document.createElement("div")
-      newLabel.className = "label-row"
-      newLabel.innerHTML = `
+function initializePlanMapDiagramForm(questionDiv) {
+  const addLabelBtn = questionDiv.querySelector(".add-label-btn")
+  const labelsContainer = questionDiv.querySelector("#labels-container")
+
+  if (addLabelBtn && labelsContainer) {
+    addLabelBtn.addEventListener("click", () => {
+      const labelCount = labelsContainer.children.length
+      const newLabelRow = document.createElement("div")
+      newLabelRow.className = "label-row"
+      newLabelRow.innerHTML = `
         <label for="label${labelCount + 1}">Nhãn ${labelCount + 1}:</label>
         <input type="text" id="label${labelCount + 1}" name="label" required>
         <label for="answer${labelCount + 1}">Đáp án ${labelCount + 1}:</label>
         <input type="text" id="answer${labelCount + 1}" name="answer" required>
         <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
       `
-      labelsContainer.appendChild(newLabel)
+      labelsContainer.appendChild(newLabelRow)
+
+      // Initialize remove button for the new label
+      const removeButton = newLabelRow.querySelector(".remove-label-btn")
+      removeButton.addEventListener("click", () => {
+        newLabelRow.remove()
+      })
     })
   }
 
-  const addNoteBtn = questionDiv.querySelector(".add-note-btn")
-  if (addNoteBtn) {
-    addNoteBtn.addEventListener("click", () => {
-      const notesContainer = questionDiv.querySelector("#notes-container")
-      if (!notesContainer) return
+  // Initialize existing remove buttons
+  const removeLabelBtns = questionDiv.querySelectorAll(".remove-label-btn")
+  removeLabelBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.closest(".label-row").remove()
+    })
+  })
 
-      const newNote = document.createElement("div")
-      newNote.className = "note-row"
-      newNote.innerHTML = `
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Ghi nhãn Bản đồ/Sơ đồ")
+    })
+  }
+}
+
+function initializeNoteCompletionForm(questionDiv) {
+  const addNoteBtn = questionDiv.querySelector(".add-note-btn")
+  const addAnswerBtn = questionDiv.querySelector(".add-answer-btn")
+  const notesContainer = questionDiv.querySelector("#notes-container")
+  const noteAnswersList = questionDiv.querySelector("#note-answers-list")
+
+  if (addNoteBtn && notesContainer && addAnswerBtn && noteAnswersList) {
+    addNoteBtn.addEventListener("click", () => {
+      const noteCount = notesContainer.children.length
+      const newNoteRow = document.createElement("div")
+      newNoteRow.className = "note-row"
+      newNoteRow.innerHTML = `
         <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
         <textarea name="note" required></textarea>
         <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
       `
-      notesContainer.appendChild(newNote)
+      notesContainer.appendChild(newNoteRow)
+
+      // Initialize remove button for the new note
+      const removeButton = newNoteRow.querySelector(".remove-note-btn")
+      removeButton.addEventListener("click", () => {
+        newNoteRow.remove()
+        updateNoteAnswers()
+      })
+
+      updateNoteAnswers()
     })
-  }
 
-  const addAnswerBtn = questionDiv.querySelector(".add-answer-btn")
-  if (addAnswerBtn) {
     addAnswerBtn.addEventListener("click", () => {
-      const answersContainer = questionDiv.querySelector("#note-answers-list")
-      if (!answersContainer) return
-
-      const answerCount = answersContainer.querySelectorAll(".answer-row").length
-      const newAnswer = document.createElement("div")
-      newAnswer.className = "answer-row"
-      newAnswer.innerHTML = `
+      const answerCount = noteAnswersList.children.length
+      const newAnswerRow = document.createElement("div")
+      newAnswerRow.className = "answer-row"
+      newAnswerRow.innerHTML = `
         <span class="answer-label">Đáp án ${answerCount + 1}:</span>
         <input type="text" name="noteAnswer" required>
         <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
       `
-      answersContainer.appendChild(newAnswer)
+      noteAnswersList.appendChild(newAnswerRow)
+
+      // Initialize remove button for the new answer
+      const removeButton = newAnswerRow.querySelector(".remove-answer-btn")
+      removeButton.addEventListener("click", () => {
+        newAnswerRow.remove()
+      })
+    })
+
+    // Function to update note answers
+    function updateNoteAnswers() {
+      noteAnswersList.innerHTML = ""
+      const noteCount = notesContainer.children.length
+
+      for (let i = 0; i < noteCount; i++) {
+        const answerRow = document.createElement("div")
+        answerRow.className = "answer-row"
+        answerRow.innerHTML = `
+          <span class="answer-label">Đáp án ${i + 1}:</span>
+          <input type="text" name="noteAnswer" required>
+        `
+        noteAnswersList.appendChild(answerRow)
+      }
+    }
+
+    // Initialize existing remove buttons for notes
+    const removeNoteBtns = questionDiv.querySelectorAll(".remove-note-btn")
+    removeNoteBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".note-row").remove()
+        updateNoteAnswers()
+      })
+    })
+
+    // Initialize existing remove buttons for answers
+    const removeAnswerBtns = questionDiv.querySelectorAll(".remove-answer-btn")
+    removeAnswerBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".answer-row").remove()
+      })
+    })
+
+    // Initial update of note answers
+    updateNoteAnswers()
+  }
+
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Hoàn thành ghi chú")
+    })
+  }
+}
+
+function initializeFormTableCompletionForm(questionDiv) {
+  const addRowBtn = questionDiv.querySelector(".add-row-btn")
+  const formTable = questionDiv.querySelector("#formTable tbody")
+
+  if (addRowBtn && formTable) {
+    addRowBtn.addEventListener("click", () => {
+      const newRow = document.createElement("tr")
+      newRow.innerHTML = `
+        <td><input type="text" name="cell" required></td>
+        <td><input type="text" name="cell" required></td>
+        <td><input type="text" name="cell" required></td>
+        <td><input type="text" name="tableAnswer" required></td>
+        <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
+      `
+      formTable.appendChild(newRow)
+
+      // Initialize remove button for the new row
+      const removeButton = newRow.querySelector(".remove-row-btn")
+      removeButton.addEventListener("click", () => {
+        newRow.remove()
+      })
     })
   }
 
-  const addFlowItemBtn = questionDiv.querySelector(".add-flow-item-btn")
-  if (addFlowItemBtn) {
-    addFlowItemBtn.addEventListener("click", () => {
-      const flowItemsList = questionDiv.querySelector("#flow-items-list")
-      if (!flowItemsList) return
+  // Initialize existing remove buttons
+  const removeRowBtns = questionDiv.querySelectorAll(".remove-row-btn")
+  removeRowBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.closest("tr").remove()
+    })
+  })
 
-      const newFlowItem = document.createElement("div")
-      newFlowItem.className = "flow-item-row"
-      newFlowItem.innerHTML = `
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Hoàn thành bảng/biểu mẫu")
+    })
+  }
+}
+
+function initializeFlowChartCompletionForm(questionDiv) {
+  const addFlowItemBtn = questionDiv.querySelector(".add-flow-item-btn")
+  const addFlowOptionBtn = questionDiv.querySelector(".add-flow-option-btn")
+  const addFlowAnswerBtn = questionDiv.querySelector(".add-flow-answer-btn")
+  const flowItemsList = questionDiv.querySelector("#flow-items-list")
+  const flowOptionsList = questionDiv.querySelector("#flow-options-list")
+  const flowAnswersList = questionDiv.querySelector("#flow-answers-list")
+
+  if (addFlowItemBtn && flowItemsList && addFlowOptionBtn && flowOptionsList && addFlowAnswerBtn && flowAnswersList) {
+    addFlowItemBtn.addEventListener("click", () => {
+      const newItemRow = document.createElement("div")
+      newItemRow.className = "flow-item-row"
+      newItemRow.innerHTML = `
         <input type="text" name="flowItem" required>
         <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
       `
-      flowItemsList.appendChild(newFlowItem)
+      flowItemsList.appendChild(newItemRow)
+
+      // Initialize remove button for the new item
+      const removeButton = newItemRow.querySelector(".remove-flow-item-btn")
+      removeButton.addEventListener("click", () => {
+        newItemRow.remove()
+        updateFlowAnswers()
+      })
+
+      updateFlowAnswers()
     })
-  }
 
-  const addFlowOptionBtn = questionDiv.querySelector(".add-flow-option-btn")
-  if (addFlowOptionBtn) {
     addFlowOptionBtn.addEventListener("click", () => {
-      const flowOptionsList = questionDiv.querySelector("#flow-options-list")
-      if (!flowOptionsList) return
-
-      const newFlowOption = document.createElement("div")
-      newFlowOption.className = "flow-option-row"
-      newFlowOption.innerHTML = `
+      const newOptionRow = document.createElement("div")
+      newOptionRow.className = "flow-option-row"
+      newOptionRow.innerHTML = `
         <input type="text" name="flowOption" required>
         <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
       `
-      flowOptionsList.appendChild(newFlowOption)
+      flowOptionsList.appendChild(newOptionRow)
+
+      // Initialize remove button for the new option
+      const removeButton = newOptionRow.querySelector(".remove-flow-option-btn")
+      removeButton.addEventListener("click", () => {
+        newOptionRow.remove()
+      })
     })
-  }
 
-  const addFlowAnswerBtn = questionDiv.querySelector(".add-flow-answer-btn")
-  if (addFlowAnswerBtn) {
     addFlowAnswerBtn.addEventListener("click", () => {
-      const flowAnswersList = questionDiv.querySelector("#flow-answers-list")
-      if (!flowAnswersList) return
-
-      const answerCount = flowAnswersList.querySelectorAll(".flow-answer-row").length
-      const newFlowAnswer = document.createElement("div")
-      newFlowAnswer.className = "flow-answer-row"
-      newFlowAnswer.innerHTML = `
+      const answerCount = flowAnswersList.children.length
+      const newAnswerRow = document.createElement("div")
+      newAnswerRow.className = "flow-answer-row"
+      newAnswerRow.innerHTML = `
         <span class="answer-label">Đáp án ${answerCount + 1}:</span>
         <input type="text" name="flowAnswer" required>
         <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
       `
-      flowAnswersList.appendChild(newFlowAnswer)
+      flowAnswersList.appendChild(newAnswerRow)
+
+      // Initialize remove button for the new answer
+      const removeButton = newAnswerRow.querySelector(".remove-flow-answer-btn")
+      removeButton.addEventListener("click", () => {
+        newAnswerRow.remove()
+      })
     })
+
+    // Function to update flow answers
+    function updateFlowAnswers() {
+      flowAnswersList.innerHTML = ""
+      const itemCount = flowItemsList.children.length
+
+      for (let i = 0; i < itemCount; i++) {
+        const answerRow = document.createElement("div")
+        answerRow.className = "flow-answer-row"
+        answerRow.innerHTML = `
+          <span class="answer-label">Đáp án ${i + 1}:</span>
+          <input type="text" name="flowAnswer" required>
+        `
+        flowAnswersList.appendChild(answerRow)
+      }
+    }
+
+    // Initialize existing remove buttons for items
+    const removeItemBtns = questionDiv.querySelectorAll(".remove-flow-item-btn")
+    removeItemBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".flow-item-row").remove()
+        updateFlowAnswers()
+      })
+    })
+
+    // Initialize existing remove buttons for options
+    const removeOptionBtns = questionDiv.querySelectorAll(".remove-flow-option-btn")
+    removeOptionBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".flow-option-row").remove()
+      })
+    })
+
+    // Initialize existing remove buttons for answers
+    const removeAnswerBtns = questionDiv.querySelectorAll(".remove-flow-answer-btn")
+    removeAnswerBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        btn.closest(".flow-answer-row").remove()
+      })
+    })
+
+    // Initial update of flow answers
+    updateFlowAnswers()
   }
 
-  // Generic remove button handler
-  questionDiv.addEventListener("click", (event) => {
-    if (
-      event.target.classList.contains("remove-option-btn") ||
-      event.target.classList.contains("remove-item-btn") ||
-      event.target.classList.contains("remove-match-btn") ||
-      event.target.classList.contains("remove-label-btn") ||
-      event.target.classList.contains("remove-note-btn") ||
-      event.target.classList.contains("remove-answer-btn") ||
-      event.target.classList.contains("remove-flow-item-btn") ||
-      event.target.classList.contains("remove-flow-option-btn") ||
-      event.target.classList.contains("remove-flow-answer-btn")
-    ) {
-      event.target
-        .closest(
-          ".option-item, .item-row, .match-row, .label-row, .note-row, .answer-row, .flow-item-row, .flow-option-row, .flow-answer-row",
-        )
-        .remove()
-    }
-  })
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      // Implement save logic here
+      alert("Lưu câu hỏi Hoàn thành lưu đồ")
+    })
+  }
 }
 
