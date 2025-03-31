@@ -938,6 +938,59 @@ textarea[name="note"] {
   border: 1px solid #e0e9f7;
 }
 
+/* Thêm CSS cho tiêu đề tùy chỉnh trong form ghép nối */
+.section-title-container {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  background-color: #1a3a6e;
+  padding: 10px 15px;
+  border-radius: 8px;
+  color: white;
+}
+
+.section-title-input {
+  flex: 1;
+  background-color: transparent;
+  border: none;
+  color: white;
+  font-weight: 600;
+  font-size: 16px;
+  padding: 5px 0;
+  margin: 0;
+}
+
+.section-title-input:focus {
+  outline: none;
+  border-bottom: 1px solid white;
+  box-shadow: none;
+}
+
+.section-title-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.section-icon {
+  margin-left: 10px;
+  font-size: 18px;
+}
+
+/* Cập nhật CSS cho matching-items và matching-matches */
+.matching-items,
+.matching-matches {
+  flex: 1;
+  background-color: #f0f7ff;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #e0e9f7;
+}
+
+.matching-items h4,
+.matching-matches h4 {
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
 .matching-answers {
   background-color: #f0f7ff;
   padding: 20px;
@@ -982,6 +1035,12 @@ textarea[name="note"] {
 }
 
 .answer-row:hover {
+  background-color: #f8fafd;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.item-row input,
+.match-row input {
   background-color: #f8fafd;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }

@@ -387,55 +387,61 @@ document.addEventListener("DOMContentLoaded", () => {
         break
       case "Ghép nối":
         formHTML = `
-    <div class="matching-form">
-      <div class="form-group">
-        <label for="title">Tiêu đề bài ghép nối:</label>
-        <input type="text" id="title" name="title" required placeholder="Ví dụ: Ghép nối người với công việc">
+<div class="matching-form">
+  <div class="form-group">
+    <label for="title">Tiêu đề bài ghép nối:</label>
+    <input type="text" id="title" name="title" required placeholder="Ví dụ: Ghép nối người với công việc">
+  </div>
+  
+  <div class="matching-container">
+    <div class="matching-items">
+      <div class="section-title-container">
+        <input type="text" class="section-title-input" id="itemsTitle" name="itemsTitle" value="Danh sách câu hỏi" placeholder="Đặt tên cho danh sách câu hỏi">
+        <i class="fas fa-question section-icon"></i>
       </div>
-      
-      <div class="matching-container">
-        <div class="matching-items">
-          <h4><i class="fas fa-question"></i> Danh sách câu hỏi</h4>
-          <div id="items-list">
-            <div class="item-row">
-              <input type="text" name="item" required placeholder="Câu hỏi 1">
-              <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="item-row">
-              <input type="text" name="item" required placeholder="Câu hỏi 2">
-              <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <button type="button" class="add-item-btn"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
+      <div id="items-list">
+        <div class="item-row">
+          <input type="text" name="item" required placeholder="Câu hỏi 1">
+          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
         </div>
-        
-        <div class="matching-matches">
-          <h4><i class="fas fa-link"></i> Danh sách từ khóa nối</h4>
-          <div id="matches-list">
-            <div class="match-row">
-              <input type="text" name="match" required placeholder="Từ khóa nối 1">
-              <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="match-row">
-              <input type="text" name="match" required placeholder="Từ khóa nối 2">
-              <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <button type="button" class="add-match-btn"><i class="fas fa-plus"></i> Thêm từ khóa nối</button>
+        <div class="item-row">
+          <input type="text" name="item" required placeholder="Câu hỏi 2">
+          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
         </div>
       </div>
-      
-      <div class="matching-answers">
-        <h4><i class="fas fa-exchange-alt"></i> Thiết lập ghép nối</h4>
-        <p class="matching-help">Chọn từ khóa nối tương ứng với mỗi câu hỏi:</p>
-        <div id="matching-answers-list">
-          <!-- Sẽ được điền động bằng JavaScript -->
-        </div>
-      </div>
-      
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+      <button type="button" class="add-item-btn"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
     </div>
-  `
+    
+    <div class="matching-matches">
+      <div class="section-title-container">
+        <input type="text" class="section-title-input" id="matchesTitle" name="matchesTitle" value="Danh sách từ khóa nối" placeholder="Đặt tên cho danh sách từ khóa">
+        <i class="fas fa-link section-icon"></i>
+      </div>
+      <div id="matches-list">
+        <div class="match-row">
+          <input type="text" name="match" required placeholder="Từ khóa nối 1">
+          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="match-row">
+          <input type="text" name="match" required placeholder="Từ khóa nối 2">
+          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <button type="button" class="add-match-btn"><i class="fas fa-plus"></i> Thêm từ khóa nối</button>
+    </div>
+  </div>
+  
+  <div class="matching-answers">
+    <h4><i class="fas fa-exchange-alt"></i> Thiết lập ghép nối</h4>
+    <p class="matching-help">Chọn từ khóa nối tương ứng với mỗi câu hỏi:</p>
+    <div id="matching-answers-list">
+      <!-- Sẽ được điền động bằng JavaScript -->
+    </div>
+  </div>
+  
+  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+</div>
+`
         break
       case "Ghi nhãn Bản đồ/Sơ đồ":
         formHTML = `
@@ -1024,6 +1030,8 @@ function initializeMatchingForm(questionDiv) {
   const itemsList = questionDiv.querySelector("#items-list")
   const matchesList = questionDiv.querySelector("#matches-list")
   const matchingAnswersList = questionDiv.querySelector("#matching-answers-list")
+  const itemsTitle = questionDiv.querySelector("#itemsTitle")
+  const matchesTitle = questionDiv.querySelector("#matchesTitle")
 
   if (addItemBtn && itemsList && matchesList && matchingAnswersList) {
     addItemBtn.addEventListener("click", () => {
@@ -1059,14 +1067,28 @@ function initializeMatchingForm(questionDiv) {
       const removeButton = newMatchRow.querySelector(".remove-match-btn")
       removeButton.addEventListener("click", () => {
         newMatchRow.remove()
+        updateMatchingAnswers()
       })
+
+      // Cập nhật danh sách từ khóa nối
+      updateMatchingAnswers()
     })
+
+    // Thêm sự kiện lắng nghe cho thay đổi tiêu đề
+    if (itemsTitle) {
+      itemsTitle.addEventListener("input", updateMatchingAnswers)
+    }
+
+    if (matchesTitle) {
+      matchesTitle.addEventListener("input", updateMatchingAnswers)
+    }
 
     // Hàm cập nhật đáp án ghép nối
     function updateMatchingAnswers() {
       matchingAnswersList.innerHTML = ""
       const itemCount = itemsList.children.length
       const matchOptions = Array.from(matchesList.querySelectorAll('input[name="match"]')).map((input) => input.value)
+      const currentItemsTitle = itemsTitle ? itemsTitle.value || "Danh sách câu hỏi" : "Danh sách câu hỏi"
 
       for (let i = 0; i < itemCount; i++) {
         const answerRow = document.createElement("div")
@@ -1091,9 +1113,9 @@ function initializeMatchingForm(questionDiv) {
         previewBtn.addEventListener("click", () => {
           const selectedMatch = answerRow.querySelector("select").value
           if (selectedMatch) {
-            showNotification(`Ghép nối: "${itemText}" → "${selectedMatch}"`, "info")
+            window.showNotification(`Ghép nối: "${itemText}" → "${selectedMatch}"`, "info")
           } else {
-            showNotification("Vui lòng chọn từ khóa nối trước", "warning")
+            window.showNotification("Vui lòng chọn từ khóa nối trước", "warning")
           }
         })
       }
@@ -1142,6 +1164,8 @@ function saveMatchingQuestion(questionDiv) {
   try {
     // Lấy dữ liệu từ form
     const title = questionDiv.querySelector("#title").value
+    const itemsTitle = questionDiv.querySelector("#itemsTitle").value || "Danh sách câu hỏi"
+    const matchesTitle = questionDiv.querySelector("#matchesTitle").value || "Danh sách từ khóa nối"
     const items = Array.from(questionDiv.querySelectorAll('input[name="item"]')).map((input) => input.value)
     const matches = Array.from(questionDiv.querySelectorAll('input[name="match"]')).map((input) => input.value)
     const answers = Array.from(questionDiv.querySelectorAll('select[name="matchingAnswer"]')).map(
@@ -1162,7 +1186,7 @@ function saveMatchingQuestion(questionDiv) {
     // Tạo đối tượng câu hỏi
     const questionData = {
       type: "Ghép nối",
-      content: [title, ...items, ...matches],
+      content: [title, itemsTitle, matchesTitle, ...items, ...matches],
       correctAnswers: answers,
     }
 
