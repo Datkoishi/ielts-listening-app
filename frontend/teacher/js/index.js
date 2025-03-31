@@ -1,69 +1,69 @@
-// Add this at the beginning of the file to ensure it's executed early
-// Make sure form-handlers.js is loaded before other scripts
+// Thêm đoạn này vào đầu tệp để đảm bảo nó được thực thi sớm
+// Đảm bảo form-handlers.js được tải trước các script khác
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM content loaded, checking if form-handlers.js is loaded")
+  console.log("DOM đã được tải, kiểm tra xem form-handlers.js đã được tải chưa")
 
-  // Check if form creation functions are available
+  // Kiểm tra xem các hàm tạo form có sẵn không
   if (typeof window.createOneAnswerForm !== "function") {
-    console.warn("Form creation functions not found. Loading form-handlers.js dynamically")
+    console.warn("Không tìm thấy các hàm tạo form. Đang tải form-handlers.js động")
 
-    // Create a script element to load form-handlers.js
+    // Tạo phần tử script để tải form-handlers.js
     const script = document.createElement("script")
     script.src = "js/form-handlers.js"
     script.onload = () => {
-      console.log("form-handlers.js loaded dynamically")
-      // Re-initialize any necessary components
+      console.log("form-handlers.js đã được tải động")
+      // Khởi tạo lại các thành phần cần thiết
       if (typeof window.renderTestCreation === "function") {
         window.renderTestCreation()
       }
     }
     script.onerror = () => {
-      console.error("Failed to load form-handlers.js")
+      console.error("Không thể tải form-handlers.js")
     }
 
     document.head.appendChild(script)
   }
 
-  // Add global event listener for delete buttons using event delegation
+  // Thêm trình lắng nghe sự kiện toàn cục cho các nút xóa bằng cách sử dụng ủy quyền sự kiện
   document.body.addEventListener("click", (event) => {
     const target = event.target
 
-    // Check if the clicked element is a delete button or its icon
+    // Kiểm tra xem phần tử được nhấp có phải là nút xóa hoặc biểu tượng của nó không
     if (
       target.classList.contains("delete-question") ||
       (target.tagName === "I" && target.parentElement.classList.contains("delete-question"))
     ) {
-      // Get the actual button (might be the icon's parent)
+      // Lấy nút thực tế (có thể là phần tử cha của biểu tượng)
       const deleteButton = target.classList.contains("delete-question") ? target : target.parentElement
 
-      // Find the question container
+      // Tìm container câu hỏi
       const questionDiv = deleteButton.closest(".question")
       if (!questionDiv) {
-        console.error("Could not find parent question div")
+        console.error("Không thể tìm thấy div câu hỏi cha")
         return
       }
 
-      // Find the part container
+      // Tìm container phần
       const partDiv = questionDiv.closest(".part")
       if (!partDiv) {
-        console.error("Could not find parent part div")
+        console.error("Không thể tìm thấy div phần cha")
         return
       }
 
-      // Get the part number from the part div's id
+      // Lấy số phần từ id của div phần
       const partId = partDiv.id
       const partNumber = Number.parseInt(partId.replace("part", ""))
 
-      // Get the index of the question within its part
+      // Lấy chỉ mục của câu hỏi trong phần của nó
       const questions = Array.from(partDiv.querySelectorAll(".question"))
       const questionIndex = questions.indexOf(questionDiv)
 
-      console.log(`Deleting question at index ${questionIndex} in part ${partNumber}`)
+      console.log(`Đang xóa câu hỏi tại chỉ mục ${questionIndex} trong phần ${partNumber}`)
 
-      // Confirm deletion
+      // Xác nhận xóa
       if (confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
         try {
-          // Remove the question from the test object
+          // Xóa câu hỏi khỏi đối tượng test
           if (
             window.test &&
             window.test[`part${partNumber}`] &&
@@ -72,22 +72,22 @@ document.addEventListener("DOMContentLoaded", () => {
           ) {
             window.test[`part${partNumber}`].splice(questionIndex, 1)
 
-            // Remove the question from the DOM
+            // Xóa câu hỏi khỏi DOM
             questionDiv.remove()
 
-            // Update the UI
+            // Cập nhật UI
             if (typeof window.updateQuestionCount === "function") {
               window.updateQuestionCount()
             }
 
-            // Re-render the questions if needed
+            // Hiển thị lại câu hỏi nếu cần
             if (typeof window.renderQuestionsForCurrentPart === "function") {
               window.renderQuestionsForCurrentPart()
             }
 
             alert("Đã xóa câu hỏi thành công")
           } else {
-            console.error("Invalid question index or test structure", {
+            console.error("Chỉ mục câu hỏi không hợp lệ hoặc cấu trúc test không đúng", {
               test: window.test,
               partKey: `part${partNumber}`,
               questionIndex: questionIndex,
@@ -95,7 +95,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Không thể xóa câu hỏi. Dữ liệu không hợp lệ.")
           }
         } catch (error) {
-          console.error("Error deleting question:", error)
+          console.error("Lỗi khi xóa câu hỏi:", error)
           alert("Lỗi khi xóa câu hỏi: " + error.message)
         }
       }
@@ -103,116 +103,116 @@ document.addEventListener("DOMContentLoaded", () => {
   })
 })
 
-// Ensure all necessary functions are defined in the global scope
+// Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("DOM content loaded")
+  console.log("DOM đã được tải")
 
-  // Define global functions first
-  // renderTestCreation function
+  // Định nghĩa các hàm toàn cục trước
+  // Hàm renderTestCreation
   // Sửa hàm renderTestCreation để đảm bảo các phần tử part được tạo ra đúng cách
   window.renderTestCreation = () => {
-    console.log("Rendering test creation form from index.js")
+    console.log("Đang hiển thị form tạo bài kiểm tra từ index.js")
     const testContent = document.getElementById("testContent")
     if (!testContent) {
-      console.error("testContent element not found!")
+      console.error("Không tìm thấy phần tử testContent!")
       return
     }
 
     // Tạo HTML cho phần metadata và các nút điều hướng
     testContent.innerHTML = `
-  <div class="test-card">
-    <div class="test-header">
-      <span class="test-icon"><i class="fas fa-pencil-alt"></i></span>
-      <span>IELTS Listening Test</span>
-    </div>
-    
-    <div class="part-header">
-      <span class="part-icon"><i class="fas fa-list"></i></span>
-      <span>Phần ${window.currentPart}</span>
-    </div>
-    
-    <div class="question-types-container">
-      ${(window.selectedTypes || [])
-        .map((type) => {
-          let icon = ""
-          switch (type) {
-            case "Một đáp án":
-              icon = "fa-check-circle"
-              break
-            case "Nhiều đáp án":
-              icon = "fa-check-double"
-              break
-            case "Ghép nối":
-              icon = "fa-link"
-              break
-            case "Ghi nhãn Bản đồ/Sơ đồ":
-              icon = "fa-map-marker-alt"
-              break
-            case "Hoàn thành ghi chú":
-              icon = "fa-sticky-note"
-              break
-            case "Hoàn thành bảng/biểu mẫu":
-              icon = "fa-table"
-              break
-            case "Hoàn thành lưu đồ":
-              icon = "fa-project-diagram"
-              break
-            default:
-              icon = "fa-question"
-              break
-          }
-
-          return `
-          <div class="question-type-item">
-            <div class="question-type-label">
-              <span class="question-type-icon"><i class="fas ${icon}"></i></span>
-              <span>${type}</span>
-            </div>
-            <button class="add-question-btn" onclick="addQuestion('${type}')">
-              <i class="fas fa-plus"></i> Thêm câu hỏi ${type.toLowerCase()}
-            </button>
-          </div>
-        `
-        })
-        .join("")}
-    </div>
-    
-    <div class="navigation-buttons">
-      <button class="nav-btn prev-btn" onclick="previousPart()">
-        <i class="fas fa-arrow-left"></i> Phần trước
-      </button>
-      <button class="nav-btn next-btn" onclick="nextPart()">
-        Phần tiếp theo <i class="fas fa-arrow-right"></i>
-      </button>
-    </div>
-    
-    <div class="save-button-container">
-      <button class="save-btn" onclick="saveTest()">
-        <i class="fas fa-save"></i> Lưu bài kiểm tra
-      </button>
-    </div>
+<div class="test-card">
+  <div class="test-header">
+    <span class="test-icon"><i class="fas fa-pencil-alt"></i></span>
+    <span>Bài kiểm tra IELTS Listening</span>
   </div>
   
-  <!-- Tạo các container cho từng phần -->
-  <div id="part1" class="part" style="display: ${window.currentPart === 1 ? "block" : "none"}"></div>
-  <div id="part2" class="part" style="display: ${window.currentPart === 2 ? "block" : "none"}"></div>
-  <div id="part3" class="part" style="display: ${window.currentPart === 3 ? "block" : "none"}"></div>
-  <div id="part4" class="part" style="display: ${window.currentPart === 4 ? "block" : "none"}"></div>
-  `
+  <div class="part-header">
+    <span class="part-icon"><i class="fas fa-list"></i></span>
+    <span>Phần ${window.currentPart}</span>
+  </div>
+  
+  <div class="question-types-container">
+    ${(window.selectedTypes || [])
+      .map((type) => {
+        let icon = ""
+        switch (type) {
+          case "Một đáp án":
+            icon = "fa-check-circle"
+            break
+          case "Nhiều đáp án":
+            icon = "fa-check-double"
+            break
+          case "Ghép nối":
+            icon = "fa-link"
+            break
+          case "Ghi nhãn Bản đồ/Sơ đồ":
+            icon = "fa-map-marker-alt"
+            break
+          case "Hoàn thành ghi chú":
+            icon = "fa-sticky-note"
+            break
+          case "Hoàn thành bảng/biểu mẫu":
+            icon = "fa-table"
+            break
+          case "Hoàn thành lưu đồ":
+            icon = "fa-project-diagram"
+            break
+          default:
+            icon = "fa-question"
+            break
+        }
 
-    // Display questions in the current part if any
+        return `
+        <div class="question-type-item">
+          <div class="question-type-label">
+            <span class="question-type-icon"><i class="fas ${icon}"></i></span>
+            <span>${type}</span>
+          </div>
+          <button class="add-question-btn" onclick="addQuestion('${type}')">
+            <i class="fas fa-plus"></i> Thêm câu hỏi ${type.toLowerCase()}
+          </button>
+        </div>
+      `
+      })
+      .join("")}
+  </div>
+  
+  <div class="navigation-buttons">
+    <button class="nav-btn prev-btn" onclick="previousPart()">
+      <i class="fas fa-arrow-left"></i> Phần trước
+    </button>
+    <button class="nav-btn next-btn" onclick="nextPart()">
+      Phần tiếp theo <i class="fas fa-arrow-right"></i>
+    </button>
+  </div>
+  
+  <div class="save-button-container">
+    <button class="save-btn" onclick="saveTest()">
+      <i class="fas fa-save"></i> Lưu bài kiểm tra
+    </button>
+  </div>
+</div>
+
+<!-- Tạo các container cho từng phần -->
+<div id="part1" class="part" style="display: ${window.currentPart === 1 ? "block" : "none"}"></div>
+<div id="part2" class="part" style="display: ${window.currentPart === 2 ? "block" : "none"}"></div>
+<div id="part3" class="part" style="display: ${window.currentPart === 3 ? "block" : "none"}"></div>
+<div id="part4" class="part" style="display: ${window.currentPart === 4 ? "block" : "none"}"></div>
+`
+
+    // Hiển thị câu hỏi trong phần hiện tại nếu có
     if (typeof window.renderQuestionsForCurrentPart === "function") {
       window.renderQuestionsForCurrentPart()
     } else {
-      console.warn("renderQuestionsForCurrentPart function not found")
+      console.warn("Không tìm thấy hàm renderQuestionsForCurrentPart")
     }
   }
 
-  // Define startTestCreation function in global scope
+  // Định nghĩa hàm startTestCreation trong phạm vi toàn cục
   window.startTestCreation = () => {
-    console.log("Start test creation function called")
+    console.log("Đã gọi hàm bắt đầu tạo bài kiểm tra")
 
-    // Get selected question types
+    // Lấy các loại câu hỏi đã chọn
     const selectedTypes = Array.from(document.querySelectorAll('input[type="checkbox"]:checked')).map((cb) => cb.value)
 
     if (selectedTypes.length === 0) {
@@ -220,16 +220,16 @@ document.addEventListener("DOMContentLoaded", () => {
       return
     }
 
-    console.log("Selected types:", selectedTypes)
+    console.log("Các loại đã chọn:", selectedTypes)
 
-    // Store selected types in window object for later use
+    // Lưu các loại đã chọn trong đối tượng window để sử dụng sau
     window.selectedTypes = selectedTypes
 
-    // Hide selection page and show test creation page
+    // Ẩn trang chọn và hiển thị trang tạo bài kiểm tra
     document.getElementById("selectionPage").classList.add("hidden")
     document.getElementById("testCreationPage").classList.remove("hidden")
 
-    // Initialize test object
+    // Khởi tạo đối tượng test
     window.test = {
       title: "Bài kiểm tra IELTS Listening mới",
       description: "Mô tả bài kiểm tra",
@@ -239,26 +239,26 @@ document.addEventListener("DOMContentLoaded", () => {
       part4: [],
     }
 
-    // Set current part to 1
+    // Đặt phần hiện tại là 1
     window.currentPart = 1
 
-    // Call renderTestCreation
+    // Gọi renderTestCreation
     window.renderTestCreation()
 
-    // Automatically create first question of selected type
+    // Tự động tạo câu hỏi đầu tiên của loại đã chọn
     // if (selectedTypes.length > 0 && typeof window.addQuestionDirectly === "function") {
-    //   console.log("Creating first question of type:", selectedTypes[0])
+    //   console.log("Đang tạo câu hỏi đầu tiên loại:", selectedTypes[0])
     //   window.addQuestionDirectly(selectedTypes[0])
     // }
-    console.log("Test creation started. Click 'Add Question' to create your first question.")
+    console.log("Đã bắt đầu tạo bài kiểm tra. Nhấp 'Thêm câu hỏi' để tạo câu hỏi đầu tiên của bạn.")
   }
 
-  // Define other necessary functions
+  // Định nghĩa các hàm cần thiết khác
   window.previousPart = () => {
-    console.log("previousPart called, current part:", window.currentPart)
+    console.log("Đã gọi previousPart, phần hiện tại:", window.currentPart)
     if (window.currentPart > 1) {
       window.currentPart--
-      console.log("Moving to previous part:", window.currentPart)
+      console.log("Chuyển đến phần trước:", window.currentPart)
       window.renderTestCreation()
     } else {
       if (typeof window.showNotification === "function") {
@@ -270,10 +270,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.nextPart = () => {
-    console.log("nextPart called, current part:", window.currentPart)
+    console.log("Đã gọi nextPart, phần hiện tại:", window.currentPart)
     if (window.currentPart < 4) {
       window.currentPart++
-      console.log("Moving to next part:", window.currentPart)
+      console.log("Chuyển đến phần tiếp theo:", window.currentPart)
       window.renderTestCreation()
     } else {
       if (typeof window.showNotification === "function") {
@@ -284,330 +284,342 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Replace the simple implementation of addQuestionDirectly with this improved version
+  // Thay thế triển khai đơn giản của addQuestionDirectly bằng phiên bản cải tiến này
   window.addQuestionDirectly = (questionType) => {
-    console.log("Adding question of type:", questionType)
+    console.log("Đang thêm câu hỏi loại:", questionType)
 
-    // Ensure currentPart is defined
+    // Đảm bảo currentPart được định nghĩa
     if (typeof window.currentPart === "undefined") {
       window.currentPart = 1
-      console.log("Setting default currentPart to 1")
+      console.log("Đặt currentPart mặc định là 1")
     }
 
-    // Get the part element
+    // Lấy phần tử part
     const partId = `part${window.currentPart}`
     let partElement = document.getElementById(partId)
 
-    // If part element doesn't exist, create it
+    // Nếu phần tử part không tồn tại, tạo nó
     if (!partElement) {
-      console.warn(`Element for ${partId} not found, creating it`)
+      console.warn(`Không tìm thấy phần tử cho ${partId}, đang tạo mới`)
       partElement = document.createElement("div")
       partElement.id = partId
       partElement.className = "part"
       partElement.style.display = "block"
 
-      // Add to testContent
+      // Thêm vào testContent
       const testContent = document.getElementById("testContent")
       if (testContent) {
         testContent.appendChild(partElement)
       } else {
-        console.error("testContent element not found, cannot add part container")
+        console.error("Không tìm thấy phần tử testContent, không thể thêm container part")
         return
       }
     }
 
-    // Create a new question div
+    // Tạo div câu hỏi mới
     const questionDiv = document.createElement("div")
     questionDiv.className = "question"
 
-    // Add question number and delete button
+    // Thêm số câu hỏi và nút xóa
     const questionNumber = (window.test[`part${window.currentPart}`] || []).length + 1
 
-    // Create the question content
+    // Tạo nội dung câu hỏi
     questionDiv.innerHTML = `
-  <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-  <h3>${getIconForType(questionType)} ${questionType}</h3>
-  <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
+<h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+<h3>${getIconForType(questionType)} ${questionType}</h3>
+<button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
 `
 
-    // Add the appropriate form based on type
+    // Thêm form phù hợp dựa trên loại
     let formHTML = ""
 
-    // Use a more direct approach to create forms with dynamic options
+    // Sử dụng cách tiếp cận trực tiếp hơn để tạo form với các tùy chọn động
     switch (questionType) {
       case "Một đáp án":
         formHTML = `
-      <div class="one-answer-form">
-        <label for="question">Câu hỏi:</label>
-        <input type="text" id="question" name="question" required>
-        <div class="options-container">
-          <label>Lựa chọn:</label>
-          <div id="options-list">
-            <div class="option-item">
-              <input type="text" name="option" required placeholder="Lựa chọn 1">
-              <input type="radio" name="correctAnswer" value="0" checked>
-              <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="option-item">
-              <input type="text" name="option" required placeholder="Lựa chọn 2">
-              <input type="radio" name="correctAnswer" value="1">
-              <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-            </div>
+    <div class="one-answer-form">
+      <label for="question">Câu hỏi:</label>
+      <input type="text" id="question" name="question" required>
+      <div class="options-container">
+        <label>Lựa chọn:</label>
+        <div id="options-list">
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 1">
+            <input type="radio" name="correctAnswer" value="0" checked>
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
           </div>
-          <button type="button" class="add-option-btn">Thêm lựa chọn</button>
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 2">
+            <input type="radio" name="correctAnswer" value="1">
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+          </div>
         </div>
-        <button type="button" class="save-question-btn">Lưu câu h��i</button>
+        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
       </div>
-    `
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       case "Nhiều đáp án":
         formHTML = `
-      <div class="multiple-answer-form">
-        <label for="question">Câu hỏi:</label>
-        <input type="text" id="question" name="question" required>
-        <div class="options-container">
-          <label>Lựa chọn:</label>
-          <div id="options-list">
-            <div class="option-item">
-              <input type="text" name="option" required placeholder="Lựa chọn 1">
-              <input type="checkbox" name="correctAnswer" value="0">
-              <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="option-item">
-              <input type="text" name="option" required placeholder="Lựa chọn 2">
-              <input type="checkbox" name="correctAnswer" value="1">
-              <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-            </div>
+    <div class="multiple-answer-form">
+      <label for="question">Câu hỏi:</label>
+      <input type="text" id="question" name="question" required>
+      <div class="options-container">
+        <label>Lựa chọn:</label>
+        <div id="options-list">
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 1">
+            <input type="checkbox" name="correctAnswer" value="0">
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
           </div>
-          <button type="button" class="add-option-btn">Thêm lựa chọn</button>
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 2">
+            <input type="checkbox" name="correctAnswer" value="1">
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+          </div>
         </div>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
+        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
       </div>
-    `
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       case "Ghép nối":
         formHTML = `
-      <div class="matching-form">
-        <label for="title">Tiêu đề:</label>
-        <input type="text" id="title" name="title" required>
-        <div class="matching-container">
-          <div class="matching-items">
-            <label>Mục:</label>
-            <div id="items-list">
-              <div class="item-row">
-                <input type="text" name="item" required placeholder="Mục 1">
-                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-              </div>
-            </div>
-            <button type="button" class="add-item-btn">Thêm mục</button>
-          </div>
-          <div class="matching-matches">
-            <label>Ghép nối:</label>
-            <div id="matches-list">
-              <div class="match-row">
-                <input type="text" name="match" required placeholder="Ghép nối 1">
-                <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-              </div>
-            </div>
-            <button type="button" class="add-match-btn">Thêm ghép nối</button>
-          </div>
-        </div>
-        <div class="matching-answers">
-          <label>Đáp án đúng (theo thứ tự mục):</label>
-          <div id="matching-answers-list">
-            <div class="answer-row">
-              <span class="item-label">Mục 1:</span>
-              <input type="text" name="matchingAnswer" required>
-            </div>
-          </div>
-        </div>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
+    <div class="matching-form">
+      <div class="form-group">
+        <label for="title">Tiêu đề bài ghép nối:</label>
+        <input type="text" id="title" name="title" required placeholder="Ví dụ: Ghép nối người với công việc">
       </div>
-    `
+      
+      <div class="matching-container">
+        <div class="matching-items">
+          <h4><i class="fas fa-question"></i> Danh sách câu hỏi</h4>
+          <div id="items-list">
+            <div class="item-row">
+              <input type="text" name="item" required placeholder="Câu hỏi 1">
+              <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="item-row">
+              <input type="text" name="item" required placeholder="Câu hỏi 2">
+              <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <button type="button" class="add-item-btn"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
+        </div>
+        
+        <div class="matching-matches">
+          <h4><i class="fas fa-link"></i> Danh sách từ khóa nối</h4>
+          <div id="matches-list">
+            <div class="match-row">
+              <input type="text" name="match" required placeholder="Từ khóa nối 1">
+              <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="match-row">
+              <input type="text" name="match" required placeholder="Từ khóa nối 2">
+              <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+          <button type="button" class="add-match-btn"><i class="fas fa-plus"></i> Thêm từ khóa nối</button>
+        </div>
+      </div>
+      
+      <div class="matching-answers">
+        <h4><i class="fas fa-exchange-alt"></i> Thiết lập ghép nối</h4>
+        <p class="matching-help">Chọn từ khóa nối tương ứng với mỗi câu hỏi:</p>
+        <div id="matching-answers-list">
+          <!-- Sẽ được điền động bằng JavaScript -->
+        </div>
+      </div>
+      
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       case "Ghi nhãn Bản đồ/Sơ đồ":
         formHTML = `
-      <div class="plan-map-diagram-form">
-        <label for="type">Loại:</label>
-        <select id="type" name="type" required>
-          <option value="map">Ghi nhãn Bản đồ</option>
-          <option value="ship">Sơ đồ Tàu</option>
-          <option value="technical">Sơ đồ Kỹ thuật</option>
-        </select>
-        <label for="instructions">Hướng dẫn:</label>
-        <input type="text" id="instructions" name="instructions" required>
-        <label for="image">Hình ảnh:</label>
-        <input type="file" id="image" name="image" accept="image/*" required>
-        <div id="labels-container">
-          <div class="label-row">
-            <label for="label1">Nhãn 1:</label>
-            <input type="text" id="label1" name="label" required>
-            <label for="answer1">Đáp án 1:</label>
-            <input type="text" id="answer1" name="answer" required>
-            <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-          </div>
+    <div class="plan-map-diagram-form">
+      <label for="type">Loại:</label>
+      <select id="type" name="type" required>
+        <option value="map">Ghi nhãn Bản đồ</option>
+        <option value="ship">Sơ đồ Tàu</option>
+        <option value="technical">Sơ đồ Kỹ thuật</option>
+      </select>
+      <label for="instructions">Hướng dẫn:</label>
+      <input type="text" id="instructions" name="instructions" required>
+      <label for="image">Hình ảnh:</label>
+      <input type="file" id="image" name="image" accept="image/*" required>
+      <div id="labels-container">
+        <div class="label-row">
+          <label for="label1">Nhãn 1:</label>
+          <input type="text" id="label1" name="label" required>
+          <label for="answer1">Đáp án 1:</label>
+          <input type="text" id="answer1" name="answer" required>
+          <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
         </div>
-        <button type="button" class="add-label-btn">Thêm nhãn</button>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
       </div>
-    `
+      <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       case "Hoàn thành ghi chú":
         formHTML = `
-      <div class="note-completion-form">
-        <label for="instructions">Hướng dẫn:</label>
-        <input type="text" id="instructions" name="instructions" value="Hoàn thành ghi chú. Viết MỘT TỪ VÀ/HOẶC MỘT SỐ vào mỗi khoảng trống." required>
-        <label for="topic">Chủ đề:</label>
-        <input type="text" id="topic" name="topic" required>
-        <div id="notes-container">
-          <div class="note-row">
-            <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-            <textarea name="note" required></textarea>
-            <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
-          </div>
+    <div class="note-completion-form">
+      <label for="instructions">Hướng dẫn:</label>
+      <input type="text" id="instructions" name="instructions" value="Hoàn thành ghi chú. Viết MỘT TỪ VÀ/HOẶC MỘT SỐ vào mỗi khoảng trống." required>
+      <label for="topic">Chủ đề:</label>
+      <input type="text" id="topic" name="topic" required>
+      <div id="notes-container">
+        <div class="note-row">
+          <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+          <textarea name="note" required></textarea>
+          <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
         </div>
-        <button type="button" class="add-note-btn">Thêm ghi chú</button>
-        <div id="answers-container">
-          <label>Đáp án đúng (theo thứ tự [ANSWER]):</label>
-          <div id="note-answers-list">
-            <div class="answer-row">
-              <span class="answer-label">Đáp án 1:</span>
-              <input type="text" name="noteAnswer" required>
-              <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <button type="button" class="add-answer-btn">Thêm đáp án</button>
-        </div>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
       </div>
-    `
+      <button type="button" class="add-note-btn"><i class="fas fa-plus"></i> Thêm ghi chú</button>
+      <div id="answers-container">
+        <label>Đáp án đúng (theo thứ tự [ANSWER]):</label>
+        <div id="note-answers-list">
+          <div class="answer-row">
+            <span class="answer-label">Đáp án 1:</span>
+            <input type="text" name="noteAnswer" required>
+            <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <button type="button" class="add-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
+      </div>
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       case "Hoàn thành bảng/biểu mẫu":
         formHTML = `
-      <div class="form-table-completion-form">
-        <label for="instructions">Hướng dẫn:</label>
-        <input type="text" id="instructions" name="instructions" value="Hoàn thành bảng. Viết KHÔNG QUÁ MỘT TỪ VÀ/HOẶC MỘT SỐ cho mỗi khoảng trống." required>
-        <table id="formTable">
-          <thead>
-            <tr>
-              <th>Cột 1</th>
-              <th>Cột 2</th>
-              <th>Cột 3</th>
-              <th>Đáp án</th>
-              <th>Thao tác</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><input type="text" name="cell" required></td>
-              <td><input type="text" name="cell" required></td>
-              <td><input type="text" name="cell" required></td>
-              <td><input type="text" name="tableAnswer" required></td>
-              <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
-            </tr>
-          </tbody>
-        </table>
-        <button type="button" class="add-row-btn">Thêm hàng</button>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
-      </div>
-    `
+    <div class="form-table-completion-form">
+      <label for="instructions">Hướng dẫn:</label>
+      <input type="text" id="instructions" name="instructions" value="Hoàn thành bảng. Viết KHÔNG QUÁ MỘT TỪ VÀ/HOẶC MỘT SỐ cho mỗi khoảng trống." required>
+      <table id="formTable">
+        <thead>
+          <tr>
+            <th>Cột 1</th>
+            <th>Cột 2</th>
+            <th>Cột 3</th>
+            <th>Đáp án</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><input type="text" name="cell" required></td>
+            <td><input type="text" name="cell" required></td>
+            <td><input type="text" name="cell" required></td>
+            <td><input type="text" name="tableAnswer" required></td>
+            <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
+          </tr>
+        </tbody>
+      </table>
+      <button type="button" class="add-row-btn"><i class="fas fa-plus"></i> Thêm hàng</button>
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       case "Hoàn thành lưu đồ":
         formHTML = `
-      <div class="flow-chart-completion-form">
-        <label for="title">Tiêu đề:</label>
-        <input type="text" id="title" name="title" required>
-        <label for="instructions">Hướng dẫn:</label>
-        <input type="text" id="instructions" name="instructions" required>
-        <div id="flow-items-container">
-          <label>Mục (sử dụng ___ cho chỗ trống):</label>
-          <div id="flow-items-list">
-            <div class="flow-item-row">
-              <input type="text" name="flowItem" required>
-              <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
-            </div>
+    <div class="flow-chart-completion-form">
+      <label for="title">Tiêu đề:</label>
+      <input type="text" id="title" name="title" required>
+      <label for="instructions">Hướng dẫn:</label>
+      <input type="text" id="instructions" name="instructions" required>
+      <div id="flow-items-container">
+        <label>Mục (sử dụng ___ cho chỗ trống):</label>
+        <div id="flow-items-list">
+          <div class="flow-item-row">
+            <input type="text" name="flowItem" required>
+            <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
           </div>
-          <button type="button" class="add-flow-item-btn">Thêm mục</button>
         </div>
-        <div id="flow-options-container">
-          <label>Lựa chọn:</label>
-          <div id="flow-options-list">
-            <div class="flow-option-row">
-              <input type="text" name="flowOption" required>
-              <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <button type="button" class="add-flow-option-btn">Thêm lựa chọn</button>
-        </div>
-        <div id="flow-answers-container">
-          <label>Đáp án đúng (theo thứ tự khoảng trống):</label>
-          <div id="flow-answers-list">
-            <div class="flow-answer-row">
-              <span class="answer-label">Đáp án 1:</span>
-              <input type="text" name="flowAnswer" required>
-              <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
-            </div>
-          </div>
-          <button type="button" class="add-flow-answer-btn">Thêm đáp án</button>
-        </div>
-        <button type="button" class="save-question-btn">Lưu câu hỏi</button>
+        <button type="button" class="add-flow-item-btn"><i class="fas fa-plus"></i> Thêm mục</button>
       </div>
-    `
+      <div id="flow-options-container">
+        <label>Lựa chọn:</label>
+        <div id="flow-options-list">
+          <div class="flow-option-row">
+            <input type="text" name="flowOption" required>
+            <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <button type="button" class="add-flow-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
+      </div>
+      <div id="flow-answers-container">
+        <label>Đáp án đúng (theo thứ tự khoảng trống):</label>
+        <div id="flow-answers-list">
+          <div class="flow-answer-row">
+            <span class="answer-label">Đáp án 1:</span>
+            <input type="text" name="flowAnswer" required>
+            <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <button type="button" class="add-flow-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
+      </div>
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
         break
       default:
         formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
     }
 
-    // Create form container and add form HTML
+    // Tạo container form và thêm HTML form
     const formContainer = document.createElement("div")
     formContainer.className = "question-form-container"
     formContainer.innerHTML = formHTML
     questionDiv.appendChild(formContainer)
 
-    // Make sure the part element is visible
+    // Đảm bảo phần tử part hiển thị
     partElement.style.display = "block"
 
-    // Append the question div to the part element
+    // Thêm div câu hỏi vào phần tử part
     partElement.appendChild(questionDiv)
 
-    // Make sure the question div is visible
+    // Đảm bảo div câu hỏi hiển thị
     questionDiv.style.display = "block"
 
-    // Create a basic question object and add it to the test
+    // Tạo đối tượng câu hỏi cơ bản và thêm vào test
     const newQuestion = {
       type: questionType,
       content: ["Câu hỏi mẫu"],
       correctAnswers: ["Đáp án mẫu"],
     }
 
-    // Add to the current part
+    // Thêm vào phần hiện tại
     if (!window.test[`part${window.currentPart}`]) {
       window.test[`part${window.currentPart}`] = []
     }
 
     window.test[`part${window.currentPart}`].push(newQuestion)
 
-    // Remove "no questions" message if it exists
+    // Xóa thông báo "không có câu hỏi" nếu tồn tại
     const noQuestionsMsg = partElement.querySelector(".no-questions")
     if (noQuestionsMsg) {
       noQuestionsMsg.remove()
     }
 
-    // Initialize event listeners for dynamic form elements
+    // Khởi tạo trình lắng nghe sự kiện cho các phần tử form động
     initializeDynamicFormElements(questionDiv, questionType)
 
-    console.log("Question added successfully:", questionType)
+    console.log("Đã thêm câu hỏi thành công:", questionType)
   }
 
-  // Add event listener for the start test button
+  // Thêm trình lắng nghe sự kiện cho nút bắt đầu kiểm tra
   const startTestBtn = document.getElementById("startTestBtn")
   if (startTestBtn) {
     startTestBtn.addEventListener("click", window.startTestCreation)
   } else {
-    console.error("Start test button not found")
+    console.error("Không tìm thấy nút bắt đầu kiểm tra")
   }
 
-  // Initialize other event listeners
+  // Khởi tạo các trình lắng nghe sự kiện khác
   const previousPartBtn = document.getElementById("previousPartBtn")
   if (previousPartBtn) {
     previousPartBtn.addEventListener("click", window.previousPart)
@@ -624,39 +636,39 @@ document.addEventListener("DOMContentLoaded", () => {
       if (typeof window.saveTest === "function") {
         window.saveTest()
       } else {
-        console.error("saveTest function not found in window object")
+        console.error("Không tìm thấy hàm saveTest trong đối tượng window")
         alert("Chức năng lưu bài kiểm tra chưa được cài đặt")
       }
     })
   }
 })
 
-// Global function to handle question creation
+// Hàm toàn cục để xử lý việc tạo câu hỏi
 window.addQuestion = (questionType) => {
-  console.log("Global addQuestion called with type:", questionType)
+  console.log("Đã gọi addQuestion toàn cục với loại:", questionType)
 
   if (typeof window.addQuestionDirectly === "function") {
     window.addQuestionDirectly(questionType)
   } else {
-    console.error("addQuestionDirectly function not found")
-    alert("Error: Cannot create question. Please refresh the page and try again.")
+    console.error("Không tìm thấy hàm addQuestionDirectly")
+    alert("Lỗi: Không thể tạo câu hỏi. Vui lòng làm mới trang và thử lại.")
   }
 }
 
-// Simple implementation of renderQuestionsForCurrentPart
+// Triển khai đơn giản của renderQuestionsForCurrentPart
 window.renderQuestionsForCurrentPart = () => {
-  console.log("Rendering questions for current part:", window.currentPart)
+  console.log("Đang hiển thị câu hỏi cho phần hiện tại:", window.currentPart)
 
   const partElement = document.getElementById(`part${window.currentPart}`)
   if (!partElement) {
-    console.error(`Element for part${window.currentPart} not found`)
+    console.error(`Không tìm thấy phần tử cho part${window.currentPart}`)
     return
   }
 
-  // Clear the part container
+  // Xóa nội dung container phần
   partElement.innerHTML = ""
 
-  // Get questions for current part
+  // Lấy câu hỏi cho phần hiện tại
   const questions = window.test[`part${window.currentPart}`] || []
 
   if (questions.length === 0) {
@@ -664,48 +676,99 @@ window.renderQuestionsForCurrentPart = () => {
     return
   }
 
-  // Render each question
+  // Hiển thị từng câu hỏi
   questions.forEach((question, index) => {
     const questionDiv = document.createElement("div")
     questionDiv.className = "question"
 
-    // Create question content
+    // Tạo nội dung câu hỏi
     questionDiv.innerHTML = `
-      <h4><i class="fas fa-question-circle"></i> Câu hỏi ${index + 1}</h4>
-      <h3><i class="fas fa-check-circle"></i> ${question.type}</h3>
-      <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
-      <div class="question-content">
-        <p><strong>Nội dung:</strong> ${question.content[0]}</p>
-        <p><strong>Đáp án:</strong> ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(", ") : question.correctAnswers}</p>
-      </div>
-    `
+    <h4><i class="fas fa-question-circle"></i> Câu hỏi ${index + 1}</h4>
+    <h3><i class="fas fa-check-circle"></i> ${question.type}</h3>
+    <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
+    <div class="question-content">
+      <p><strong>Nội dung:</strong> ${question.content[0]}</p>
+      <p><strong>Đáp án:</strong> ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(", ") : question.correctAnswers}</p>
+    </div>
+  `
 
     partElement.appendChild(questionDiv)
   })
 }
 
-// Simple implementation of deleteQuestion - this is now handled by the event delegation approach
+// Triển khai đơn giản của deleteQuestion - hiện được xử lý bởi cách tiếp cận ủy quyền sự kiện
 window.deleteQuestion = (index) => {
-  console.log("Legacy deleteQuestion called with index:", index)
-  // This function is kept for backward compatibility but the actual deletion
-  // is now handled by the event delegation approach
+  console.log("Đã gọi deleteQuestion cũ với chỉ mục:", index)
+  // Hàm này được giữ lại để tương thích ngược nhưng việc xóa thực tế
+  // được xử lý bởi cách tiếp cận ủy quyền sự kiện ở trên
 }
 
-// Simple implementation of showNotification
+// Triển khai đơn giản của showNotification
 window.showNotification = (message, type) => {
   console.log(`${type}: ${message}`)
-  alert(message)
+
+  // Tạo phần tử thông báo
+  let notification = document.querySelector(".notification")
+  if (!notification) {
+    notification = document.createElement("div")
+    notification.className = `notification notification-${type}`
+    document.body.appendChild(notification)
+  } else {
+    notification.className = `notification notification-${type}`
+  }
+
+  // Thiết lập nội dung và hiển thị
+  notification.innerHTML = message
+  notification.style.display = "block"
+
+  // Tự động ẩn sau 5 giây
+  setTimeout(() => {
+    notification.style.opacity = "0"
+    setTimeout(() => {
+      notification.style.display = "none"
+    }, 500)
+  }, 5000)
 }
 
-// Simple implementation of saveTest
+// Triển khai đơn giản của saveTest
 window.saveTest = () => {
-  console.log("Saving test:", window.test)
-  alert("Đã lưu bài kiểm tra thành công!")
+  console.log("Đang lưu bài kiểm tra:", window.test)
+
+  // Cập nhật tiêu đề và mô tả từ form
+  const titleInput = document.getElementById("testTitle")
+  const descriptionInput = document.getElementById("testDescription")
+
+  if (titleInput && descriptionInput) {
+    window.test.title = titleInput.value
+    window.test.description = descriptionInput.value
+  }
+
+  // Kiểm tra tính hợp lệ
+  if (!window.test.title) {
+    window.showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
+    return
+  }
+
+  // Kiểm tra xem có câu hỏi nào không
+  let hasQuestions = false
+  for (let i = 1; i <= 4; i++) {
+    if (window.test[`part${i}`] && window.test[`part${i}`].length > 0) {
+      hasQuestions = true
+      break
+    }
+  }
+
+  if (!hasQuestions) {
+    window.showNotification("Không có câu hỏi nào để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
+    return
+  }
+
+  window.showNotification("Đã lưu bài kiểm tra thành công!", "success")
 }
 
-console.log("index.js loaded successfully")
+console.log("index.js đã được tải thành công")
 
-// Add helper function to get icon for question type
+// Thêm hàm trợ giúp để lấy biểu tượng cho loại câu hỏi
 function getIconForType(type) {
   const icons = {
     "Một đáp án": '<i class="fas fa-check-circle"></i>',
@@ -719,57 +782,57 @@ function getIconForType(type) {
   return icons[type] || '<i class="fas fa-question"></i>'
 }
 
-// Add these functions at the end of the file to ensure they're available
-// These are placeholder functions that will call the actual implementations from form-handlers.js
+// Thêm các hàm này ở cuối tệp để đảm bảo chúng có sẵn
+// Đây là các hàm giữ chỗ sẽ gọi các triển khai thực tế từ form-handlers.js
 
-// Replace the form creation functions with these versions that don't cause recursion
-// Form creation functions
+// Thay thế các hàm tạo form bằng các phiên bản này không gây ra đệ quy
+// Các hàm tạo form
 function createOneAnswerForm() {
-  // Don't call window.createOneAnswerForm here to avoid recursion
+  // Không gọi window.createOneAnswerForm ở đây để tránh đệ quy
   return `
-    <div class="one-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" required>
-      <label>Lựa chọn:</label>
-      <input type="text" name="option1" required><br>
-      <input type="text" name="option2" required><br>
-      <input type="text" name="option3" required><br>
-      <input type="text" name="option4" required><br>
-      <label for="correctAnswer">Đáp án đúng:</label>
-      <select id="correctAnswer" name="correctAnswer" required>
-        <option value="1">Lựa chọn 1</option>
-        <option value="2">Lựa chọn 2</option>
-        <option value="3">Lựa chọn 3</option>
-        <option value="4">Lựa chọn 4</option>
-      </select>
-      <button type="button" onclick="saveOneAnswerQuestion(this)">Lưu câu hỏi</button>
-    </div>
-  `
+  <div class="one-answer-form">
+    <label for="question">Câu hỏi:</label>
+    <input type="text" id="question" name="question" required>
+    <label>Lựa chọn:</label>
+    <input type="text" name="option1" required><br>
+    <input type="text" name="option2" required><br>
+    <input type="text" name="option3" required><br>
+    <input type="text" name="option4" required><br>
+    <label for="correctAnswer">Đáp án đúng:</label>
+    <select id="correctAnswer" name="correctAnswer" required>
+      <option value="1">Lựa chọn 1</option>
+      <option value="2">Lựa chọn 2</option>
+      <option value="3">Lựa chọn 3</option>
+      <option value="4">Lựa chọn 4</option>
+    </select>
+    <button type="button" onclick="saveOneAnswerQuestion(this)">Lưu câu hỏi</button>
+  </div>
+`
 }
 
 function createMultipleAnswerForm() {
-  // Don't call window.createMultipleAnswerForm here to avoid recursion
+  // Không gọi window.createMultipleAnswerForm ở đây để tránh đệ quy
   return `
-    <div class="multiple-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" required>
-      <label>Lựa chọn:</label>
-      <input type="text" name="option1" required><br>
-      <input type="text" name="option2" required><br>
-      <input type="text" name="option3" required><br>
-      <input type="text" name="option4" required><br>
-      <label>Đáp án đúng (chọn nhiều):</label><br>
-      <input type="checkbox" id="correctAnswer1" name="correctAnswers" value="1">
-      <label for="correctAnswer1">Lựa chọn 1</label><br>
-      <input type="checkbox" id="correctAnswer2" name="correctAnswers" value="2">
-      <label for="correctAnswer2">Lựa chọn 2</label><br>
-      <input type="checkbox" id="correctAnswer3" name="correctAnswers" value="3">
-      <label for="correctAnswer3">Lựa chọn 3</label><br>
-      <input type="checkbox" id="correctAnswer4" name="correctAnswers" value="4">
-      <label for="correctAnswer4">Lựa chọn 4</label>
-      <button type="button" onclick="saveMultipleAnswerQuestion(this)">Lưu câu hỏi</button>
-    </div>
-  `
+  <div class="multiple-answer-form">
+    <label for="question">Câu hỏi:</label>
+    <input type="text" id="question" name="question" required>
+    <label>Lựa chọn:</label>
+    <input type="text" name="option1" required><br>
+    <input type="text" name="option2" required><br>
+    <input type="text" name="option3" required><br>
+    <input type="text" name="option4" required><br>
+    <label>Đáp án đúng (chọn nhiều):</label><br>
+    <input type="checkbox" id="correctAnswer1" name="correctAnswers" value="1">
+    <label for="correctAnswer1">Lựa chọn 1</label><br>
+    <input type="checkbox" id="correctAnswer2" name="correctAnswers" value="2">
+    <label for="correctAnswer2">Lựa chọn 2</label><br>
+    <input type="checkbox" id="correctAnswer3" name="correctAnswers" value="3">
+    <label for="correctAnswer3">Lựa chọn 3</label><br>
+    <input type="checkbox" id="correctAnswer4" name="correctAnswers" value="4">
+    <label for="correctAnswer4">Lựa chọn 4</label>
+    <button type="button" onclick="saveMultipleAnswerQuestion(this)">Lưu câu hỏi</button>
+  </div>
+`
 }
 
 function createMatchingForm() {
@@ -777,22 +840,22 @@ function createMatchingForm() {
     return window.createMatchingForm()
   }
   return `
-    <div class="matching-form">
-      <label for="title">Tiêu đề:</label>
-      <input type="text" id="title" name="title" required>
-      <label>Mục:</label>
-      <input type="text" name="item1" required><br>
-      <input type="text" name="item2" required><br>
-      <input type="text" name="item3" required><br>
-      <label>Ghép nối:</label>
-      <input type="text" name="match1" required><br>
-      <input type="text" name="match2" required><br>
-      <input type="text" name="match3" required><br>
-      <label for="correctMatches">Ghép nối đúng (ví dụ: 1-A, 2-B, 3-C):</label>
-      <input type="text" id="correctMatches" name="correctMatches" required>
-      <button type="button" onclick="saveMatchingQuestion(this)">Lưu câu hỏi</button>
-    </div>
-  `
+  <div class="matching-form">
+    <label for="title">Tiêu đề:</label>
+    <input type="text" id="title" name="title" required>
+    <label>Mục:</label>
+    <input type="text" name="item1" required><br>
+    <input type="text" name="item2" required><br>
+    <input type="text" name="item3" required><br>
+    <label>Ghép nối:</label>
+    <input type="text" name="match1" required><br>
+    <input type="text" name="match2" required><br>
+    <input type="text" name="match3" required><br>
+    <label for="correctMatches">Ghép nối đúng (ví dụ: 1-A, 2-B, 3-C):</label>
+    <input type="text" id="correctMatches" name="correctMatches" required>
+    <button type="button" onclick="saveMatchingQuestion(this)">Lưu câu hỏi</button>
+  </div>
+`
 }
 
 function createPlanMapDiagramForm() {
@@ -800,27 +863,27 @@ function createPlanMapDiagramForm() {
     return window.createPlanMapDiagramForm()
   }
   return `
-    <div class="plan-map-diagram-form">
-      <label for="type">Loại:</label>
-      <select id="type" name="type" required>
-        <option value="map">Ghi nhãn Bản đồ</option>
-        <option value="ship">Sơ đồ Tàu</option>
-        <option value="technical">Sơ đồ Kỹ thuật</option>
-      </select>
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label for="image">Hình ảnh:</label>
-      <input type="file" id="image" name="image" accept="image/*" required>
-      <div id="labels-container">
-        <label for="label1">Nhãn 1:</label>
-        <input type="text" id="label1" name="label1" required>
-        <label for="answer1">Đáp án 1:</label>
-        <input type="text" id="answer1" name="answer1" required>
-      </div>
-      <button type="button" onclick="addLabel()">Thêm nhãn</button>
-      <button type="button" onclick="savePlanMapDiagramQuestion(this)">Lưu câu hỏi</button>
+  <div class="plan-map-diagram-form">
+    <label for="type">Loại:</label>
+    <select id="type" name="type" required>
+      <option value="map">Ghi nhãn Bản đồ</option>
+      <option value="ship">Sơ đồ Tàu</option>
+      <option value="technical">Sơ đồ Kỹ thuật</option>
+    </select>
+    <label for="instructions">Hướng dẫn:</label>
+    <input type="text" id="instructions" name="instructions" required>
+    <label for="image">Hình ảnh:</label>
+    <input type="file" id="image" name="image" accept="image/*" required>
+    <div id="labels-container">
+      <label for="label1">Nhãn 1:</label>
+      <input type="text" id="label1" name="label1" required>
+      <label for="answer1">Đáp án 1:</label>
+      <input type="text" id="answer1" name="answer1" required>
     </div>
-  `
+    <button type="button" onclick="addLabel()">Thêm nhãn</button>
+    <button type="button" onclick="savePlanMapDiagramQuestion(this)">Lưu câu hỏi</button>
+  </div>
+`
 }
 
 function createNoteCompletionForm() {
@@ -828,20 +891,20 @@ function createNoteCompletionForm() {
     return window.createNoteCompletionForm()
   }
   return `
-    <div class="note-completion-form">
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
-      <label for="topic">Chủ đề:</label>
-      <input type="text" id="topic" name="topic" required>
-      <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-      <textarea name="note1" required></textarea><br>
-      <textarea name="note2" required></textarea><br>
-      <textarea name="note3" required></textarea>
-    </div>
-  `
+  <div class="note-completion-form">
+    <label for="instructions">Hướng dẫn:</label>
+    <input type="text" id="instructions" name="instructions" required>
+    <label for="topic">Chủ đề:</label>
+    <input type="text" id="topic" name="topic" required>
+    <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+    <textarea name="note1" required></textarea><br>
+    <textarea name="note2" required></textarea><br>
+    <textarea name="note3" required></textarea>
+  </div>
+`
 }
 
-// Initialize dynamic form elements
+// Khởi tạo các phần tử form động
 function initializeDynamicFormElements(questionDiv, questionType) {
   switch (questionType) {
     case "Một đáp án":
@@ -880,13 +943,13 @@ function initializeOneAnswerForm(questionDiv) {
       const newOptionItem = document.createElement("div")
       newOptionItem.className = "option-item"
       newOptionItem.innerHTML = `
-        <input type="text" name="option" required>
-        <input type="radio" name="correctAnswer" value="${optionCount}">
-        <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-      `
+      <input type="text" name="option" required>
+      <input type="radio" name="correctAnswer" value="${optionCount}">
+      <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+    `
       optionsList.appendChild(newOptionItem)
 
-      // Initialize remove button for the new option
+      // Khởi tạo nút xóa cho tùy chọn mới
       const removeButton = newOptionItem.querySelector(".remove-option-btn")
       removeButton.addEventListener("click", () => {
         newOptionItem.remove()
@@ -894,7 +957,7 @@ function initializeOneAnswerForm(questionDiv) {
     })
   }
 
-  // Initialize existing remove buttons
+  // Khởi tạo các nút xóa hiện có
   const removeOptionBtns = questionDiv.querySelectorAll(".remove-option-btn")
   removeOptionBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -902,12 +965,12 @@ function initializeOneAnswerForm(questionDiv) {
     })
   })
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Một đáp án")
+      // Triển khai logic lưu ở đây
+      saveOneAnswerQuestion(questionDiv)
     })
   }
 }
@@ -922,13 +985,13 @@ function initializeMultipleAnswerForm(questionDiv) {
       const newOptionItem = document.createElement("div")
       newOptionItem.className = "option-item"
       newOptionItem.innerHTML = `
-        <input type="text" name="option" required>
-        <input type="checkbox" name="correctAnswer" value="${optionCount}">
-        <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-      `
+      <input type="text" name="option" required>
+      <input type="checkbox" name="correctAnswer" value="${optionCount}">
+      <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+    `
       optionsList.appendChild(newOptionItem)
 
-      // Initialize remove button for the new option
+      // Khởi tạo nút xóa cho tùy chọn mới
       const removeButton = newOptionItem.querySelector(".remove-option-btn")
       removeButton.addEventListener("click", () => {
         newOptionItem.remove()
@@ -936,7 +999,7 @@ function initializeMultipleAnswerForm(questionDiv) {
     })
   }
 
-  // Initialize existing remove buttons
+  // Khởi tạo các nút xóa hiện có
   const removeOptionBtns = questionDiv.querySelectorAll(".remove-option-btn")
   removeOptionBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -944,16 +1007,17 @@ function initializeMultipleAnswerForm(questionDiv) {
     })
   })
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Nhiều đáp án")
+      // Triển khai logic lưu ở đây
+      saveMultipleAnswerQuestion(questionDiv)
     })
   }
 }
 
+// Thay thế hàm initializeMatchingForm hiện tại bằng phiên bản cải tiến này
 function initializeMatchingForm(questionDiv) {
   const addItemBtn = questionDiv.querySelector(".add-item-btn")
   const addMatchBtn = questionDiv.querySelector(".add-match-btn")
@@ -967,12 +1031,12 @@ function initializeMatchingForm(questionDiv) {
       const newItemRow = document.createElement("div")
       newItemRow.className = "item-row"
       newItemRow.innerHTML = `
-        <input type="text" name="item" required>
-        <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-      `
+      <input type="text" name="item" required placeholder="Câu hỏi ${itemCount + 1}">
+      <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+    `
       itemsList.appendChild(newItemRow)
 
-      // Initialize remove button for the new item
+      // Khởi tạo nút xóa cho mục mới
       const removeButton = newItemRow.querySelector(".remove-item-btn")
       removeButton.addEventListener("click", () => {
         newItemRow.remove()
@@ -986,35 +1050,56 @@ function initializeMatchingForm(questionDiv) {
       const newMatchRow = document.createElement("div")
       newMatchRow.className = "match-row"
       newMatchRow.innerHTML = `
-        <input type="text" name="match" required>
-        <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-      `
+      <input type="text" name="match" required placeholder="Từ khóa nối">
+      <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+    `
       matchesList.appendChild(newMatchRow)
 
-      // Initialize remove button for the new match
+      // Khởi tạo nút xóa cho ghép nối mới
       const removeButton = newMatchRow.querySelector(".remove-match-btn")
       removeButton.addEventListener("click", () => {
         newMatchRow.remove()
       })
     })
 
-    // Function to update matching answers
+    // Hàm cập nhật đáp án ghép nối
     function updateMatchingAnswers() {
       matchingAnswersList.innerHTML = ""
       const itemCount = itemsList.children.length
+      const matchOptions = Array.from(matchesList.querySelectorAll('input[name="match"]')).map((input) => input.value)
 
       for (let i = 0; i < itemCount; i++) {
         const answerRow = document.createElement("div")
         answerRow.className = "answer-row"
+
+        // Lấy nội dung câu hỏi để hiển thị
+        const itemText = itemsList.children[i].querySelector('input[name="item"]').value || `Câu hỏi ${i + 1}`
+
+        // Tạo dropdown để chọn từ khóa nối
         answerRow.innerHTML = `
-          <span class="item-label">Mục ${i + 1}:</span>
-          <input type="text" name="matchingAnswer" required>
-        `
+        <span class="item-label">${itemText}:</span>
+        <select name="matchingAnswer" required>
+          <option value="">-- Chọn từ khóa nối --</option>
+          ${matchOptions.map((match, idx) => `<option value="${match}">${match}</option>`).join("")}
+        </select>
+        <button type="button" class="preview-match-btn" title="Xem trước"><i class="fas fa-eye"></i></button>
+      `
         matchingAnswersList.appendChild(answerRow)
+
+        // Thêm sự kiện xem trước
+        const previewBtn = answerRow.querySelector(".preview-match-btn")
+        previewBtn.addEventListener("click", () => {
+          const selectedMatch = answerRow.querySelector("select").value
+          if (selectedMatch) {
+            showNotification(`Ghép nối: "${itemText}" → "${selectedMatch}"`, "info")
+          } else {
+            showNotification("Vui lòng chọn từ khóa nối trước", "warning")
+          }
+        })
       }
     }
 
-    // Initialize existing remove buttons for items
+    // Khởi tạo các nút xóa hiện có cho mục
     const removeItemBtns = questionDiv.querySelectorAll(".remove-item-btn")
     removeItemBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1023,25 +1108,92 @@ function initializeMatchingForm(questionDiv) {
       })
     })
 
-    // Initialize existing remove buttons for matches
+    // Khởi tạo các nút xóa hiện có cho ghép nối
     const removeMatchBtns = questionDiv.querySelectorAll(".remove-match-btn")
     removeMatchBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
         btn.closest(".match-row").remove()
+        // Cập nhật lại danh sách từ khóa trong dropdown
+        updateMatchingAnswers()
       })
     })
 
-    // Initial update of matching answers
+    // Thêm sự kiện lắng nghe cho thay đổi trong danh sách từ khóa
+    matchesList.addEventListener("input", () => {
+      updateMatchingAnswers()
+    })
+
+    // Cập nhật ban đầu của đáp án ghép nối
     updateMatchingAnswers()
   }
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Ghép nối")
+      // Triển khai logic lưu ở đây
+      saveMatchingQuestion(questionDiv)
     })
+  }
+}
+
+// Cập nhật hàm saveMatchingQuestion để xử lý dữ liệu từ form mới
+function saveMatchingQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const title = questionDiv.querySelector("#title").value
+    const items = Array.from(questionDiv.querySelectorAll('input[name="item"]')).map((input) => input.value)
+    const matches = Array.from(questionDiv.querySelectorAll('input[name="match"]')).map((input) => input.value)
+    const answers = Array.from(questionDiv.querySelectorAll('select[name="matchingAnswer"]')).map(
+      (select) => select.value,
+    )
+
+    if (!title || items.length === 0 || matches.length === 0) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    // Kiểm tra xem tất cả các câu hỏi đã được ghép nối chưa
+    if (answers.some((answer) => !answer)) {
+      window.showNotification("Vui lòng chọn từ khóa nối cho tất cả các câu hỏi", "warning")
+      return
+    }
+
+    // Tạo đối tượng câu hỏi
+    const questionData = {
+      type: "Ghép nối",
+      content: [title, ...items, ...matches],
+      correctAnswers: answers,
+    }
+
+    // Thêm vào đối tượng test
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Tìm chỉ mục của câu hỏi này trong phần
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Cập nhật câu hỏi hiện có
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Thêm câu hỏi mới
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Cập nhật UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi ghép nối:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
 }
 
@@ -1051,19 +1203,19 @@ function initializePlanMapDiagramForm(questionDiv) {
 
   if (addLabelBtn && labelsContainer) {
     addLabelBtn.addEventListener("click", () => {
-      const labelCount = labelsContainer.children.length
+      const labelCount = labelsContainer.children.length / 4 // 4 phần tử cho mỗi nhãn (2 nhãn, 2 input)
       const newLabelRow = document.createElement("div")
       newLabelRow.className = "label-row"
       newLabelRow.innerHTML = `
-        <label for="label${labelCount + 1}">Nhãn ${labelCount + 1}:</label>
-        <input type="text" id="label${labelCount + 1}" name="label" required>
-        <label for="answer${labelCount + 1}">Đáp án ${labelCount + 1}:</label>
-        <input type="text" id="answer${labelCount + 1}" name="answer" required>
-        <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-      `
+      <label for="label${labelCount + 1}">Nhãn ${labelCount + 1}:</label>
+      <input type="text" id="label${labelCount + 1}" name="label" required>
+      <label for="answer${labelCount + 1}">Đáp án ${labelCount + 1}:</label>
+      <input type="text" id="answer${labelCount + 1}" name="answer" required>
+      <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
+    `
       labelsContainer.appendChild(newLabelRow)
 
-      // Initialize remove button for the new label
+      // Khởi tạo nút xóa cho nhãn mới
       const removeButton = newLabelRow.querySelector(".remove-label-btn")
       removeButton.addEventListener("click", () => {
         newLabelRow.remove()
@@ -1071,7 +1223,7 @@ function initializePlanMapDiagramForm(questionDiv) {
     })
   }
 
-  // Initialize existing remove buttons
+  // Khởi tạo các nút xóa hiện có
   const removeLabelBtns = questionDiv.querySelectorAll(".remove-label-btn")
   removeLabelBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1079,12 +1231,12 @@ function initializePlanMapDiagramForm(questionDiv) {
     })
   })
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Ghi nhãn Bản đồ/Sơ đồ")
+      // Triển khai logic lưu ở đây
+      savePlanMapDiagramQuestion(questionDiv)
     })
   }
 }
@@ -1101,13 +1253,13 @@ function initializeNoteCompletionForm(questionDiv) {
       const newNoteRow = document.createElement("div")
       newNoteRow.className = "note-row"
       newNoteRow.innerHTML = `
-        <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-        <textarea name="note" required></textarea>
-        <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
-      `
+      <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+      <textarea name="note" required></textarea>
+      <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
+    `
       notesContainer.appendChild(newNoteRow)
 
-      // Initialize remove button for the new note
+      // Khởi tạo nút xóa cho ghi chú mới
       const removeButton = newNoteRow.querySelector(".remove-note-btn")
       removeButton.addEventListener("click", () => {
         newNoteRow.remove()
@@ -1122,20 +1274,20 @@ function initializeNoteCompletionForm(questionDiv) {
       const newAnswerRow = document.createElement("div")
       newAnswerRow.className = "answer-row"
       newAnswerRow.innerHTML = `
-        <span class="answer-label">Đáp án ${answerCount + 1}:</span>
-        <input type="text" name="noteAnswer" required>
-        <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
-      `
+      <span class="answer-label">Đáp án ${answerCount + 1}:</span>
+      <input type="text" name="noteAnswer" required>
+      <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
+    `
       noteAnswersList.appendChild(newAnswerRow)
 
-      // Initialize remove button for the new answer
+      // Khởi tạo nút xóa cho đáp án mới
       const removeButton = newAnswerRow.querySelector(".remove-answer-btn")
       removeButton.addEventListener("click", () => {
         newAnswerRow.remove()
       })
     })
 
-    // Function to update note answers
+    // Hàm cập nhật đáp án ghi chú
     function updateNoteAnswers() {
       noteAnswersList.innerHTML = ""
       const noteCount = notesContainer.children.length
@@ -1144,14 +1296,21 @@ function initializeNoteCompletionForm(questionDiv) {
         const answerRow = document.createElement("div")
         answerRow.className = "answer-row"
         answerRow.innerHTML = `
-          <span class="answer-label">Đáp án ${i + 1}:</span>
-          <input type="text" name="noteAnswer" required>
-        `
+        <span class="answer-label">Đáp án ${i + 1}:</span>
+        <input type="text" name="noteAnswer" required>
+        <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
+      `
         noteAnswersList.appendChild(answerRow)
+
+        // Khởi tạo nút xóa cho đáp án
+        const removeButton = answerRow.querySelector(".remove-answer-btn")
+        removeButton.addEventListener("click", () => {
+          answerRow.remove()
+        })
       }
     }
 
-    // Initialize existing remove buttons for notes
+    // Khởi tạo các nút xóa hiện có cho ghi chú
     const removeNoteBtns = questionDiv.querySelectorAll(".remove-note-btn")
     removeNoteBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1160,7 +1319,7 @@ function initializeNoteCompletionForm(questionDiv) {
       })
     })
 
-    // Initialize existing remove buttons for answers
+    // Khởi tạo các nút xóa hiện có cho đáp án
     const removeAnswerBtns = questionDiv.querySelectorAll(".remove-answer-btn")
     removeAnswerBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1168,16 +1327,16 @@ function initializeNoteCompletionForm(questionDiv) {
       })
     })
 
-    // Initial update of note answers
+    // Cập nhật ban đầu của đáp án ghi chú
     updateNoteAnswers()
   }
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Hoàn thành ghi chú")
+      // Triển khai logic lưu ở đây
+      saveNoteCompletionQuestion(questionDiv)
     })
   }
 }
@@ -1190,15 +1349,15 @@ function initializeFormTableCompletionForm(questionDiv) {
     addRowBtn.addEventListener("click", () => {
       const newRow = document.createElement("tr")
       newRow.innerHTML = `
-        <td><input type="text" name="cell" required></td>
-        <td><input type="text" name="cell" required></td>
-        <td><input type="text" name="cell" required></td>
-        <td><input type="text" name="tableAnswer" required></td>
-        <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
-      `
+      <td><input type="text" name="cell" required></td>
+      <td><input type="text" name="cell" required></td>
+      <td><input type="text" name="cell" required></td>
+      <td><input type="text" name="tableAnswer" required></td>
+      <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
+    `
       formTable.appendChild(newRow)
 
-      // Initialize remove button for the new row
+      // Khởi tạo nút xóa cho hàng mới
       const removeButton = newRow.querySelector(".remove-row-btn")
       removeButton.addEventListener("click", () => {
         newRow.remove()
@@ -1206,7 +1365,7 @@ function initializeFormTableCompletionForm(questionDiv) {
     })
   }
 
-  // Initialize existing remove buttons
+  // Khởi tạo các nút xóa hiện có
   const removeRowBtns = questionDiv.querySelectorAll(".remove-row-btn")
   removeRowBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1214,12 +1373,12 @@ function initializeFormTableCompletionForm(questionDiv) {
     })
   })
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Hoàn thành bảng/biểu mẫu")
+      // Triển khai logic lưu ở đây
+      saveFormTableCompletionQuestion(questionDiv)
     })
   }
 }
@@ -1237,12 +1396,12 @@ function initializeFlowChartCompletionForm(questionDiv) {
       const newItemRow = document.createElement("div")
       newItemRow.className = "flow-item-row"
       newItemRow.innerHTML = `
-        <input type="text" name="flowItem" required>
-        <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
-      `
+      <input type="text" name="flowItem" required>
+      <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
+    `
       flowItemsList.appendChild(newItemRow)
 
-      // Initialize remove button for the new item
+      // Khởi tạo nút xóa cho mục mới
       const removeButton = newItemRow.querySelector(".remove-flow-item-btn")
       removeButton.addEventListener("click", () => {
         newItemRow.remove()
@@ -1256,12 +1415,12 @@ function initializeFlowChartCompletionForm(questionDiv) {
       const newOptionRow = document.createElement("div")
       newOptionRow.className = "flow-option-row"
       newOptionRow.innerHTML = `
-        <input type="text" name="flowOption" required>
-        <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
-      `
+      <input type="text" name="flowOption" required>
+      <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
+    `
       flowOptionsList.appendChild(newOptionRow)
 
-      // Initialize remove button for the new option
+      // Khởi tạo nút xóa cho tùy chọn mới
       const removeButton = newOptionRow.querySelector(".remove-flow-option-btn")
       removeButton.addEventListener("click", () => {
         newOptionRow.remove()
@@ -1273,20 +1432,20 @@ function initializeFlowChartCompletionForm(questionDiv) {
       const newAnswerRow = document.createElement("div")
       newAnswerRow.className = "flow-answer-row"
       newAnswerRow.innerHTML = `
-        <span class="answer-label">Đáp án ${answerCount + 1}:</span>
-        <input type="text" name="flowAnswer" required>
-        <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
-      `
+      <span class="answer-label">Đáp án ${answerCount + 1}:</span>
+      <input type="text" name="flowAnswer" required>
+      <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
+    `
       flowAnswersList.appendChild(newAnswerRow)
 
-      // Initialize remove button for the new answer
+      // Khởi tạo nút xóa cho đáp án mới
       const removeButton = newAnswerRow.querySelector(".remove-flow-answer-btn")
       removeButton.addEventListener("click", () => {
         newAnswerRow.remove()
       })
     })
 
-    // Function to update flow answers
+    // Hàm cập nhật đáp án lưu đồ
     function updateFlowAnswers() {
       flowAnswersList.innerHTML = ""
       const itemCount = flowItemsList.children.length
@@ -1295,14 +1454,21 @@ function initializeFlowChartCompletionForm(questionDiv) {
         const answerRow = document.createElement("div")
         answerRow.className = "flow-answer-row"
         answerRow.innerHTML = `
-          <span class="answer-label">Đáp án ${i + 1}:</span>
-          <input type="text" name="flowAnswer" required>
-        `
+        <span class="answer-label">Đáp án ${i + 1}:</span>
+        <input type="text" name="flowAnswer" required>
+        <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
+      `
         flowAnswersList.appendChild(answerRow)
+
+        // Khởi tạo nút xóa cho đáp án
+        const removeButton = answerRow.querySelector(".remove-flow-answer-btn")
+        removeButton.addEventListener("click", () => {
+          answerRow.remove()
+        })
       }
     }
 
-    // Initialize existing remove buttons for items
+    // Khởi tạo các nút xóa hiện có cho mục
     const removeItemBtns = questionDiv.querySelectorAll(".remove-flow-item-btn")
     removeItemBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1311,7 +1477,7 @@ function initializeFlowChartCompletionForm(questionDiv) {
       })
     })
 
-    // Initialize existing remove buttons for options
+    // Khởi tạo các nút xóa hiện có cho tùy chọn
     const removeOptionBtns = questionDiv.querySelectorAll(".remove-flow-option-btn")
     removeOptionBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1319,7 +1485,7 @@ function initializeFlowChartCompletionForm(questionDiv) {
       })
     })
 
-    // Initialize existing remove buttons for answers
+    // Khởi tạo các nút xóa hiện có cho đáp án
     const removeAnswerBtns = questionDiv.querySelectorAll(".remove-flow-answer-btn")
     removeAnswerBtns.forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -1327,17 +1493,348 @@ function initializeFlowChartCompletionForm(questionDiv) {
       })
     })
 
-    // Initial update of flow answers
+    // Cập nhật ban đầu của đáp án lưu đồ
     updateFlowAnswers()
   }
 
-  // Save question button
+  // Nút lưu câu hỏi
   const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
   if (saveQuestionBtn) {
     saveQuestionBtn.addEventListener("click", () => {
-      // Implement save logic here
-      alert("Lưu câu hỏi Hoàn thành lưu đồ")
+      // Triển khai logic lưu ở đây
+      saveFlowChartCompletionQuestion(questionDiv)
     })
+  }
+}
+
+// Hàm lưu câu hỏi
+function saveOneAnswerQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const questionText = questionDiv.querySelector("#question").value
+    const options = Array.from(questionDiv.querySelectorAll('input[name="option"]')).map((input) => input.value)
+    const selectedRadio = questionDiv.querySelector('input[name="correctAnswer"]:checked')
+
+    if (!questionText || options.length === 0 || !selectedRadio) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    const correctAnswerIndex = Number.parseInt(selectedRadio.value)
+    const correctAnswer = options[correctAnswerIndex]
+
+    // Tạo đối tượng câu hỏi
+    const questionData = {
+      type: "Một đáp án",
+      content: [questionText, ...options],
+      correctAnswers: correctAnswer,
+    }
+
+    // Thêm vào đối tượng test
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Tìm chỉ mục của câu hỏi này trong phần
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Cập nhật câu hỏi hiện có
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Thêm câu hỏi mới
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Cập nhật UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi một đáp án:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  }
+}
+
+function saveMultipleAnswerQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const questionText = questionDiv.querySelector("#question").value
+    const options = Array.from(questionDiv.querySelectorAll('input[name="option"]')).map((input) => input.value)
+    const selectedCheckboxes = Array.from(questionDiv.querySelectorAll('input[name="correctAnswer"]:checked'))
+
+    if (!questionText || options.length === 0 || selectedCheckboxes.length === 0) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    const correctAnswerIndices = selectedCheckboxes.map((checkbox) => Number.parseInt(checkbox.value))
+    const correctAnswers = correctAnswerIndices.map((index) => options[index])
+
+    // Tạo đối tượng câu hỏi
+    const questionData = {
+      type: "Nhiều đáp án",
+      content: [questionText, ...options],
+      correctAnswers: correctAnswers,
+    }
+
+    // Thêm vào đối tượng test
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Tìm chỉ mục của câu hỏi này trong phần
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Cập nhật câu hỏi hiện có
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Thêm câu hỏi mới
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Cập nhật UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi nhiều đáp án:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  }
+}
+
+function savePlanMapDiagramQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const type = questionDiv.querySelector("#type").value
+    const instructions = questionDiv.querySelector("#instructions").value
+    const imageFile = questionDiv.querySelector("#image").files[0]
+    const labels = Array.from(questionDiv.querySelectorAll('input[name="label"]')).map((input) => input.value)
+    const answers = Array.from(questionDiv.querySelectorAll('input[name="answer"]')).map((input) => input.value)
+
+    if (!type || !instructions || !imageFile || labels.length === 0 || answers.length === 0) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    // Chuyển đổi hình ảnh thành URL dữ liệu
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const imageDataUrl = e.target.result
+
+      // Tạo đối tượng câu hỏi
+      const questionData = {
+        type: "Ghi nhãn Bản đồ/Sơ đồ",
+        content: [type, instructions, imageDataUrl, ...labels],
+        correctAnswers: answers,
+      }
+
+      // Thêm vào đối tượng test
+      if (!window.test[`part${window.currentPart}`]) {
+        window.test[`part${window.currentPart}`] = []
+      }
+
+      // Tìm chỉ mục của câu hỏi này trong phần
+      const questionElement = questionDiv.closest(".question")
+      const partElement = questionElement.closest(".part")
+      const questions = Array.from(partElement.querySelectorAll(".question"))
+      const questionIndex = questions.indexOf(questionElement)
+
+      if (questionIndex !== -1) {
+        // Cập nhật câu hỏi hiện có
+        window.test[`part${window.currentPart}`][questionIndex] = questionData
+      } else {
+        // Thêm câu hỏi mới
+        window.test[`part${window.currentPart}`].push(questionData)
+      }
+
+      window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+      // Cập nhật UI
+      if (typeof window.renderQuestionsForCurrentPart === "function") {
+        window.renderQuestionsForCurrentPart()
+      }
+    }
+
+    reader.readAsDataURL(imageFile)
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi ghi nhãn bản đồ/sơ đồ:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  }
+}
+
+function saveNoteCompletionQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const instructions = questionDiv.querySelector("#instructions").value
+    const topic = questionDiv.querySelector("#topic").value
+    const notes = Array.from(questionDiv.querySelectorAll('textarea[name="note"]')).map((textarea) => textarea.value)
+    const answers = Array.from(questionDiv.querySelectorAll('input[name="noteAnswer"]')).map((input) => input.value)
+
+    if (!instructions || !topic || notes.length === 0 || answers.length === 0) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    // Tạo đối tượng câu hỏi
+    const questionData = {
+      type: "Hoàn thành ghi chú",
+      content: [instructions, topic, ...notes],
+      correctAnswers: answers,
+    }
+
+    // Thêm vào đối tượng test
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Tìm chỉ mục của câu hỏi này trong phần
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Cập nhật câu hỏi hiện có
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Thêm câu hỏi mới
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Cập nhật UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi hoàn thành ghi chú:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  }
+}
+
+function saveFormTableCompletionQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const instructions = questionDiv.querySelector("#instructions").value
+    const rows = Array.from(questionDiv.querySelectorAll("#formTable tbody tr"))
+    const tableData = []
+    const answers = []
+
+    rows.forEach((row) => {
+      const cells = Array.from(row.querySelectorAll('input[name="cell"]')).map((input) => input.value)
+      const answer = row.querySelector('input[name="tableAnswer"]').value
+
+      if (cells.length > 0 && cells.every((cell) => cell) && answer) {
+        tableData.push(...cells)
+        answers.push(answer)
+      }
+    })
+
+    if (!instructions || tableData.length === 0 || answers.length === 0) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    // Tạo đối tượng câu hỏi
+    const questionData = {
+      type: "Hoàn thành bảng/biểu mẫu",
+      content: [instructions, ...tableData],
+      correctAnswers: answers,
+    }
+
+    // Thêm vào đối tượng test
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Tìm chỉ mục của câu hỏi này trong phần
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Cập nhật câu hỏi hiện có
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Thêm câu hỏi mới
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Cập nhật UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi hoàn thành bảng/biểu mẫu:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  }
+}
+
+function saveFlowChartCompletionQuestion(questionDiv) {
+  try {
+    // Lấy dữ liệu từ form
+    const title = questionDiv.querySelector("#title").value
+    const instructions = questionDiv.querySelector("#instructions").value
+    const flowItems = Array.from(questionDiv.querySelectorAll('input[name="flowItem"]')).map((input) => input.value)
+    const flowOptions = Array.from(questionDiv.querySelectorAll('input[name="flowOption"]')).map((input) => input.value)
+    const flowAnswers = Array.from(questionDiv.querySelectorAll('input[name="flowAnswer"]')).map((input) => input.value)
+
+    if (!title || !instructions || flowItems.length === 0 || flowOptions.length === 0 || flowAnswers.length === 0) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    // Tạo đối tượng câu hỏi
+    const questionData = {
+      type: "Hoàn thành lưu đồ",
+      content: [title, instructions, ...flowItems, ...flowOptions],
+      correctAnswers: flowAnswers,
+    }
+
+    // Thêm vào đối tượng test
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Tìm chỉ mục của câu hỏi này trong phần
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Cập nhật câu hỏi hiện có
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Thêm câu hỏi mới
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Cập nhật UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi hoàn thành lưu đồ:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
 }
 
