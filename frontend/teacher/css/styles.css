@@ -1142,7 +1142,7 @@ textarea[name="note"] {
   transform: scale(1.05);
 }
 
-/* Thêm CSS cho form Ghi nhãn Bản đồ/Sơ đồ */
+/* Add styles for the Plan/Map/Diagram form */
 .plan-map-diagram-form {
   background-color: #f8fafd;
   padding: 25px;
@@ -1154,26 +1154,24 @@ textarea[name="note"] {
   margin-bottom: 20px;
 }
 
-.type-description {
-  margin-top: 10px;
-  padding: 12px;
-  background-color: #e6f7ff;
-  border-radius: 8px;
-  border-left: 4px solid #1a3a6e;
-  font-size: 14px;
-}
-
-.map-description,
-.ship-description {
-  margin-bottom: 8px;
-}
-
-.labels-container {
+.plan-map-diagram-form h3.form-type-title {
+  color: #1a3a6e;
+  font-size: 18px;
+  margin-top: 15px;
   margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #e0e9f7;
+}
+
+.plan-map-diagram-form h4 {
+  color: #1a3a6e;
+  font-size: 16px;
+  margin-bottom: 15px;
 }
 
 .label-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 15px;
   background-color: #f0f7ff;
@@ -1185,83 +1183,150 @@ textarea[name="note"] {
 
 .label-row:hover {
   background-color: #e8f1fd;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.label-content {
-  flex: 1;
-  margin-right: 15px;
-}
-
-.answer-input-container {
-  flex: 2;
-  margin-right: 15px;
-}
-
-.map-options {
-  display: flex;
-  align-items: center;
-}
-
-.options-label {
+.label-row label {
+  min-width: 100px;
   margin-right: 10px;
   font-weight: 500;
-  color: #1a3a6e;
-  min-width: 100px;
 }
 
-.options-container {
+.label-row input[type="text"] {
+  flex: 1;
+  min-width: 200px;
+  margin-right: 15px;
+  margin-bottom: 0;
+}
+
+.answer-options {
+  display: flex;
+  align-items: center;
+  margin: 10px 0;
+}
+
+.radio-options {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  margin-left: 10px;
 }
 
-.option-label {
+.radio-label {
   display: flex;
   align-items: center;
   background-color: #ffffff;
-  padding: 6px 12px;
-  border-radius: 6px;
+  padding: 5px 10px;
+  border-radius: 4px;
   border: 1px solid #d1dbe8;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.option-label:hover {
+.radio-label:hover {
   background-color: #f0f7ff;
   border-color: #1a3a6e;
 }
 
-.option-label input[type="radio"] {
+.radio-label input[type="radio"] {
   margin-right: 5px;
+  accent-color: #1a3a6e;
 }
 
-.answer-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #d1dbe8;
-  border-radius: 6px;
-  transition: all 0.3s ease;
-}
-
-.answer-input:focus {
-  border-color: #1a3a6e;
-  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.1);
-  outline: none;
-}
-
-.image-preview {
+.image-preview-container {
   margin-top: 10px;
+}
+
+#image-preview {
   max-width: 300px;
-  max-height: 200px;
-  overflow: hidden;
+  border: 1px solid #d1dbe8;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .label-row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .label-row input[type="text"] {
+    width: 100%;
+    margin-right: 0;
+    margin-bottom: 10px;
+  }
+
+  .radio-options {
+    margin-left: 0;
+    margin-top: 10px;
+  }
+}
+
+/* Add styles for the rendered Plan/Map/Diagram question */
+.question-type-display {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.question-type-badge {
+  background-color: #1a3a6e;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.answer-type-badge {
+  background-color: #4caf50;
+  color: white;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.instruction-text {
+  background-color: #f8fafd;
+  padding: 10px 15px;
   border-radius: 8px;
   border: 1px solid #e0e9f7;
+  margin-top: 5px;
 }
 
-.image-preview img {
-  width: 100%;
-  height: auto;
-  display: block;
+.image-container {
+  margin: 10px 0;
+  padding: 10px;
+  background-color: #f8fafd;
+  border-radius: 8px;
+  border: 1px solid #e0e9f7;
+  display: inline-block;
+}
+
+.labels-list {
+  margin-top: 10px;
+}
+
+.label-item {
+  display: flex;
+  justify-content: space-between;
+  background-color: #f8fafd;
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #e0e9f7;
+  margin-bottom: 8px;
+}
+
+.label-text {
+  font-weight: 500;
+}
+
+.answer-text {
+  color: #1a3a6e;
+}
+
+.answer-text strong {
+  color: #4caf50;
 }
 

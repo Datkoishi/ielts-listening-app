@@ -79,7 +79,7 @@ function updateQuestionCount() {
   })
 }
 
-// Hiển thị giao diện t��o bài kiểm tra
+// Hiển thị giao diện tạo bài kiểm tra
 function renderTestCreation() {
   console.log("Rendering test creation form from test-management.js for part:", window.currentPart)
   const testContent = document.getElementById("testContent")
@@ -372,42 +372,46 @@ function renderMatchingQuestion(question) {
 
 // Hiển thị câu hỏi Ghi nhãn Bản đồ/Sơ đồ
 function renderPlanMapDiagramQuestion(question) {
+  const type = question.content[0]
+  const typeLabel = type === "map" ? "Ghi nhãn Bản đồ" : type === "ship" ? "Sơ đồ Tàu" : "Sơ đồ Kỹ thuật"
+  const answerTypeLabel = type === "map" ? "(Chọn từ A-H)" : "(Nhập đáp án tự do)"
+
   return `
-    <div class="t1-ielts-creator">
-      <form id="questionForm">
-        <div class="t1-form-group">
-          <label for="questionType">Loại câu hỏi:</label>
-          <select id="questionType" required>
-            <option value="map" ${question.content[0] === "map" ? "selected" : ""}>Ghi nhãn Bản đồ</option>
-            <option value="ship" ${question.content[0] === "ship" ? "selected" : ""}>Sơ đồ Tàu</option>
-            <option value="technical" ${question.content[0] === "technical" ? "selected" : ""}>Sơ đồ Kỹ thuật</option>
-          </select>
-        </div>
-        <div class="t1-form-group">
-          <label for="instructions">Hướng dẫn:</label>
-          <textarea id="instructions" rows="3" required>${question.content[1]}</textarea>
-        </div>
-        <div class="t1-form-group">
-          <label for="imageFile">Hình ảnh đã tải lên:</label>
-          <img src="${question.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
-        </div>
-        <div id="answerInputs">
-          ${question.content
-            .slice(3)
-            .map(
-              (answer, index) => `
-            <div class="t1-form-group">
-              <label for="answer${index}">Câu trả lời ${index + 1}:</label>
-              <input type="text" id="answer${index}" value="${answer}" required>
-              <label for="correctAnswer${index}">Đáp án đúng cho câu ${index + 1}:</label>
-              <input type="text" id="correctAnswer${index}" value="${question.correctAnswers[index]}" required>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </form>
+  <div class="t1-ielts-creator">
+    <div class="question-type-display">
+      <span class="question-type-badge">${typeLabel}</span>
+      <span class="answer-type-badge">${answerTypeLabel}</span>
     </div>
+    
+    <div class="t1-form-group">
+      <label>Hướng dẫn:</label>
+      <div class="instruction-text">${question.content[1]}</div>
+    </div>
+    
+    <div class="t1-form-group">
+      <label>Hình ảnh:</label>
+      <div class="image-container">
+        <img src="${question.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 300px;">
+      </div>
+    </div>
+    
+    <div class="t1-form-group">
+      <label>Danh sách nhãn và đáp án:</label>
+      <div class="labels-list">
+        ${question.content
+          .slice(3)
+          .map(
+            (label, index) => `
+          <div class="label-item">
+            <span class="label-text">${label}</span>
+            <span class="answer-text">Đáp án: <strong>${question.correctAnswers[index]}</strong></span>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+    </div>
+  </div>
   `
 }
 
