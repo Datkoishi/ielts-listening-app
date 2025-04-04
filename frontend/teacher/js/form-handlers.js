@@ -547,45 +547,213 @@ function saveQuestion() {
 
   // Declare the missing functions
   const saveOneAnswerQuestion = (container) => {
-    // Implement the logic to save a one-answer question
-    // This is just a placeholder
-    return { type: "Một đáp án", content: "Câu hỏi mẫu", correctAnswer: "Đáp án A" }
+    // Get the form elements within this specific question container
+    const questionText = container.querySelector("#t3-questionText")?.value || ""
+    const options =
+      container
+        .querySelector("#t3-options")
+        ?.value.split("\n")
+        .filter((o) => o.trim()) || []
+    const correctAnswer = container.querySelector("#t3-correctAnswer")?.value || ""
+
+    if (!questionText || options.length === 0 || !correctAnswer) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return null
+    }
+
+    return {
+      type: "Một đáp án",
+      content: [questionText, ...options],
+      correctAnswers: correctAnswer,
+    }
   }
 
   const saveMultipleAnswerQuestion = (container) => {
-    // Implement the logic to save a multiple-answer question
-    // This is just a placeholder
-    return { type: "Nhiều đáp án", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+    const questionText = container.querySelector("#t4-questionText")?.value || ""
+    const options =
+      container
+        .querySelector("#t4-options")
+        ?.value.split("\n")
+        .filter((o) => o.trim()) || []
+    const correctAnswersInput = container.querySelector("#t4-correctAnswers")?.value || ""
+    const correctAnswers = correctAnswersInput
+      .split(",")
+      .map((a) => a.trim())
+      .filter((a) => a)
+
+    if (!questionText || options.length === 0 || correctAnswers.length === 0) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return null
+    }
+
+    return {
+      type: "Nhiều đáp án",
+      content: [questionText, ...options],
+      correctAnswers: correctAnswers,
+    }
   }
 
   const saveMatchingQuestion = (container) => {
-    // Implement the logic to save a matching question
-    // This is just a placeholder
-    return { type: "Ghép nối", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+    const title = container.querySelector("#t3-questionTitle")?.value || ""
+    const people =
+      container
+        .querySelector("#t3-people")
+        ?.value.split("\n")
+        .filter((p) => p.trim()) || []
+    const responsibilities =
+      container
+        .querySelector("#t3-responsibilities")
+        ?.value.split("\n")
+        .filter((r) => r.trim()) || []
+    const correctAnswers =
+      container
+        .querySelector("#t3-correctAnswers")
+        ?.value.split("\n")
+        .filter((a) => a.trim()) || []
+
+    if (!title || people.length === 0 || responsibilities.length === 0 || correctAnswers.length === 0) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi ghép nối", "error")
+      return null
+    }
+
+    return {
+      type: "Ghép nối",
+      content: [title, ...people, ...responsibilities],
+      correctAnswers: correctAnswers,
+    }
   }
 
   const savePlanMapDiagramQuestion = (container) => {
-    // Implement the logic to save a plan/map diagram question
-    // This is just a placeholder
-    return { type: "Ghi nhãn Bản đồ/Sơ đồ", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+    const questionType = container.querySelector("#questionType")?.value || "map"
+    const instructions = container.querySelector("#instructions")?.value || ""
+    const imageElement = container.querySelector(".image-preview img")
+    const imageSource = imageElement ? imageElement.src : "/placeholder.svg?height=300&width=400"
+
+    // Get all answer inputs within this specific container
+    const answerGroups = container.querySelectorAll(".t1-form-group")
+    const labels = []
+    const correctAnswers = []
+
+    answerGroups.forEach((group, index) => {
+      const answerInput = group.querySelector(`#answer${index}`)
+      const correctAnswerInput = group.querySelector(`#correctAnswer${index}`)
+
+      if (answerInput && correctAnswerInput) {
+        const label = answerInput.value
+        const answer = correctAnswerInput.value
+
+        if (label && answer) {
+          labels.push(label)
+          correctAnswers.push(answer)
+        }
+      }
+    })
+
+    if (!instructions || labels.length === 0 || correctAnswers.length === 0) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi ghi nhãn", "error")
+      return null
+    }
+
+    return {
+      type: "Ghi nhãn Bản đồ/Sơ đồ",
+      content: [questionType, instructions, imageSource, ...labels],
+      correctAnswers: correctAnswers,
+    }
   }
 
   const saveNoteCompletionQuestion = (container) => {
-    // Implement the logic to save a note completion question
-    // This is just a placeholder
-    return { type: "Hoàn thành ghi chú", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+    const instructions = container.querySelector("#t2ListeningExerciseInstructions")?.value || ""
+    const topic = container.querySelector("#t2ListeningExerciseTopic")?.value || ""
+    const noteContainers = container.querySelectorAll(".t2-listening-exercise-form-group")
+
+    const notes = []
+    const correctAnswers = []
+
+    noteContainers.forEach((noteContainer, index) => {
+      const noteTextarea = noteContainer.querySelector(`textarea[id^="t2ListeningExerciseQuestion"]`)
+      const answerInput = noteContainer.querySelector(".t2-listening-exercise-correct-answer-input")
+
+      if (noteTextarea && answerInput) {
+        const note = noteTextarea.value
+        const answer = answerInput.value
+
+        if (note && answer) {
+          notes.push(note)
+          correctAnswers.push(answer)
+        }
+      }
+    })
+
+    if (!instructions || !topic || notes.length === 0 || correctAnswers.length === 0) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi hoàn thành ghi chú", "error")
+      return null
+    }
+
+    return {
+      type: "Hoàn thành ghi chú",
+      content: [instructions, topic, ...notes],
+      correctAnswers: correctAnswers,
+    }
   }
 
   const saveFormTableCompletionQuestion = (container) => {
-    // Implement the logic to save a form/table completion question
-    // This is just a placeholder
-    return { type: "Hoàn thành bảng/biểu mẫu", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+    const instructions = container.querySelector("#tableInstruction")?.value || ""
+    const rows = container.querySelectorAll("#fareTable tr:not(:first-child)")
+
+    const rowData = []
+    const correctAnswers = []
+
+    rows.forEach((row) => {
+      const cells = row.querySelectorAll("td input")
+      if (cells.length >= 4) {
+        rowData.push(cells[0].value || "")
+        rowData.push(cells[1].value || "")
+        rowData.push(cells[2].value || "")
+        correctAnswers.push(cells[3].value || "")
+      }
+    })
+
+    if (!instructions || rowData.length === 0 || correctAnswers.length === 0) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi hoàn thành bảng", "error")
+      return null
+    }
+
+    return {
+      type: "Hoàn thành bảng/biểu mẫu",
+      content: [instructions, ...rowData],
+      correctAnswers: correctAnswers,
+    }
   }
 
   const saveFlowChartCompletionQuestion = (container) => {
-    // Implement the logic to save a flow chart completion question
-    // This is just a placeholder
-    return { type: "Hoàn thành lưu đồ", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+    const title = container.querySelector("#title, #flowChartTitle")?.value || ""
+    const instructions = container.querySelector("#instructions, #flowChartInstructions")?.value || ""
+    const flowItems =
+      container
+        .querySelector("#flowItems1, #flowChartItems")
+        ?.value.split("\n")
+        .filter((i) => i.trim()) || []
+    const options =
+      container
+        .querySelector("#options1, #flowChartOptions")
+        ?.value.split("\n")
+        .filter((o) => o.trim()) || []
+    const correctAnswersInput = container.querySelector("#correctAnswers1, #flowChartAnswers")?.value || ""
+    const correctAnswers = correctAnswersInput
+      .split(",")
+      .map((a) => a.trim())
+      .filter((a) => a)
+
+    if (!title || !instructions || flowItems.length === 0 || options.length === 0 || correctAnswers.length === 0) {
+      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi hoàn thành lưu đồ", "error")
+      return null
+    }
+
+    return {
+      type: "Hoàn thành lưu đồ",
+      content: [title, instructions, ...flowItems, ...options],
+      correctAnswers: correctAnswers,
+    }
   }
 
   switch (questionType) {
@@ -614,12 +782,24 @@ function saveQuestion() {
 
   if (question) {
     // Find the index of this question in the current part
-    const questionIndex = Array.from(questionContainer.parentNode.children).indexOf(questionContainer)
+    const questionIndex = Array.from(questionContainer.parentNode.querySelectorAll(".question")).indexOf(
+      questionContainer,
+    )
 
-    // Update the question in the test object
-    test[`part${window.currentPart}`][questionIndex] = question
+    // Make sure the part array exists
+    if (!test[`part${window.currentPart}`]) {
+      test[`part${window.currentPart}`] = []
+    }
 
-    showNotification("Câu hỏi đã được lưu thành công", "success")
+    // Update only this specific question in the test object
+    if (questionIndex !== -1) {
+      test[`part${window.currentPart}`][questionIndex] = question
+      showNotification(`Đã lưu câu hỏi ${questionIndex + 1} thành công`, "success")
+    } else {
+      // If for some reason we couldn't find the index, add it as a new question
+      test[`part${window.currentPart}`].push(question)
+      showNotification("Đã thêm câu hỏi mới thành công", "success")
+    }
   }
 }
 
