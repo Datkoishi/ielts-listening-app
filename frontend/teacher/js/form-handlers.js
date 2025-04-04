@@ -82,70 +82,34 @@ function createMatchingForm() {
 // Tạo form cho câu hỏi Ghi nhãn Bản đồ/Sơ đồ
 function createPlanMapDiagramForm() {
   return `
-<div class="t1-ielts-creator">
-    <h1>Công cụ tạo câu hỏi IELTS Listening</h1>
-
-    <div class="t1-instructions-section">
-        <h2>Hướng dẫn tạo câu hỏi</h2>
-        <ol class="t1-instructions-list">
-            <li><strong>Chọn loại câu hỏi:</strong> Lựa chọn giữa Ghi nhãn Bản đồ, Sơ đồ Tàu, hoặc Sơ đồ Kỹ thuật.</li>
-            <li><strong>Đặt số lượng câu hỏi:</strong> Quyết định số lượng câu hỏi bạn muốn tạo (1-10).</li>
-            <li><strong>Viết hướng dẫn:</strong> Cung cấp hướng dẫn rõ ràng cho học viên làm theo.</li>
-            <li><strong>Tải lên hình ảnh:</strong> Chọn hình ảnh phù hợp cho câu hỏi (bản đồ, sơ đồ tàu, hoặc sơ đồ kỹ thuật).</li>
-            <li><strong>Thêm câu trả lời:</strong>
-                <ul>
-                    <li>Đối với Ghi nhãn Bản đồ: Nhập tên địa điểm và chữ cái đúng (A-H).</li>
-                    <li>Đối với Sơ đồ Tàu: Nhập tên khu vực và chữ cái hoặc số đúng.</li>
-                    <li>Đối với Sơ đồ Kỹ thuật: Chỉ nhập câu trả lời đúng.</li>
-                </ul>
-            </li>
-            <li><strong>Xem lại và Gửi:</strong> Kiểm tra tất cả các mục nhập và nhấp vào "Thêm câu hỏi" để tạo câu hỏi.</li>
-            <li><strong>Lưu câu hỏi:</strong> Sau khi tạo tất cả câu hỏi, nhấp vào "Lưu câu hỏi" để gửi về hệ thống.</li>
-        </ol>
+    <div class="t1-ielts-creator">
+      <form id="questionForm">
+        <div class="t1-form-group">
+          <label for="questionType">Loại câu hỏi:</label>
+          <select id="questionType" required>
+            <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
+            <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
+          </select>
+        </div>
+        <div class="t1-form-group">
+          <label for="instructions">Hướng dẫn:</label>
+          <textarea id="instructions" rows="3" required></textarea>
+        </div>
+        <div class="t1-form-group">
+          <label for="imageFile">Hình ảnh:</label>
+          <input type="file" id="imageFile" name="imageFile" accept="image/*" required>
+        </div>
+        <div id="answerInputs">
+          <!-- Answer inputs will be added here dynamically -->
+        </div>
+        <button type="button" onclick="addAnswerInput()">Thêm nhãn</button>
+        <div class="t1-form-actions">
+          <button type="button" class="save-question-btn" onclick="saveQuestion()">Lưu câu hỏi</button>
+          <button type="button" class="preview-question-btn" onclick="previewQuestion()">Xem trước</button>
+        </div>
+      </form>
     </div>
-
-    <div class="t1-form-section">
-        <h2>Tạo câu hỏi mới</h2>
-        <form id="questionForm">
-            <div class="t1-form-group">
-                <label for="questionType">Loại câu hỏi:</label>
-                <select id="questionType" required>
-                    <option value="map">Ghi nhãn Bản đồ</option>
-                    <option value="ship">Sơ đồ Tàu</option>
-                    <option value="technical">Sơ đồ Kỹ thuật</option>
-                </select>
-            </div>
-            <div class="t1-form-group">
-                <label for="numQuestions">Số lượng câu hỏi:</label>
-                <input type="number" id="numQuestions" min="1" max="10" value="3" required>
-            </div>
-            <div class="t1-form-group">
-                <label for="instructions">Hướng dẫn:</label>
-                <textarea id="instructions" rows="3" required></textarea>
-            </div>
-            <div class="t1-form-group">
-                <label for="imageFile">Tải lên hình ảnh:</label>
-                <input type="file" id="imageFile" accept="image/*" required>
-            </div>
-            <div id="answerInputs">
-                <!-- Answer inputs will be dynamically added here -->
-            </div>
-            <button type="submit">Thêm câu hỏi</button>
-        </form>
-    </div>
-
-    <div id="questionDisplay" class="t1-question-display">
-        <h2>Câu hỏi đã tạo</h2>
-        <!-- Questions will be dynamically added here -->
-    </div>
-
-    <div class="t1-save-button">
-        <button id="saveQuestionsBtn">Lưu câu hỏi</button>
-    </div>
-
-    <div id="notification" class="t1-notification" style="display: none;"></div>
-</div>
-`
+  `
 }
 
 // Tạo form cho câu hỏi Hoàn thành ghi chú
@@ -571,6 +535,206 @@ function initializeFormTableCompletionForm(container) {
 
 function initializeFlowChartCompletionForm(container) {
   console.log("Đã gọi initializeFlowChartCompletionForm")
+}
+
+// Add the missing function for saving questions
+function saveQuestion() {
+  const questionContainer = event.target.closest(".question")
+  if (!questionContainer) return
+
+  const questionType = questionContainer.querySelector("h3").textContent.trim()
+  let question = null
+
+  // Declare the missing functions
+  const saveOneAnswerQuestion = (container) => {
+    // Implement the logic to save a one-answer question
+    // This is just a placeholder
+    return { type: "Một đáp án", content: "Câu hỏi mẫu", correctAnswer: "Đáp án A" }
+  }
+
+  const saveMultipleAnswerQuestion = (container) => {
+    // Implement the logic to save a multiple-answer question
+    // This is just a placeholder
+    return { type: "Nhiều đáp án", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveMatchingQuestion = (container) => {
+    // Implement the logic to save a matching question
+    // This is just a placeholder
+    return { type: "Ghép nối", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const savePlanMapDiagramQuestion = (container) => {
+    // Implement the logic to save a plan/map diagram question
+    // This is just a placeholder
+    return { type: "Ghi nhãn Bản đồ/Sơ đồ", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveNoteCompletionQuestion = (container) => {
+    // Implement the logic to save a note completion question
+    // This is just a placeholder
+    return { type: "Hoàn thành ghi chú", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveFormTableCompletionQuestion = (container) => {
+    // Implement the logic to save a form/table completion question
+    // This is just a placeholder
+    return { type: "Hoàn thành bảng/biểu mẫu", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveFlowChartCompletionQuestion = (container) => {
+    // Implement the logic to save a flow chart completion question
+    // This is just a placeholder
+    return { type: "Hoàn thành lưu đồ", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  switch (questionType) {
+    case "Một đáp án":
+      question = saveOneAnswerQuestion(questionContainer)
+      break
+    case "Nhiều đáp án":
+      question = saveMultipleAnswerQuestion(questionContainer)
+      break
+    case "Ghép nối":
+      question = saveMatchingQuestion(questionContainer)
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      question = savePlanMapDiagramQuestion(questionContainer)
+      break
+    case "Hoàn thành ghi chú":
+      question = saveNoteCompletionQuestion(questionContainer)
+      break
+    case "Hoàn thành bảng/biểu mẫu":
+      question = saveFormTableCompletionQuestion(questionContainer)
+      break
+    case "Hoàn thành lưu đồ":
+      question = saveFlowChartCompletionQuestion(questionContainer)
+      break
+  }
+
+  if (question) {
+    // Find the index of this question in the current part
+    const questionIndex = Array.from(questionContainer.parentNode.children).indexOf(questionContainer)
+
+    // Update the question in the test object
+    test[`part${window.currentPart}`][questionIndex] = question
+
+    showNotification("Câu hỏi đã được lưu thành công", "success")
+  }
+}
+
+// Add the missing function for previewing questions
+function previewQuestion() {
+  const questionContainer = event.target.closest(".question")
+  if (!questionContainer) return
+
+  const questionType = questionContainer.querySelector("h3").textContent.trim()
+  let question = null
+
+  // Declare the missing functions
+  const saveOneAnswerQuestion = (container) => {
+    // Implement the logic to save a one-answer question
+    // This is just a placeholder
+    return { type: "Một đáp án", content: "Câu hỏi mẫu", correctAnswer: "Đáp án A" }
+  }
+
+  const saveMultipleAnswerQuestion = (container) => {
+    // Implement the logic to save a multiple-answer question
+    // This is just a placeholder
+    return { type: "Nhiều đáp án", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveMatchingQuestion = (container) => {
+    // Implement the logic to save a matching question
+    // This is just a placeholder
+    return { type: "Ghép nối", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const savePlanMapDiagramQuestion = (container) => {
+    // Implement the logic to save a plan/map diagram question
+    // This is just a placeholder
+    return { type: "Ghi nhãn Bản đồ/Sơ đồ", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveNoteCompletionQuestion = (container) => {
+    // Implement the logic to save a note completion question
+    // This is just a placeholder
+    return { type: "Hoàn thành ghi chú", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveFormTableCompletionQuestion = (container) => {
+    // Implement the logic to save a form/table completion question
+    // This is just a placeholder
+    return { type: "Hoàn thành bảng/biểu mẫu", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const saveFlowChartCompletionQuestion = (container) => {
+    // Implement the logic to save a flow chart completion question
+    // This is just a placeholder
+    return { type: "Hoàn thành lưu đồ", content: "Câu hỏi mẫu", correctAnswers: ["A", "B"] }
+  }
+
+  const renderQuestionPreview = (question) => {
+    // Implement the logic to render a question preview based on its type
+    // This is just a placeholder
+    return `<p>Xem trước cho câu hỏi loại: ${question.type}</p>`
+  }
+
+  switch (questionType) {
+    case "Một đáp án":
+      question = saveOneAnswerQuestion(questionContainer)
+      break
+    case "Nhiều đáp án":
+      question = saveMultipleAnswerQuestion(questionContainer)
+      break
+    case "Ghép nối":
+      question = saveMatchingQuestion(questionContainer)
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      question = savePlanMapDiagramQuestion(questionContainer)
+      break
+    case "Hoàn thành ghi chú":
+      question = saveNoteCompletionQuestion(questionContainer)
+      break
+    case "Hoàn thành bảng/biểu mẫu":
+      question = saveFormTableCompletionQuestion(questionContainer)
+      break
+    case "Hoàn thành lưu đồ":
+      question = saveFlowChartCompletionQuestion(questionContainer)
+      break
+  }
+
+  if (question) {
+    // Create a preview window
+    const previewWindow = window.open("", "Preview", "width=800,height=600")
+
+    // Generate preview content
+    let previewContent = `
+      <h2>Xem trước câu hỏi: ${question.type}</h2>
+      <div>${renderQuestionPreview(question)}</div>
+    `
+
+    // Add styles
+    previewContent = `
+      <html>
+        <head>
+          <title>Xem trước câu hỏi</title>
+          <style>
+            body { font-family: 'Times New Roman', Times, serif; margin: 20px; line-height: 1.6; color: #333; }
+            h2 { color: #003366; margin-bottom: 20px; }
+            .correct-answer { color: #27ae60; font-weight: bold; }
+            img { max-width: 100%; height: auto; }
+          </style>
+        </head>
+        <body>
+          ${previewContent}
+        </body>
+      </html>
+    `
+
+    previewWindow.document.write(previewContent)
+    previewWindow.document.close()
+  }
 }
 
 // Đảm bảo các hàm này được xuất đúng cách đến đối tượng window

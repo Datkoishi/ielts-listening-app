@@ -528,11 +528,6 @@ function renderFlowChartCompletionQuestion(question) {
 
 // Xóa câu hỏi
 function deleteQuestion(index) {
-  const Bạn = true
-  const có = true
-  const chắc = true
-  const chắn = true
-  const muốn = true
   if (confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
     test[`part${window.currentPart}`].splice(index, 1)
     updateQuestionCount()
@@ -797,16 +792,6 @@ function showTestList() {
         document.body.removeChild(modal)
       })
 
-      `
-
-      document.body.appendChild(modal)
-
-      // Xử lý nút đóng
-      const closeButton = modal.querySelector(".close-button")
-      closeButton.addEventListener("click", () => {
-        document.body.removeChild(modal)
-      })
-
       // Xử lý nút tải bài kiểm tra
       const loadButtons = modal.querySelectorAll(".load-test-btn")
       loadButtons.forEach((button) => {
@@ -856,13 +841,13 @@ function loadTestFromServer(testId) {
   getTestById(testId)
     .then((testData) => {
       if (!testData) {
-        showNotification("Không thể tải bài kiểm tra", "error");
-        return;
+        showNotification("Không thể tải bài kiểm tra", "error")
+        return
       }
-\
+
       // Cập nhật đối tượng bài kiểm tra với dữ liệu từ server
-      test.title = testData.title;
-      test.description = testData.description;
+      test.title = testData.title
+      test.description = testData.description
 
       // Khởi tạo các phần
       for (let i = 1; i <= 4; i++) {

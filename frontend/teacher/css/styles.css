@@ -1282,3 +1282,89 @@ textarea[name="note"] {
   margin-right: 8px;
 }
 
+/* Add styles for the Plan/Map/Diagram form */
+.t1-ielts-creator {
+  margin-bottom: 20px;
+}
+
+.t1-form-group {
+  margin-bottom: 15px;
+}
+
+.t1-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.t1-form-group input[type="text"],
+.t1-form-group select,
+.t1-form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.t1-form-group textarea {
+  min-height: 80px;
+}
+
+.t1-form-group .remove-answer-btn {
+  margin-left: 10px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.t1-form-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.save-question-btn,
+.preview-question-btn {
+  background-color: #003366;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preview-question-btn {
+  background-color: #4caf50;
+}
+
+.image-preview {
+  margin-top: 10px;
+}
+
+/* Fix for the modal display */
+.test-list-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.test-list-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+

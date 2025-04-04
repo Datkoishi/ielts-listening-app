@@ -325,7 +325,7 @@ function renderQuestionContent(question) {
   }
 }
 
-// Hàm trợ giúp để hiển thị hàng b���ng
+// Hàm trợ giúp để hiển thị hàng bảng
 function renderTableRows(data) {
   let rows = ""
   for (let i = 0; i < data.length; i += 3) {
@@ -408,15 +408,17 @@ function createPlanMapDiagramForm() {
   return `
     <div class="plan-map-diagram-form">
       <label for="type">Loại:</label>
-      <input type="text" id="type" name="type" required>
+      <select id="questionType" name="type" required>
+        <option value="plan">Plan</option>
+        <option value="map">Map</option>
+        <option value="diagram">Diagram</option>
+      </select>
       <label for="instructions">Hướng dẫn:</label>
       <input type="text" id="instructions" name="instructions" required>
       <label for="image">Hình ảnh:</label>
-      <input type="file" id="image" name="image" accept="image/*" required>
-      <label for="labels">Nhãn (cách nhau bằng dấu phẩy):</label>
-      <input type="text" id="labels" name="labels" required>
-      <label for="correctAnswers">Đáp án đúng (ví dụ: A, B, C):</label>
-      <input type="text" id="correctAnswers" name="correctAnswers" required>
+      <input type="file" id="imageFile" name="image" accept="image/*" required>
+      <div id="answerInputs"></div>
+      <button type="button" onclick="addAnswerInput()">Thêm nhãn</button>
     </div>
   `
 }
@@ -487,8 +489,130 @@ function initializeMatchingForm(questionDiv) {
   // Thêm logic khởi tạo nếu cần
 }
 
-function initializePlanMapDiagram(questionDiv) {
-  // Thêm logic khởi tạo nếu cần
+// Add the missing function for Plan/Map/Diagram labelling
+function initializePlanMapDiagram(container) {
+  const questionType = container.querySelector("#questionType")
+  const answerInputs = container.querySelector("#answerInputs")
+
+  // Function to add a new answer input
+  window.addAnswerInput = () => {
+    const index = answerInputs.children.length
+    const answerGroup = document.createElement("div")
+    answerGroup.className = "t1-form-group"
+
+    const isMapType = questionType.value === "map"
+
+    answerGroup.innerHTML = `
+      <label for="answer${index}">Nhãn ${index + 1}:</label>
+      <input type="text" id="answer${index}" required>
+      <label for="correctAnswer${index}">Đáp án đúng cho nhãn ${index + 1}:</label>
+      ${
+        isMapType
+          ? `<select id="correctAnswer${index}" required>
+            ${["A", "B", "C", "D", "E", "F", "G", "H"]
+              .map((letter) => `<option value="${letter}">${letter}</option>`)
+              .join("")}
+          </select>`
+          : `<input type="text" id="correctAnswer${index}" required>`
+      }
+      <button type="button" class="remove-answer-btn" onclick="removeAnswerInput(${index})">Xóa</button>
+    `
+
+    answerInputs.appendChild(answerGroup)
+  }
+
+  // Function to remove an answer input
+  window.removeAnswerInput = (index) => {
+    const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
+    if (index < answerGroups.length) {
+      answerInputs.removeChild(answerGroups[index])
+
+      // Update indices for remaining answer inputs
+      const remainingGroups = answerInputs.querySelectorAll(".t1-form-group")
+      remainingGroups.forEach((group, i) => {
+        const labels = group.querySelectorAll("label")
+        const inputs = group.querySelectorAll("input, select")
+        const button = group.querySelector("button")
+
+        labels[0].setAttribute("for", `answer${i}`)
+        labels[0].textContent = `Nhãn ${i + 1}:`
+        inputs[0].id = `answer${i}`
+
+        labels[1].setAttribute("for", `correctAnswer${i}`)
+        labels[1].textContent = `Đáp án đúng cho nhãn ${i + 1}:`
+        inputs[1].id = `correctAnswer${i}`
+
+        button.setAttribute("onclick", `removeAnswerInput(${i})`)
+      })
+    }
+  }
+
+  // Handle question type change
+  questionType.addEventListener("change", function () {
+    const isMapType = this.value === "map"
+    const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
+
+    answerGroups.forEach((group, index) => {
+      const correctAnswerLabel = group.querySelector(`label[for="correctAnswer${index}"]`)
+      const correctAnswerContainer = correctAnswerLabel.nextElementSibling
+      const currentValue = correctAnswerContainer.value || ""
+
+      // Replace the input/select with the appropriate type
+      if (isMapType && correctAnswerContainer.tagName !== "SELECT") {
+        correctAnswerLabel.insertAdjacentHTML(
+          "afterend",
+          `
+          <select id="correctAnswer${index}" required>
+            ${["A", "B", "C", "D", "E", "F", "G", "H"]
+              .map(
+                (letter) => `<option value="${letter}" ${currentValue === letter ? "selected" : ""}>${letter}</option>`,
+              )
+              .join("")}
+          </select>
+        `,
+        )
+        correctAnswerContainer.remove()
+      } else if (!isMapType && correctAnswerContainer.tagName !== "INPUT") {
+        correctAnswerLabel.insertAdjacentHTML(
+          "afterend",
+          `
+          <input type="text" id="correctAnswer${index}" value="${currentValue}" required>
+        `,
+        )
+        correctAnswerContainer.remove()
+      }
+    })
+  })
+
+  // Handle image upload
+  const imageFile = container.querySelector("#imageFile")
+  if (imageFile) {
+    imageFile.addEventListener("change", (e) => {
+      const file = e.target.files[0]
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          // Create or update image preview
+          let imgPreview = container.querySelector(".image-preview")
+          if (!imgPreview) {
+            imgPreview = document.createElement("div")
+            imgPreview.className = "image-preview"
+            imageFile.parentNode.appendChild(imgPreview)
+          }
+
+          imgPreview.innerHTML = `
+            <img src="${event.target.result}" alt="Preview" style="max-width: 200px; margin-top: 10px;">
+          `
+        }
+        reader.readAsDataURL(file)
+      }
+    })
+  }
+
+  // Add initial answer input if none exist
+  if (answerInputs.children.length === 0) {
+    window.addAnswerInput()
+  }
 }
 
 function initializeNoteCompletionForm(questionDiv) {
@@ -503,6 +627,67 @@ function initializeFlowChartCompletionForm(questionDiv) {
   // Thêm logic khởi tạo nếu cần
 }
 
+// Add the missing function for saving Plan/Map/Diagram questions
+function savePlanMapDiagramQuestion(container) {
+  const questionType = container.querySelector("#questionType").value
+  const instructions = container.querySelector("#instructions").value
+  const imageFile = container.querySelector("#imageFile")
+  const answerInputs = container.querySelector("#answerInputs")
+  const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
+
+  // Validate inputs
+  if (!instructions) {
+    showNotification("Vui lòng nhập hướng dẫn", "error")
+    return null
+  }
+
+  if (!imageFile.files[0] && !container.querySelector(".image-preview img")) {
+    showNotification("Vui lòng tải lên hình ảnh", "error")
+    return null
+  }
+
+  if (answerGroups.length === 0) {
+    showNotification("Vui lòng thêm ít nhất một nhãn", "error")
+    return null
+  }
+
+  // Get image source
+  let imageSource = ""
+  if (container.querySelector(".image-preview img")) {
+    imageSource = container.querySelector(".image-preview img").src
+  } else if (imageFile.files[0]) {
+    // This is a placeholder - in a real implementation, you'd upload the file to a server
+    // and get back a URL, but for this example we'll use a placeholder
+    imageSource = "/placeholder.svg?height=300&width=400"
+  }
+
+  // Collect labels and answers
+  const labels = []
+  const correctAnswers = []
+
+  answerGroups.forEach((group, index) => {
+    const label = group.querySelector(`#answer${index}`).value
+    const answer = group.querySelector(`#correctAnswer${index}`).value
+
+    if (!label || !answer) {
+      showNotification(`Vui lòng điền đầy đủ thông tin cho nhãn ${index + 1}`, "error")
+      return null
+    }
+
+    labels.push(label)
+    correctAnswers.push(answer)
+  })
+
+  // Create question object
+  const question = {
+    type: "Ghi nhãn Bản đồ/Sơ đồ",
+    content: [questionType, instructions, imageSource, ...labels],
+    correctAnswers: correctAnswers,
+  }
+
+  return question
+}
+
 // Make sure these functions are exposed to the global window object
 window.addQuestion = addQuestion
 window.deleteQuestion = deleteQuestion
@@ -512,4 +697,9 @@ window.displayExistingQuestions = displayExistingQuestions
 window.fetchQuestionTypes = fetchQuestionTypes
 window.updateQuestionCount = updateQuestionCount
 window.renumberQuestions = renumberQuestions
+
+// Dummy showNotification function
+function showNotification(message, type) {
+  alert(message)
+}
 
