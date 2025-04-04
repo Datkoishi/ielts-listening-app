@@ -373,45 +373,54 @@ function renderMatchingQuestion(question) {
 // Hiển thị câu hỏi Ghi nhãn Bản đồ/Sơ đồ
 function renderPlanMapDiagramQuestion(question) {
   const type = question.content[0]
-  const typeLabel = type === "map" ? "Ghi nhãn Bản đồ" : type === "ship" ? "Sơ đồ Tàu" : "Sơ đồ Kỹ thuật"
-  const answerTypeLabel = type === "map" ? "(Chọn từ A-H)" : "(Nhập đáp án tự do)"
+  const typeLabel = type === "map" ? "Ghi nhãn Bản đồ (Chọn từ A-H)" : "Sơ đồ Tàu (Nhập đáp án)"
 
   return `
-  <div class="t1-ielts-creator">
-    <div class="question-type-display">
-      <span class="question-type-badge">${typeLabel}</span>
-      <span class="answer-type-badge">${answerTypeLabel}</span>
+    <div class="t1-ielts-creator">
+      <form id="questionForm">
+        <div class="t1-form-group">
+          <label for="questionType">Loại câu hỏi:</label>
+          <select id="questionType" required>
+            <option value="map" ${type === "map" ? "selected" : ""}>Ghi nhãn Bản đồ (Chọn từ A-H)</option>
+            <option value="ship" ${type === "ship" ? "selected" : ""}>Sơ đồ Tàu (Nhập đáp án)</option>
+          </select>
+        </div>
+        <div class="t1-form-group">
+          <label for="instructions">Hướng dẫn:</label>
+          <textarea id="instructions" rows="3" required>${question.content[1]}</textarea>
+        </div>
+        <div class="t1-form-group">
+          <label for="imageFile">Hình ảnh đã tải lên:</label>
+          <img src="${question.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
+        </div>
+        <div id="answerInputs">
+          ${question.content
+            .slice(3)
+            .map(
+              (answer, index) => `
+              <div class="t1-form-group">
+                <label for="answer${index}">Nhãn ${index + 1}:</label>
+                <input type="text" id="answer${index}" value="${answer}" required>
+                <label for="correctAnswer${index}">Đáp án đúng cho nhãn ${index + 1}:</label>
+                ${
+                  type === "map"
+                    ? `<select id="correctAnswer${index}" required>
+                      ${["A", "B", "C", "D", "E", "F", "G", "H"]
+                        .map(
+                          (letter) =>
+                            `<option value="${letter}" ${question.correctAnswers[index] === letter ? "selected" : ""}>${letter}</option>`,
+                        )
+                        .join("")}
+                    </select>`
+                    : `<input type="text" id="correctAnswer${index}" value="${question.correctAnswers[index]}" required>`
+                }
+              </div>
+            `,
+            )
+            .join("")}
+        </div>
+      </form>
     </div>
-    
-    <div class="t1-form-group">
-      <label>Hướng dẫn:</label>
-      <div class="instruction-text">${question.content[1]}</div>
-    </div>
-    
-    <div class="t1-form-group">
-      <label>Hình ảnh:</label>
-      <div class="image-container">
-        <img src="${question.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 300px;">
-      </div>
-    </div>
-    
-    <div class="t1-form-group">
-      <label>Danh sách nhãn và đáp án:</label>
-      <div class="labels-list">
-        ${question.content
-          .slice(3)
-          .map(
-            (label, index) => `
-          <div class="label-item">
-            <span class="label-text">${label}</span>
-            <span class="answer-text">Đáp án: <strong>${question.correctAnswers[index]}</strong></span>
-          </div>
-        `,
-          )
-          .join("")}
-      </div>
-    </div>
-  </div>
   `
 }
 
@@ -519,6 +528,11 @@ function renderFlowChartCompletionQuestion(question) {
 
 // Xóa câu hỏi
 function deleteQuestion(index) {
+  const Bạn = true
+  const có = true
+  const chắc = true
+  const chắn = true
+  const muốn = true
   if (confirm("Bạn có chắc chắn muốn xóa câu hỏi này không?")) {
     test[`part${window.currentPart}`].splice(index, 1)
     updateQuestionCount()
@@ -783,6 +797,16 @@ function showTestList() {
         document.body.removeChild(modal)
       })
 
+      `
+
+      document.body.appendChild(modal)
+
+      // Xử lý nút đóng
+      const closeButton = modal.querySelector(".close-button")
+      closeButton.addEventListener("click", () => {
+        document.body.removeChild(modal)
+      })
+
       // Xử lý nút tải bài kiểm tra
       const loadButtons = modal.querySelectorAll(".load-test-btn")
       loadButtons.forEach((button) => {
@@ -815,7 +839,7 @@ function showTestList() {
               })
               .catch((error) => {
                 console.error("Lỗi khi xóa bài kiểm tra:", error)
-                showNotification(`Lỗi khi xóa bài kiểm tra: ${error.message}`, "error")
+                showNotification(`Lỗi khi xóa bài kiểm tra: $error.message`, "error")
               })
           }
         })
@@ -823,7 +847,7 @@ function showTestList() {
     })
     .catch((error) => {
       console.error("Lỗi khi lấy danh sách bài kiểm tra:", error)
-      showNotification(`Lỗi khi lấy danh sách bài kiểm tra: ${error.message}`, "error")
+      showNotification(`Lỗi khi lấy danh sách bài kiểm tra: $error.message`, "error")
     })
 }
 
@@ -832,17 +856,17 @@ function loadTestFromServer(testId) {
   getTestById(testId)
     .then((testData) => {
       if (!testData) {
-        showNotification("Không thể tải bài kiểm tra", "error")
-        return
+        showNotification("Không thể tải bài kiểm tra", "error");
+        return;
       }
-
+\
       // Cập nhật đối tượng bài kiểm tra với dữ liệu từ server
-      test.title = testData.title
-      test.description = testData.description
+      test.title = testData.title;
+      test.description = testData.description;
 
       // Khởi tạo các phần
       for (let i = 1; i <= 4; i++) {
-        test[`part${i}`] = []
+        test[`part$i`] = []
       }
 
       // Thêm câu hỏi vào các phần tương ứng
@@ -859,7 +883,7 @@ function loadTestFromServer(testId) {
                   ? JSON.parse(question.correct_answers)
                   : question.correct_answers
 
-              test[`part${partNumber}`].push({
+              test[`part$partNumber`].push({
                 type: question.question_type,
                 content: content,
                 correctAnswers: correctAnswers,
@@ -887,7 +911,7 @@ function loadTestFromServer(testId) {
     })
     .catch((error) => {
       console.error("Lỗi khi tải bài kiểm tra:", error)
-      showNotification(`Lỗi khi tải bài kiểm tra: ${error.message}`, "error")
+      showNotification(`Lỗi khi tải bài kiểm tra: $error.message`, "error")
     })
 }
 
@@ -902,7 +926,7 @@ function exportTest() {
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
-  a.download = `ielts_listening_test_${test.title.replace(/\s+/g, "_")}.json`
+  a.download = `ielts_listening_test_$test.title.replace(/\s+/g, "_").json`
   document.body.appendChild(a)
   a.click()
   document.body.removeChild(a)

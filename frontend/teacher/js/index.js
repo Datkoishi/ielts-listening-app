@@ -445,32 +445,63 @@ document.addEventListener("DOMContentLoaded", () => {
         break
       case "Ghi nhãn Bản đồ/Sơ đồ":
         formHTML = `
-    <div class="plan-map-diagram-form">
-      <h4 class="form-type-title">Ghi nhãn Bản đồ/Sơ đồ</h4>
-      <label for="type">Loại:</label>
-      <select id="type" name="type" required>
-        <option value="map">Ghi nhãn Bản đồ</option>
-        <option value="ship">Sơ đồ Tàu</option>
-        <option value="technical">Sơ đồ Kỹ thuật</option>
+  <div class="plan-map-diagram-form">
+    <div class="form-group">
+      <label for="type">Loại câu hỏi:</label>
+      <select id="type" name="type" required onchange="updatePlanMapDiagramForm(this)">
+        <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
+        <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
       </select>
+      <p class="form-help-text" id="typeHelpText">
+        <i class="fas fa-info-circle"></i> 
+        <span>Ghi nhãn Bản đồ: Người dùng chọn đáp án từ các lựa chọn có sẵn (A-H)</span>
+      </p>
+    </div>
+    
+    <div class="form-group">
       <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" required>
+      <textarea id="instructions" name="instructions" rows="3" required placeholder="Nhập hướng dẫn cho câu hỏi"></textarea>
+    </div>
+    
+    <div class="form-group">
       <label for="image">Hình ảnh:</label>
       <input type="file" id="image" name="image" accept="image/*" required>
-      <img id="image-preview" src="/placeholder.svg" alt="Xem trước hình ảnh" style="max-width: 300px; margin-top: 10px; display: none;">
-      <div id="labels-container">
-        <div class="label-row">
-          <label for="label1">Nhãn 1:</label>
-          <input type="text" id="label1" name="label" required>
-          <label for="answer1">Đáp án 1:</label>
-          <input type="text" id="answer1" name="answer" required>
-          <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-        </div>
-      </div>
-      <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+      <div id="imagePreview" class="image-preview"></div>
     </div>
-  `
+    
+    <div id="labels-container">
+      <h4><i class="fas fa-tags"></i> Danh sách nhãn và đáp án</h4>
+      <div class="label-row">
+        <div class="label-input-group">
+          <label for="label1">Nhãn 1:</label>
+          <input type="text" id="label1" name="label" required placeholder="Nhập nhãn">
+        </div>
+        <div class="answer-input-group map-answer-group">
+          <label for="answer1">Đáp án:</label>
+          <select id="answer1" name="answer" required>
+            <option value="">-- Chọn --</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+            <option value="H">H</option>
+          </select>
+        </div>
+        <div class="answer-input-group ship-answer-group" style="display: none;">
+          <label for="shipAnswer1">Đáp án:</label>
+          <input type="text" id="shipAnswer1" name="shipAnswer" required placeholder="Nhập đáp án">
+        </div>
+        <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    
+    <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
+    <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+  </div>
+`
         break
       case "Hoàn thành ghi chú":
         formHTML = `
@@ -866,20 +897,21 @@ function createMatchingForm() {
 `
 }
 
-// Update the createPlanMapDiagramForm function to include the new structure
+// Find the createPlanMapDiagramForm function and replace it with this improved version
 function createPlanMapDiagramForm() {
   return `
   <div class="plan-map-diagram-form">
     <div class="form-group">
       <label for="type">Loại câu hỏi:</label>
-      <select id="type" name="type" required>
-        <option value="map">Ghi nhãn Bản đồ</option>
-        <option value="ship">Sơ đồ Tàu</option>
-        <option value="technical">Sơ đồ Kỹ thuật</option>
+      <select id="type" name="type" required onchange="updatePlanMapDiagramForm(this)">
+        <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
+        <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
       </select>
+      <p class="form-help-text" id="typeHelpText">
+        <i class="fas fa-info-circle"></i> 
+        <span>Ghi nhãn Bản đồ: Người dùng chọn đáp án từ các lựa chọn có sẵn (A-H)</span>
+      </p>
     </div>
-    
-    <h3 class="form-type-title">Ghi nhãn Bản đồ (Chọn đáp án từ A-H)</h3>
     
     <div class="form-group">
       <label for="instructions">Hướng dẫn:</label>
@@ -889,20 +921,42 @@ function createPlanMapDiagramForm() {
     <div class="form-group">
       <label for="image">Hình ảnh:</label>
       <input type="file" id="image" name="image" accept="image/*" required>
-      <div class="image-preview-container"></div>
+      <div id="imagePreview" class="image-preview"></div>
     </div>
     
-    <div class="form-group">
-      <h4>Danh sách nhãn và đáp án</h4>
-      <div id="labels-container">
-        <!-- Labels will be added dynamically -->
+    <div id="labels-container">
+      <h4><i class="fas fa-tags"></i> Danh sách nhãn và đáp án</h4>
+      <div class="label-row">
+        <div class="label-input-group">
+          <label for="label1">Nhãn 1:</label>
+          <input type="text" id="label1" name="label" required placeholder="Nhập nhãn">
+        </div>
+        <div class="answer-input-group map-answer-group">
+          <label for="answer1">Đáp án:</label>
+          <select id="answer1" name="answer" required>
+            <option value="">-- Chọn --</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+            <option value="H">H</option>
+          </select>
+        </div>
+        <div class="answer-input-group ship-answer-group" style="display: none;">
+          <label for="shipAnswer1">Đáp án:</label>
+          <input type="text" id="shipAnswer1" name="shipAnswer" required placeholder="Nhập đáp án">
+        </div>
+        <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
       </div>
-      <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
     </div>
     
+    <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
     <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
   </div>
-  `
+`
 }
 
 function createNoteCompletionForm() {
@@ -923,6 +977,35 @@ function createNoteCompletionForm() {
 `
 }
 
+// Add this new function to update the form based on the selected type
+function updatePlanMapDiagramForm(selectElement) {
+  const questionDiv = selectElement.closest(".question")
+  const selectedType = selectElement.value
+  const helpText = questionDiv.querySelector("#typeHelpText span")
+
+  // Update help text based on selected type
+  if (selectedType === "map") {
+    helpText.textContent = "Ghi nhãn Bản đồ: Người dùng chọn đáp án từ các lựa chọn có sẵn (A-H)"
+  } else if (selectedType === "ship") {
+    helpText.textContent = "Sơ đồ Tàu: Người dùng nhập đáp án vào ô trống (không có lựa chọn sẵn)"
+  }
+
+  // Update all label rows to show/hide appropriate answer inputs
+  const labelRows = questionDiv.querySelectorAll(".label-row")
+  labelRows.forEach((row) => {
+    const mapAnswerGroup = row.querySelector(".map-answer-group")
+    const shipAnswerGroup = row.querySelector(".ship-answer-group")
+
+    if (selectedType === "map") {
+      mapAnswerGroup.style.display = "block"
+      shipAnswerGroup.style.display = "none"
+    } else {
+      mapAnswerGroup.style.display = "none"
+      shipAnswerGroup.style.display = "block"
+    }
+  })
+}
+
 // Khởi tạo các phần tử form động
 function initializeDynamicFormElements(questionDiv, questionType) {
   switch (questionType) {
@@ -936,7 +1019,7 @@ function initializeDynamicFormElements(questionDiv, questionType) {
       initializeMatchingForm(questionDiv)
       break
     case "Ghi nhãn Bản đồ/Sơ đồ":
-      initializePlanMapDiagramForm(questionDiv)
+      initializePlanMapDiagram(questionDiv)
       break
     case "Hoàn thành ghi chú":
       initializeNoteCompletionForm(questionDiv)
@@ -1172,6 +1255,177 @@ function initializeMatchingForm(questionDiv) {
   }
 }
 
+// Update the initializePlanMapDiagram function
+function initializePlanMapDiagram(questionDiv) {
+  const typeSelect = questionDiv.querySelector("#type")
+  const addLabelBtn = questionDiv.querySelector(".add-label-btn")
+  const labelsContainer = questionDiv.querySelector("#labels-container")
+  const imageInput = questionDiv.querySelector("#image")
+  const imagePreview = questionDiv.querySelector("#imagePreview")
+
+  // Initialize the form based on the selected type
+  if (typeSelect) {
+    updatePlanMapDiagramForm(typeSelect)
+
+    // Add event listener for type change
+    typeSelect.addEventListener("change", function () {
+      updatePlanMapDiagramForm(this)
+    })
+  }
+
+  // Image preview functionality
+  if (imageInput && imagePreview) {
+    imageInput.addEventListener("change", (e) => {
+      if (e.target.files && e.target.files[0]) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width: 200px; max-height: 200px;">`
+        }
+        reader.readAsDataURL(e.target.files[0])
+      }
+    })
+  }
+
+  // Add new label row functionality
+  if (addLabelBtn && labelsContainer) {
+    addLabelBtn.addEventListener("click", () => {
+      const labelRows = labelsContainer.querySelectorAll(".label-row")
+      const newIndex = labelRows.length + 1
+      const selectedType = typeSelect.value
+
+      const newLabelRow = document.createElement("div")
+      newLabelRow.className = "label-row"
+      newLabelRow.innerHTML = `
+        <div class="label-input-group">
+          <label for="label${newIndex}">Nhãn ${newIndex}:</label>
+          <input type="text" id="label${newIndex}" name="label" required placeholder="Nhập nhãn">
+        </div>
+        <div class="answer-input-group map-answer-group" ${selectedType !== "map" ? 'style="display: none;"' : ""}>
+          <label for="answer${newIndex}">Đáp án:</label>
+          <select id="answer${newIndex}" name="answer" required>
+            <option value="">-- Chọn --</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+            <option value="E">E</option>
+            <option value="F">F</option>
+            <option value="G">G</option>
+            <option value="H">H</option>
+          </select>
+        </div>
+        <div class="answer-input-group ship-answer-group" ${selectedType !== "ship" ? 'style="display: none;"' : ""}>
+          <label for="shipAnswer${newIndex}">Đáp án:</label>
+          <input type="text" id="shipAnswer${newIndex}" name="shipAnswer" required placeholder="Nhập đáp án">
+        </div>
+        <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
+      `
+
+      labelsContainer.appendChild(newLabelRow)
+
+      // Initialize remove button for the new row
+      const removeButton = newLabelRow.querySelector(".remove-label-btn")
+      if (removeButton) {
+        removeButton.addEventListener("click", () => {
+          newLabelRow.remove()
+        })
+      }
+    })
+  }
+
+  // Initialize existing remove buttons
+  const removeButtons = questionDiv.querySelectorAll(".remove-label-btn")
+  removeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      btn.closest(".label-row").remove()
+    })
+  })
+
+  // Save question button
+  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
+  if (saveQuestionBtn) {
+    saveQuestionBtn.addEventListener("click", () => {
+      savePlanMapDiagramQuestion(questionDiv)
+    })
+  }
+}
+
+// Update the savePlanMapDiagramQuestion function
+function savePlanMapDiagramQuestion(questionDiv) {
+  try {
+    // Get form data
+    const type = questionDiv.querySelector("#type").value
+    const instructions = questionDiv.querySelector("#instructions").value.trim()
+    const imageFile = questionDiv.querySelector("#image").files[0]
+    const imagePreview = questionDiv.querySelector("#imagePreview img")
+    const imageDataUrl = imagePreview ? imagePreview.src : ""
+
+    // Get labels and answers based on the selected type
+    const labels = Array.from(questionDiv.querySelectorAll('input[name="label"]')).map((input) => input.value.trim())
+    let answers = []
+
+    if (type === "map") {
+      answers = Array.from(questionDiv.querySelectorAll('select[name="answer"]')).map((select) => select.value)
+    } else if (type === "ship") {
+      answers = Array.from(questionDiv.querySelectorAll('input[name="shipAnswer"]')).map((input) => input.value.trim())
+    }
+
+    // Validate inputs
+    if (!instructions || labels.length === 0 || answers.length === 0 || !imageDataUrl) {
+      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
+      return
+    }
+
+    // Validate that all labels have answers
+    if (labels.length !== answers.length) {
+      window.showNotification("Mỗi nhãn phải có một đáp án tương ứng", "error")
+      return
+    }
+
+    // Validate that all fields are filled
+    if (labels.some((label) => !label) || answers.some((answer) => !answer)) {
+      window.showNotification("Vui lòng điền đầy đủ tất cả các nhãn và đáp án", "error")
+      return
+    }
+
+    // Create question data object
+    const questionData = {
+      type: "Ghi nhãn Bản đồ/Sơ đồ",
+      content: [type, instructions, imageDataUrl, ...labels],
+      correctAnswers: answers,
+    }
+
+    // Add to test object
+    if (!window.test[`part${window.currentPart}`]) {
+      window.test[`part${window.currentPart}`] = []
+    }
+
+    // Find the index of this question in the part
+    const questionElement = questionDiv.closest(".question")
+    const partElement = questionElement.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionElement)
+
+    if (questionIndex !== -1) {
+      // Update existing question
+      window.test[`part${window.currentPart}`][questionIndex] = questionData
+    } else {
+      // Add new question
+      window.test[`part${window.currentPart}`].push(questionData)
+    }
+
+    window.showNotification("Đã lưu câu hỏi thành công!", "success")
+
+    // Update UI
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      window.renderQuestionsForCurrentPart()
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi ghi nhãn bản đồ/sơ đồ:", error)
+    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  }
+}
+
 // Cập nhật hàm saveMatchingQuestion để xử lý dữ liệu từ form mới
 function saveMatchingQuestion(questionDiv) {
   try {
@@ -1230,216 +1484,6 @@ function saveMatchingQuestion(questionDiv) {
     }
   } catch (error) {
     console.error("Lỗi khi lưu câu hỏi ghép nối:", error)
-    window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
-  }
-}
-
-// Find the initializePlanMapDiagramForm function and replace it with this updated version
-function initializePlanMapDiagramForm(questionDiv) {
-  const typeSelect = questionDiv.querySelector("#type")
-  const labelsContainer = questionDiv.querySelector("#labels-container")
-  const addLabelBtn = questionDiv.querySelector(".add-label-btn")
-  const imageInput = questionDiv.querySelector("#image")
-  const imagePreview = questionDiv.querySelector("#image-preview")
-
-  // Function to update the form based on the selected type
-  function updateFormByType() {
-    const selectedType = typeSelect.value
-
-    // Clear existing labels
-    labelsContainer.innerHTML = ""
-
-    // Add initial label based on type
-    addLabelRow(selectedType)
-
-    // Update the form title based on type
-    const formTitle = questionDiv.querySelector(".form-type-title")
-    if (formTitle) {
-      if (selectedType === "map") {
-        formTitle.textContent = "Ghi nhãn Bản đồ (Chọn đáp án từ A-H)"
-      } else {
-        formTitle.textContent = "Sơ đồ Tàu/Kỹ thuật (Nhập đáp án tự do)"
-      }
-    }
-  }
-
-  // Function to add a new label row
-  function addLabelRow(type) {
-    const labelCount = labelsContainer.children.length + 1
-    const newLabelRow = document.createElement("div")
-    newLabelRow.className = "label-row"
-
-    if (type === "map") {
-      // Map labelling with A-H options
-      newLabelRow.innerHTML = `
-        <label for="label${labelCount}">Nhãn ${labelCount}:</label>
-        <input type="text" id="label${labelCount}" name="label" required placeholder="Nhập nội dung nhãn">
-        <div class="answer-options">
-          <label>Đáp án đúng:</label>
-          <div class="radio-options">
-            ${["A", "B", "C", "D", "E", "F", "G", "H"]
-              .map(
-                (letter) =>
-                  `<label class="radio-label">
-                <input type="radio" name="correctAnswer${labelCount}" value="${letter}" ${letter === "A" ? "checked" : ""}>
-                ${letter}
-              </label>`,
-              )
-              .join("")}
-          </div>
-        </div>
-        <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-      `
-    } else {
-      // Ship/Technical diagram with free text input
-      newLabelRow.innerHTML = `
-        <label for="label${labelCount}">Nhãn ${labelCount}:</label>
-        <input type="text" id="label${labelCount}" name="label" required placeholder="Nhập nội dung nhãn">
-        <label for="answer${labelCount}">Đáp án đúng:</label>
-        <input type="text" id="answer${labelCount}" name="answer" required placeholder="Nhập đáp án tự do">
-        <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-      `
-    }
-
-    labelsContainer.appendChild(newLabelRow)
-
-    // Initialize remove button for the new row
-    const removeButton = newLabelRow.querySelector(".remove-label-btn")
-    if (removeButton) {
-      removeButton.addEventListener("click", () => {
-        newLabelRow.remove()
-      })
-    }
-  }
-
-  // Add event listener for type change
-  if (typeSelect) {
-    typeSelect.addEventListener("change", updateFormByType)
-  }
-
-  // Add event listener for add label button
-  if (addLabelBtn) {
-    addLabelBtn.addEventListener("click", () => {
-      addLabelRow(typeSelect.value)
-    })
-  }
-
-  // Handle image preview
-  if (imageInput) {
-    imageInput.addEventListener("change", (e) => {
-      const file = e.target.files[0]
-      if (file) {
-        const reader = new FileReader()
-        reader.onload = (event) => {
-          if (imagePreview) {
-            imagePreview.src = event.target.result
-            imagePreview.style.display = "block"
-          } else {
-            // Create image preview if it doesn't exist
-            const newImagePreview = document.createElement("img")
-            newImagePreview.id = "image-preview"
-            newImagePreview.src = event.target.result
-            newImagePreview.style.maxWidth = "300px"
-            newImagePreview.style.marginTop = "10px"
-            newImagePreview.style.display = "block"
-            imageInput.parentElement.appendChild(newImagePreview)
-          }
-        }
-        reader.readAsDataURL(file)
-      }
-    })
-  }
-
-  // Initialize existing remove buttons
-  const removeLabelBtns = questionDiv.querySelectorAll(".remove-label-btn")
-  removeLabelBtns.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      btn.closest(".label-row").remove()
-    })
-  })
-
-  // Save question button
-  const saveQuestionBtn = questionDiv.querySelector(".save-question-btn")
-  if (saveQuestionBtn) {
-    saveQuestionBtn.addEventListener("click", () => {
-      savePlanMapDiagramQuestion(questionDiv)
-    })
-  }
-
-  // Initialize the form based on the default selected type
-  updateFormByType()
-}
-
-// Update the savePlanMapDiagramQuestion function to handle both types
-function savePlanMapDiagramQuestion(questionDiv) {
-  try {
-    // Get form data
-    const type = questionDiv.querySelector("#type").value
-    const instructions = questionDiv.querySelector("#instructions").value
-    const imagePreview = questionDiv.querySelector("#image-preview")
-    const imageDataUrl = imagePreview ? imagePreview.src : ""
-
-    // Get labels and answers based on type
-    const labels = Array.from(questionDiv.querySelectorAll('input[name="label"]')).map((input) => input.value)
-    let answers = []
-
-    if (type === "map") {
-      // For map type, get selected radio buttons
-      answers = labels.map((_, index) => {
-        const selectedRadio = questionDiv.querySelector(`input[name="correctAnswer${index + 1}"]:checked`)
-        return selectedRadio ? selectedRadio.value : ""
-      })
-    } else {
-      // For ship/technical type, get text inputs
-      answers = Array.from(questionDiv.querySelectorAll('input[name="answer"]')).map((input) => input.value)
-    }
-
-    // Validate inputs
-    if (!instructions || !imageDataUrl || labels.length === 0 || answers.length === 0) {
-      window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
-      return
-    }
-
-    // Check if all answers are provided
-    if (answers.some((answer) => !answer)) {
-      window.showNotification("Vui lòng cung cấp đáp án cho tất cả các nhãn", "error")
-      return
-    }
-
-    // Create question object
-    const questionData = {
-      type: "Ghi nhãn Bản đồ/Sơ đồ",
-      content: [type, instructions, imageDataUrl, ...labels],
-      correctAnswers: answers,
-    }
-
-    // Add to test object
-    if (!window.test[`part${window.currentPart}`]) {
-      window.test[`part${window.currentPart}`] = []
-    }
-
-    // Find index of this question in the part
-    const questionElement = questionDiv.closest(".question")
-    const partElement = questionElement.closest(".part")
-    const questions = Array.from(partElement.querySelectorAll(".question"))
-    const questionIndex = questions.indexOf(questionElement)
-
-    if (questionIndex !== -1) {
-      // Update existing question
-      window.test[`part${window.currentPart}`][questionIndex] = questionData
-    } else {
-      // Add new question
-      window.test[`part${window.currentPart}`].push(questionData)
-    }
-
-    window.showNotification("Đã lưu câu hỏi thành công!", "success")
-
-    // Update UI
-    if (typeof window.renderQuestionsForCurrentPart === "function") {
-      window.renderQuestionsForCurrentPart()
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi ghi nhãn bản đồ/sơ đồ:", error)
     window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
 }
@@ -1872,21 +1916,12 @@ function saveFormTableCompletionQuestion(questionDiv) {
   try {
     // Lấy dữ liệu từ form
     const instructions = questionDiv.querySelector("#instructions").value
-    const rows = Array.from(questionDiv.querySelectorAll("#formTable tbody tr"))
-    const tableData = []
-    const answers = []
+    const cells = Array.from(questionDiv.querySelectorAll('input[name="cell"]')).map((input) => input.value)
+    const tableAnswers = Array.from(questionDiv.querySelectorAll('input[name="tableAnswer"]')).map(
+      (input) => input.value,
+    )
 
-    rows.forEach((row) => {
-      const cells = Array.from(row.querySelectorAll('input[name="cell"]')).map((input) => input.value)
-      const answer = row.querySelector('input[name="tableAnswer"]').value
-
-      if (cells.length > 0 && cells.every((cell) => cell) && answer) {
-        tableData.push(...cells)
-        answers.push(answer)
-      }
-    })
-
-    if (!instructions || tableData.length === 0 || answers.length === 0) {
+    if (!instructions || cells.length === 0 || tableAnswers.length === 0) {
       window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
       return
     }
@@ -1894,8 +1929,8 @@ function saveFormTableCompletionQuestion(questionDiv) {
     // Tạo đối tượng câu hỏi
     const questionData = {
       type: "Hoàn thành bảng/biểu mẫu",
-      content: [instructions, ...tableData],
-      correctAnswers: answers,
+      content: [instructions, ...cells],
+      correctAnswers: tableAnswers,
     }
 
     // Thêm vào đối tượng test
@@ -1938,7 +1973,7 @@ function saveFlowChartCompletionQuestion(questionDiv) {
     const flowOptions = Array.from(questionDiv.querySelectorAll('input[name="flowOption"]')).map((input) => input.value)
     const flowAnswers = Array.from(questionDiv.querySelectorAll('input[name="flowAnswer"]')).map((input) => input.value)
 
-    if (!title || !instructions || flowItems.length === 0 || flowOptions.length === 0 || flowAnswers.length === 0) {
+    if (!title || !instructions || flowItems.length === 0 || flowAnswers.length === 0) {
       window.showNotification("Vui lòng điền đầy đủ thông tin câu hỏi", "error")
       return
     }

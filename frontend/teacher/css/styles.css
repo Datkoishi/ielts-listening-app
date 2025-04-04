@@ -1142,7 +1142,7 @@ textarea[name="note"] {
   transform: scale(1.05);
 }
 
-/* Add styles for the Plan/Map/Diagram form */
+/* Add these styles for the Plan/Map/Diagram form */
 .plan-map-diagram-form {
   background-color: #f8fafd;
   padding: 25px;
@@ -1154,24 +1154,44 @@ textarea[name="note"] {
   margin-bottom: 20px;
 }
 
-.plan-map-diagram-form h3.form-type-title {
-  color: #1a3a6e;
-  font-size: 18px;
-  margin-top: 15px;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #e0e9f7;
-}
-
 .plan-map-diagram-form h4 {
   color: #1a3a6e;
-  font-size: 16px;
+  margin-top: 20px;
   margin-bottom: 15px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.plan-map-diagram-form h4 i {
+  margin-right: 8px;
+}
+
+.form-help-text {
+  margin-top: 5px;
+  color: #4a5568;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.form-help-text i {
+  color: #1a3a6e;
+  margin-right: 5px;
+}
+
+.image-preview {
+  margin-top: 10px;
+  min-height: 50px;
+  border: 1px dashed #d1dbe8;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .label-row {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   margin-bottom: 15px;
   background-color: #f0f7ff;
@@ -1183,150 +1203,82 @@ textarea[name="note"] {
 
 .label-row:hover {
   background-color: #e8f1fd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.label-row label {
-  min-width: 100px;
-  margin-right: 10px;
-  font-weight: 500;
-}
-
-.label-row input[type="text"] {
+.label-input-group,
+.answer-input-group {
   flex: 1;
-  min-width: 200px;
   margin-right: 15px;
-  margin-bottom: 0;
 }
 
-.answer-options {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-}
-
-.radio-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-left: 10px;
-}
-
-.radio-label {
-  display: flex;
-  align-items: center;
-  background-color: #ffffff;
-  padding: 5px 10px;
-  border-radius: 4px;
-  border: 1px solid #d1dbe8;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.radio-label:hover {
-  background-color: #f0f7ff;
-  border-color: #1a3a6e;
-}
-
-.radio-label input[type="radio"] {
-  margin-right: 5px;
-  accent-color: #1a3a6e;
-}
-
-.image-preview-container {
-  margin-top: 10px;
-}
-
-#image-preview {
-  max-width: 300px;
-  border: 1px solid #d1dbe8;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .label-row {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .label-row input[type="text"] {
-    width: 100%;
-    margin-right: 0;
-    margin-bottom: 10px;
-  }
-
-  .radio-options {
-    margin-left: 0;
-    margin-top: 10px;
-  }
-}
-
-/* Add styles for the rendered Plan/Map/Diagram question */
-.question-type-display {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.question-type-badge {
-  background-color: #1a3a6e;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
+.label-input-group label,
+.answer-input-group label {
+  display: block;
+  margin-bottom: 5px;
   font-weight: 500;
-  font-size: 14px;
-}
-
-.answer-type-badge {
-  background-color: #4caf50;
-  color: white;
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-.instruction-text {
-  background-color: #f8fafd;
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: 1px solid #e0e9f7;
-  margin-top: 5px;
-}
-
-.image-container {
-  margin: 10px 0;
-  padding: 10px;
-  background-color: #f8fafd;
-  border-radius: 8px;
-  border: 1px solid #e0e9f7;
-  display: inline-block;
-}
-
-.labels-list {
-  margin-top: 10px;
-}
-
-.label-item {
-  display: flex;
-  justify-content: space-between;
-  background-color: #f8fafd;
-  padding: 10px 15px;
-  border-radius: 8px;
-  border: 1px solid #e0e9f7;
-  margin-bottom: 8px;
-}
-
-.label-text {
-  font-weight: 500;
-}
-
-.answer-text {
   color: #1a3a6e;
 }
 
-.answer-text strong {
-  color: #4caf50;
+.label-input-group input,
+.answer-input-group input,
+.answer-input-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1dbe8;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #ffffff;
+}
+
+.label-input-group input:focus,
+.answer-input-group input:focus,
+.answer-input-group select:focus {
+  outline: none;
+  border-color: #1a3a6e;
+  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.1);
+}
+
+.remove-label-btn {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-label-btn:hover {
+  background-color: #ff3838;
+  transform: scale(1.05);
+}
+
+.add-label-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.add-label-btn:hover {
+  background-color: #43a047;
+  transform: translateY(-2px);
+}
+
+.add-label-btn i {
+  margin-right: 8px;
 }
 
