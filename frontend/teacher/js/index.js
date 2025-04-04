@@ -1803,7 +1803,7 @@ function saveOneAnswerQuestion(questionDiv) {
       window.renderQuestionsForCurrentPart()
     }
   } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi một đáp án:", error)
+    console.error("Lỗi khi l��u câu hỏi một đáp án:", error)
     window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
 }
