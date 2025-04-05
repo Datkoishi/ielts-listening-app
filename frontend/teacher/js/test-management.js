@@ -1839,18 +1839,18 @@ function startTestCreation() {
 // Lưu một câu hỏi cụ thể
 function saveIndividualQuestion(partNumber, questionIndex) {
   try {
-    console.log(`Lưu câu hỏi ${questionIndex + 1} trong phần ${partNumber}`)
+    console.log(`Saving question ${questionIndex + 1} in part ${partNumber}`)
 
-    // Lấy phần tử câu hỏi từ DOM
+    // Get the question element from DOM
     const partElement = document.getElementById(`part${partNumber}`)
     if (!partElement) {
-      showNotification("Không tìm thấy phần chứa câu hỏi", "error")
+      showNotification("Could not find the part containing the question", "error")
       return false
     }
 
     const questionElements = partElement.querySelectorAll(".question")
     if (questionIndex >= questionElements.length) {
-      showNotification("Không tìm thấy câu hỏi cần lưu", "error")
+      showNotification("Could not find the question to save", "error")
       return false
     }
 
@@ -1860,7 +1860,7 @@ function saveIndividualQuestion(partNumber, questionIndex) {
       .textContent.trim()
       .replace(/^[\s\S]*\s/, "")
 
-    // Lấy dữ liệu câu hỏi dựa trên loại
+    // Get question data based on type
     let updatedQuestion = null
 
     switch (questionType) {
@@ -1886,28 +1886,31 @@ function saveIndividualQuestion(partNumber, questionIndex) {
         updatedQuestion = getFlowChartCompletionQuestionData(questionElement)
         break
       default:
-        showNotification(`Không hỗ trợ lưu loại câu hỏi: ${questionType}`, "error")
+        showNotification(`Unsupported question type: ${questionType}`, "error")
         return false
     }
 
     if (!updatedQuestion) {
-      showNotification("Không thể lấy dữ liệu câu hỏi", "error")
+      showNotification("Could not get question data", "error")
       return false
     }
 
-    // Cập nhật câu hỏi trong đối tượng test
+    // Update ONLY this specific question in the test object
     test[`part${partNumber}`][questionIndex] = updatedQuestion
 
-    // Hiển thị thông báo thành công
-    showNotification(`Đã lưu câu hỏi ${questionIndex + 1} trong phần ${partNumber}`, "success")
+    // Show success notification
+    showNotification(`Saved question ${questionIndex + 1} in part ${partNumber}`, "success")
 
-    // Đánh dấu câu hỏi đã được lưu
+    // Mark the question as saved
     questionElement.classList.add("saved-question")
+
+    // Add a green border to indicate the question is saved
+    questionElement.style.borderLeft = "4px solid #28a745"
 
     return true
   } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi:", error)
-    showNotification(`Lỗi khi lưu câu hỏi: ${error.message}`, "error")
+    console.error("Error saving question:", error)
+    showNotification(`Error saving question: ${error.message}`, "error")
     return false
   }
 }
@@ -2128,31 +2131,31 @@ function getFlowChartCompletionQuestionData(questionElement) {
 // Thêm hàm để bật/tắt chế độ chỉnh sửa câu hỏi
 function toggleQuestionEditMode(questionElement) {
   if (questionElement.classList.contains("editing")) {
-    // Đang ở chế độ chỉnh sửa, chuyển sang chế độ xem
+    // Currently in edit mode, switch to view mode
     questionElement.classList.remove("editing")
 
-    // Vô hiệu hóa các trường nhập liệu
+    // Disable input fields
     const inputs = questionElement.querySelectorAll("input, textarea, select")
     inputs.forEach((input) => {
       input.setAttribute("disabled", "disabled")
     })
 
-    // Cập nhật nút
+    // Update button text
     const editButton = questionElement.querySelector(".edit-question-btn")
     if (editButton) {
       editButton.innerHTML = '<i class="fas fa-edit"></i> Chỉnh sửa'
     }
   } else {
-    // Đang ở chế độ xem, chuyển sang chế độ chỉnh sửa
+    // Currently in view mode, switch to edit mode
     questionElement.classList.add("editing")
 
-    // Kích hoạt các trường nhập liệu
+    // Enable input fields
     const inputs = questionElement.querySelectorAll("input, textarea, select")
     inputs.forEach((input) => {
       input.removeAttribute("disabled")
     })
 
-    // Cập nhật nút
+    // Update button text
     const editButton = questionElement.querySelector(".edit-question-btn")
     if (editButton) {
       editButton.innerHTML = '<i class="fas fa-eye"></i> Xem'

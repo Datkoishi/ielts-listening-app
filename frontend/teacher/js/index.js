@@ -695,43 +695,134 @@ window.addQuestion = (questionType) => {
 }
 
 // Triển khai đơn giản của renderQuestionsForCurrentPart
-window.renderQuestionsForCurrentPart = () => {
-  console.log("Đang hiển thị câu hỏi cho phần hiện tại:", window.currentPart)
+// window.renderQuestionsForCurrentPart = () => {
+//   console.log("Đang hiển thị câu hỏi cho phần hiện tại:", window.currentPart)
 
-  const partElement = document.getElementById(`part${window.currentPart}`)
-  if (!partElement) {
-    console.error(`Không tìm thấy phần tử cho part${window.currentPart}`)
-    return
+//   const partElement = document.getElementById(`part${window.currentPart}`)
+//   if (!partElement) {
+//     console.error(`Không tìm thấy phần tử cho part${window.currentPart}`)
+//     return
+//   }
+
+//   // Xóa nội dung container phần
+//   partElement.innerHTML = ""
+
+//   // Lấy câu hỏi cho phần hiện tại
+//   const questions = window.test[`part${window.currentPart}`] || []
+
+//   if (questions.length === 0) {
+//     partElement.innerHTML = `<div class="no-questions">Không có câu hỏi nào trong phần này. Nhấn "Thêm câu hỏi" để bắt đầu.</div>`
+//     return
+//   }
+
+//   // Hiển thị từng câu hỏi
+//   questions.forEach((question, index) => {
+//     const questionDiv = document.createElement("div")
+//     questionDiv.className = "question"
+
+//     // Tạo nội dung câu hỏi
+//     questionDiv.innerHTML = `
+//     <h4><i class="fas fa-question-circle"></i> Câu hỏi ${index + 1}</h4>
+//     <h3><i class="fas fa-check-circle"></i> ${question.type}</h3>
+//     <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
+//     <div class="question-content">
+//       <p><strong>Nội dung:</strong> ${question.content[0]}</p>
+//       <p><strong>Đáp án:</strong> ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(", ") : question.correctAnswers}</p>
+//     </div>
+//   `
+
+//     partElement.appendChild(questionDiv)
+//   })
+// }
+
+// Add this function to render the question content with save and edit buttons
+function renderQuestionContent(question) {
+  let content = ""
+
+  switch (question.type) {
+    case "Một đáp án":
+      content = renderOneAnswerQuestion(question)
+      break
+    case "Nhiều đáp án":
+      content = renderMultipleAnswerQuestion(question)
+      break
+    case "Ghép nối":
+      content = renderMatchingQuestion(question)
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      content = renderPlanMapDiagramQuestion(question)
+      break
+    case "Hoàn thành ghi chú":
+      content = renderNoteCompletionQuestion(question)
+      break
+    case "Hoàn thành bảng/biểu mẫu":
+      content = renderFormTableCompletionQuestion(question)
+      break
+    case "Hoàn thành lưu đồ":
+      content = renderFlowChartCompletionQuestion(question)
+      break
+    default:
+      content = `<p>Không hỗ trợ loại câu hỏi này: ${question.type}</p>`
   }
 
-  // Xóa nội dung container phần
-  partElement.innerHTML = ""
-
-  // Lấy câu hỏi cho phần hiện tại
-  const questions = window.test[`part${window.currentPart}`] || []
-
-  if (questions.length === 0) {
-    partElement.innerHTML = `<div class="no-questions">Không có câu hỏi nào trong phần này. Nhấn "Thêm câu hỏi" để bắt đầu.</div>`
-    return
-  }
-
-  // Hiển thị từng câu hỏi
-  questions.forEach((question, index) => {
-    const questionDiv = document.createElement("div")
-    questionDiv.className = "question"
-
-    // Tạo nội dung câu hỏi
-    questionDiv.innerHTML = `
-    <h4><i class="fas fa-question-circle"></i> Câu hỏi ${index + 1}</h4>
-    <h3><i class="fas fa-check-circle"></i> ${question.type}</h3>
-    <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
-    <div class="question-content">
-      <p><strong>Nội dung:</strong> ${question.content[0]}</p>
-      <p><strong>Đáp án:</strong> ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(", ") : question.correctAnswers}</p>
+  // Add save and edit buttons
+  content += `
+    <div class="question-actions">
+      <button class="save-question-btn" onclick="saveIndividualQuestion(window.currentPart, Array.from(this.closest('.part').querySelectorAll('.question')).indexOf(this.closest('.question')))">
+        <i class="fas fa-save"></i> Lưu câu hỏi
+      </button>
+      <button class="edit-question-btn" onclick="toggleQuestionEditMode(this.closest('.question'))">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
     </div>
   `
 
-    partElement.appendChild(questionDiv)
+  return content
+}
+
+// Add this function to render questions for the current part
+window.renderQuestionsForCurrentPart = () => {
+  console.log(`Rendering questions for part ${window.currentPart}`)
+  const part = document.getElementById(`part${window.currentPart}`)
+  if (!part) {
+    console.error(`part${window.currentPart} element not found!`)
+    return
+  }
+
+  // Clear the part container
+  part.innerHTML = ""
+
+  // Check if there are any questions in this part
+  if (!window.test[`part${window.currentPart}`] || window.test[`part${window.currentPart}`].length === 0) {
+    part.innerHTML = `<div class="no-questions">Không có câu hỏi nào trong phần này. Nhấn "Thêm câu hỏi" để bắt đầu.</div>`
+    return
+  }
+
+  // Calculate the starting question index for this part
+  let questionIndex = 0
+  for (let i = 1; i < window.currentPart; i++) {
+    questionIndex += window.test[`part${i}`]?.length || 0
+  }
+
+  // Render each question in this part
+  window.test[`part${window.currentPart}`].forEach((question, index) => {
+    const questionDiv = document.createElement("div")
+    questionDiv.className = "question"
+    questionDiv.innerHTML = `
+      <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionIndex + index + 1}</h4>
+      <h3>${getIconForType(question.type)} ${question.type}</h3>
+      <button class="delete-question" onclick="deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
+      ${renderQuestionContent(question)}
+    `
+    part.appendChild(questionDiv)
+
+    // Set default view mode (disable input fields)
+    setTimeout(() => {
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.setAttribute("disabled", "disabled")
+      })
+    }, 100)
   })
 }
 
@@ -1803,7 +1894,7 @@ function saveOneAnswerQuestion(questionDiv) {
       window.renderQuestionsForCurrentPart()
     }
   } catch (error) {
-    console.error("Lỗi khi l��u câu hỏi một đáp án:", error)
+    console.error("Lỗi khi lưu câu hỏi một đáp án:", error)
     window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
 }
@@ -2014,5 +2105,34 @@ function saveFlowChartCompletionQuestion(questionDiv) {
     console.error("Lỗi khi lưu câu hỏi hoàn thành lưu đồ:", error)
     window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
+}
+
+// Dummy render functions to avoid errors, these should be defined elsewhere (e.g., form-handlers.js)
+function renderOneAnswerQuestion(question) {
+  return `<p>Rendered One Answer Question: ${question.content[0]}</p>`
+}
+
+function renderMultipleAnswerQuestion(question) {
+  return `<p>Rendered Multiple Answer Question: ${question.content[0]}</p>`
+}
+
+function renderMatchingQuestion(question) {
+  return `<p>Rendered Matching Question: ${question.content[0]}</p>`
+}
+
+function renderPlanMapDiagramQuestion(question) {
+  return `<p>Rendered Plan Map Diagram Question: ${question.content[0]}</p>`
+}
+
+function renderNoteCompletionQuestion(question) {
+  return `<p>Rendered Note Completion Question: ${question.content[0]}</p>`
+}
+
+function renderFormTableCompletionQuestion(question) {
+  return `<p>Rendered Form Table Completion Question: ${question.content[0]}</p>`
+}
+
+function renderFlowChartCompletionQuestion(question) {
+  return `<p>Rendered Flow Chart Completion Question: ${question.content[0]}</p>`
 }
 

@@ -113,20 +113,28 @@ button i {
   transition: all 0.3s ease;
 }
 
+/* Add styles for saved questions */
+.question.saved-question {
+  border-left: 4px solid #28a745;
+}
+
+/* Improve styles for edit/view modes */
 .question:not(.editing) input:not([type="file"]),
 .question:not(.editing) textarea,
 .question:not(.editing) select {
   background-color: #f8f9fa;
   border-color: transparent;
   pointer-events: none;
+  cursor: not-allowed;
 }
 
-.question.saved-question {
-  border-left: 4px solid #28a745;
-}
-
-.question.editing {
-  border-left: 4px solid #007bff;
+.question.editing input:not([type="file"]),
+.question.editing textarea,
+.question.editing select {
+  background-color: #ffffff;
+  border-color: #d1dbe8;
+  pointer-events: auto;
+  cursor: text;
 }
 
 .delete-question {
@@ -383,6 +391,7 @@ select:focus {
   margin-right: 8px;
 }
 
+/* Improve styles for save and edit buttons */
 .question-actions {
   display: flex;
   gap: 10px;
@@ -515,7 +524,7 @@ textarea[name="note"] {
   border-radius: 6px;
 }
 
-/* Cải thiện giao diện cho thông báo */
+/* Add a notification style for feedback */
 .notification {
   position: fixed;
   top: 20px;
