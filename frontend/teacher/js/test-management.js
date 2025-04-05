@@ -253,7 +253,7 @@ function renderQuestionsForCurrentPart() {
   // Render each question in this part
   test[`part${window.currentPart}`].forEach((question, index) => {
     const questionDiv = document.createElement("div")
-    questionDiv.className = "question"
+    questionDiv.className = "question view-mode" // Mặc định ở chế độ xem
     questionDiv.innerHTML = `
       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionIndex + index + 1}</h4>
       <h3>${getIconForType(question.type)} ${question.type}</h3>
@@ -261,6 +261,12 @@ function renderQuestionsForCurrentPart() {
       ${renderQuestionContent(question)}
     `
     part.appendChild(questionDiv)
+
+    // Vô hiệu hóa các trường input khi ở chế độ xem
+    const inputs = questionDiv.querySelectorAll("input, textarea, select")
+    inputs.forEach((input) => {
+      input.disabled = true
+    })
   })
 }
 
@@ -307,11 +313,17 @@ function renderQuestionContent(question) {
       content = `<p>Không hỗ trợ loại câu hỏi này: ${question.type}</p>`
   }
 
-  // Thêm nút lưu cho từng câu hỏi
+  // Thêm nút lưu và chỉnh sửa cho từng câu hỏi
   content += `
     <div class="question-actions">
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
       <button class="save-question-btn" onclick="saveQuestionChanges(this)">
         <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-times"></i> Hủy
       </button>
     </div>
   `
@@ -1652,7 +1664,7 @@ function addQuestionDirectly(questionType) {
 
     // Create the question form in the DOM
     const questionDiv = document.createElement("div")
-    questionDiv.className = "question"
+    questionDiv.className = "question edit-mode" // Câu hỏi mới ở chế độ chỉnh sửa
 
     // Add question header
     const questionNumber = test[`part${window.currentPart}`].length
@@ -1709,6 +1721,21 @@ function addQuestionDirectly(questionType) {
     // Add form HTML to question div
     questionDiv.innerHTML += formHTML
 
+    // Thêm nút lưu và chỉnh sửa
+    questionDiv.innerHTML += `
+      <div class="question-actions">
+        <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
+          <i class="fas fa-edit"></i> Chỉnh sửa
+        </button>
+        <button class="save-question-btn" onclick="saveQuestionChanges(this)">
+          <i class="fas fa-save"></i> Lưu thay đổi
+        </button>
+        <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)">
+          <i class="fas fa-times"></i> Hủy
+        </button>
+      </div>
+    `
+
     // Append the question div to the part element
     partElement.appendChild(questionDiv)
 
@@ -1762,6 +1789,30 @@ function addQuestionDirectly(questionType) {
     showNotification(`Lỗi khi tạo câu hỏi: ${error.message}`, "error")
   }
 }
+
+// Make sure all functions are available globally
+window.addQuestionDirectly = addQuestionDirectly
+window.renderTestCreation = renderTestCreation
+window.startTestCreation = startTestCreation
+window.previousPart = previousPart
+window.nextPart = nextPart
+window.saveTest = saveTest
+window.deleteQuestion = deleteQuestion
+window.showNotification = showNotification
+window.updateQuestionCount = updateQuestionCount
+window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
+window.previewEntireTest = previewEntireTest
+window.exportTest = exportTest
+window.importTest = importTest
+window.showTestList = showTestList
+window.createNewTest = createNewTest
+window.duplicateTest = duplicateTest
+window.generateTestPDF = generateTestPDF
+window.saveQuestionChanges = saveQuestionChanges
+window.toggleQuestionEdit = toggleQuestionEdit
+window.cancelQuestionEdit = cancelQuestionEdit
+window.setQuestionEditMode = setQuestionEditMode
+window.setQuestionViewMode = setQuestionViewMode
 
 // Sửa đổi hàm document.addEventListener("DOMContentLoaded", ...) để loại bỏ kiểm tra đăng nhập
 document.addEventListener("DOMContentLoaded", () => {
@@ -1867,6 +1918,9 @@ function saveQuestionChanges(button) {
       // Cập nhật câu hỏi trong đối tượng test
       test[`part${window.currentPart}`][questionIndex] = updatedQuestion
       showNotification(`Đã lưu thay đổi cho câu hỏi ${questionIndex + 1}`, "success")
+
+      // Chuyển sang chế độ xem sau khi lưu
+      setQuestionViewMode(questionDiv)
     } else {
       showNotification("Không thể lưu câu hỏi, vui lòng kiểm tra dữ liệu nhập", "error")
     }
@@ -1874,6 +1928,122 @@ function saveQuestionChanges(button) {
     console.error("Lỗi khi lưu câu hỏi:", error)
     showNotification(`Lỗi khi lưu câu hỏi: ${error.message}`, "error")
   }
+}
+
+// Thêm hàm để chuyển đổi giữa chế độ xem và chỉnh sửa
+function toggleQuestionEdit(button) {
+  const questionDiv = button.closest(".question")
+  if (!questionDiv) return
+
+  // Kiểm tra xem câu hỏi đang ở chế độ xem hay chỉnh sửa
+  const isViewMode = questionDiv.classList.contains("view-mode")
+
+  if (isViewMode) {
+    // Chuyển sang chế độ chỉnh sửa
+    setQuestionEditMode(questionDiv)
+  } else {
+    // Chuyển sang chế độ xem
+    setQuestionViewMode(questionDiv)
+  }
+}
+
+// Hàm để hủy chỉnh sửa và quay lại chế độ xem
+function cancelQuestionEdit(button) {
+  const questionDiv = button.closest(".question")
+  if (!questionDiv) return
+
+  // Lấy chỉ mục của câu hỏi
+  const part = document.getElementById(`part${window.currentPart}`)
+  const questions = Array.from(part.querySelectorAll(".question"))
+  const questionIndex = questions.indexOf(questionDiv)
+
+  if (questionIndex === -1) return
+
+  // Lấy dữ liệu câu hỏi gốc
+  const originalQuestion = test[`part${window.currentPart}`][questionIndex]
+
+  // Render lại câu hỏi với dữ liệu gốc
+  const questionType = originalQuestion.type
+  let contentHTML = ""
+
+  switch (questionType) {
+    case "Một đáp án":
+      contentHTML = renderOneAnswerQuestion(originalQuestion)
+      break
+    case "Nhiều đáp án":
+      contentHTML = renderMultipleAnswerQuestion(originalQuestion)
+      break
+    case "Ghép nối":
+      contentHTML = renderMatchingQuestion(originalQuestion)
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      contentHTML = renderPlanMapDiagramQuestion(originalQuestion)
+      break
+    case "Hoàn thành ghi chú":
+      contentHTML = renderNoteCompletionQuestion(originalQuestion)
+      break
+    case "Hoàn thành bảng/biểu mẫu":
+      contentHTML = renderFormTableCompletionQuestion(originalQuestion)
+      break
+    case "Hoàn thành lưu đồ":
+      contentHTML = renderFlowChartCompletionQuestion(originalQuestion)
+      break
+  }
+
+  // Thay thế nội dung form
+  const formContainer = questionDiv.querySelector(
+    ".t3-question-creator, .t4-container, .t1-ielts-creator, .t2-listening-exercise-app, .t6-ielts-listening-creator, .t7-ielts-flow-chart-creator",
+  )
+  if (formContainer) {
+    formContainer.outerHTML = contentHTML
+  }
+
+  // Chuyển sang chế độ xem
+  setQuestionViewMode(questionDiv)
+
+  showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
+}
+
+// Hàm để thiết lập chế độ chỉnh sửa
+function setQuestionEditMode(questionDiv) {
+  // Xóa class view-mode và thêm class edit-mode
+  questionDiv.classList.remove("view-mode")
+  questionDiv.classList.add("edit-mode")
+
+  // Hiển thị nút Hủy và ẩn nút Chỉnh sửa
+  const editBtn = questionDiv.querySelector(".edit-question-btn")
+  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+  if (editBtn) editBtn.style.display = "none"
+  if (cancelBtn) cancelBtn.style.display = "inline-block"
+
+  // Kích hoạt tất cả các trường input
+  const inputs = questionDiv.querySelectorAll("input, textarea, select")
+  inputs.forEach((input) => {
+    input.disabled = false
+  })
+
+  showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
+}
+
+// Hàm để thiết lập chế độ xem
+function setQuestionViewMode(questionDiv) {
+  // Xóa class edit-mode và thêm class view-mode
+  questionDiv.classList.remove("edit-mode")
+  questionDiv.classList.add("view-mode")
+
+  // Hiển thị nút Chỉnh sửa và ẩn nút Hủy
+  const editBtn = questionDiv.querySelector(".edit-question-btn")
+  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+  if (editBtn) editBtn.style.display = "inline-block"
+  if (cancelBtn) cancelBtn.style.display = "none"
+
+  // Vô hiệu hóa tất cả các trường input
+  const inputs = questionDiv.querySelectorAll("input, textarea, select")
+  inputs.forEach((input) => {
+    input.disabled = true
+  })
 }
 
 // Thêm các hàm lưu cho từng loại câu hỏi
