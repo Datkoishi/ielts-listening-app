@@ -1370,3 +1370,142 @@ textarea[name="note"] {
   overflow-y: auto;
 }
 
+/* Thêm CSS cho nút lưu câu hỏi */
+.question-actions {
+  margin-top: 15px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.save-question-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.3s;
+}
+
+.save-question-btn:hover {
+  background-color: #45a049;
+}
+
+/* Cải thiện giao diện form câu hỏi */
+.question {
+  background-color: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.question h3 {
+  margin-top: 0;
+  color: #333;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.question h4 {
+  color: #555;
+  font-size: 16px;
+  margin-bottom: 15px;
+}
+
+.question input[type="text"],
+.question textarea,
+.question select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  margin-bottom: 10px;
+}
+
+.question textarea {
+  min-height: 80px;
+}
+
+.question label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #444;
+}
+
+.question .delete-question {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.question .delete-question:hover {
+  background-color: #e60000;
+}
+
+/* Cải thiện giao diện form ghép nối */
+.t3-form-group {
+  margin-bottom: 15px;
+}
+
+/* Cải thiện giao diện form bản đồ/sơ đồ */
+.t1-form-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+/* Cải thiện giao diện form ghi chú */
+.t2-listening-exercise-form-group {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
+/* Cải thiện giao diện form bảng/biểu mẫu */
+#tableSection table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 15px;
+}
+
+#tableSection th,
+#tableSection td {
+  padding: 8px;
+  border: 1px solid #ddd;
+}
+
+#tableSection th {
+  background-color: #f2f2f2;
+  text-align: left;
+}
+
+/* Cải thiện giao diện form lưu đồ */
+.t7-question-form {
+  margin-bottom: 15px;
+  padding: 10px;
+  background-color: #f5f5f5;
+  border-radius: 5px;
+}
+
