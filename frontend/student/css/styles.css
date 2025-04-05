@@ -102,18 +102,31 @@ button i {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
 }
 
+/* Thêm CSS cho chế độ chỉnh sửa và xem câu hỏi */
 .question {
   position: relative;
-  padding: 20px;
-  margin-bottom: 25px;
-  background-color: #f8fafd;
-  border: 1px solid #e0e9f7;
-  border-radius: 10px;
+  margin-bottom: 20px;
+  padding: 15px;
+  border-radius: 5px;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
-.question:hover {
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+.question:not(.editing) input:not([type="file"]),
+.question:not(.editing) textarea,
+.question:not(.editing) select {
+  background-color: #f8f9fa;
+  border-color: transparent;
+  pointer-events: none;
+}
+
+.question.saved-question {
+  border-left: 4px solid #28a745;
+}
+
+.question.editing {
+  border-left: 4px solid #007bff;
 }
 
 .delete-question {
@@ -370,28 +383,46 @@ select:focus {
   margin-right: 8px;
 }
 
+.question-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
 .save-question-btn {
-  background-color: #2196f3;
+  background-color: #28a745;
   color: white;
   border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
+  padding: 6px 12px;
+  border-radius: 4px;
   cursor: pointer;
-  margin-top: 20px;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 14px;
   display: flex;
   align-items: center;
-  transition: all 0.3s ease;
+  gap: 5px;
+  transition: background-color 0.2s;
 }
 
 .save-question-btn:hover {
-  background-color: #0b7dda;
-  transform: translateY(-2px);
+  background-color: #218838;
 }
 
-.save-question-btn i {
-  margin-right: 8px;
+.edit-question-btn {
+  background-color: #17a2b8;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: background-color 0.2s;
+}
+
+.edit-question-btn:hover {
+  background-color: #138496;
 }
 
 .options-container,
@@ -943,17 +974,18 @@ textarea[name="note"] {
   display: flex;
   align-items: center;
   margin-bottom: 15px;
-  background-color: #1a3a6e;
+  background-color: #f0f7ff; /* Thay đổi màu nền thành màu sáng hơn */
   padding: 10px 15px;
   border-radius: 8px;
-  color: white;
+  color: #1a3a6e; /* Thay đổi màu chữ của container */
+  border: 1px solid #e0e9f7;
 }
 
 .section-title-input {
   flex: 1;
   background-color: transparent;
   border: none;
-  color: white;
+  color: #1a3a6e; /* Thay đổi màu chữ thành màu xanh đậm */
   font-weight: 600;
   font-size: 16px;
   padding: 5px 0;
@@ -962,17 +994,18 @@ textarea[name="note"] {
 
 .section-title-input:focus {
   outline: none;
-  border-bottom: 1px solid white;
+  border-bottom: 1px solid #1a3a6e;
   box-shadow: none;
 }
 
 .section-title-input::placeholder {
-  color: rgba(255, 255, 255, 0.7);
+  color: rgba(26, 58, 110, 0.7); /* Điều chỉnh màu placeholder */
 }
 
 .section-icon {
   margin-left: 10px;
   font-size: 18px;
+  color: #1a3a6e; /* Thay đổi màu biểu tượng */
 }
 
 /* Cập nhật CSS cho matching-items và matching-matches */
@@ -1140,5 +1173,276 @@ textarea[name="note"] {
 .remove-match-btn:hover {
   background-color: #ff3838;
   transform: scale(1.05);
+}
+
+/* Add these styles for the Plan/Map/Diagram form */
+.plan-map-diagram-form {
+  background-color: #f8fafd;
+  padding: 25px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.plan-map-diagram-form .form-group {
+  margin-bottom: 20px;
+}
+
+.plan-map-diagram-form h4 {
+  color: #1a3a6e;
+  margin-top: 20px;
+  margin-bottom: 15px;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.plan-map-diagram-form h4 i {
+  margin-right: 8px;
+}
+
+.form-help-text {
+  margin-top: 5px;
+  color: #4a5568;
+  font-size: 14px;
+  font-style: italic;
+}
+
+.form-help-text i {
+  color: #1a3a6e;
+  margin-right: 5px;
+}
+
+.image-preview {
+  margin-top: 10px;
+  min-height: 50px;
+  border: 1px dashed #d1dbe8;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  background-color: #f0f7ff;
+  padding: 15px;
+  border-radius: 8px;
+  border: 1px solid #e0e9f7;
+  transition: all 0.3s ease;
+}
+
+.label-row:hover {
+  background-color: #e8f1fd;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.label-input-group,
+.answer-input-group {
+  flex: 1;
+  margin-right: 15px;
+}
+
+.label-input-group label,
+.answer-input-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #1a3a6e;
+}
+
+.label-input-group input,
+.answer-input-group input,
+.answer-input-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #d1dbe8;
+  border-radius: 6px;
+  font-size: 14px;
+  background-color: #ffffff;
+}
+
+.label-input-group input:focus,
+.answer-input-group input:focus,
+.answer-input-group select:focus {
+  outline: none;
+  border-color: #1a3a6e;
+  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.1);
+}
+
+.remove-label-btn {
+  background-color: #ff5252;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.remove-label-btn:hover {
+  background-color: #ff3838;
+  transform: scale(1.05);
+}
+
+.add-label-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  margin-bottom: 20px;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.add-label-btn:hover {
+  background-color: #43a047;
+  transform: translateY(-2px);
+}
+
+.add-label-btn i {
+  margin-right: 8px;
+}
+
+/* Add styles for the Plan/Map/Diagram form */
+.t1-ielts-creator {
+  margin-bottom: 20px;
+}
+
+.t1-form-group {
+  margin-bottom: 15px;
+}
+
+.t1-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.t1-form-group input[type="text"],
+.t1-form-group select,
+.t1-form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.t1-form-group textarea {
+  min-height: 80px;
+}
+
+.t1-form-group .remove-answer-btn {
+  margin-left: 10px;
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.t1-form-actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.save-question-btn,
+.preview-question-btn {
+  background-color: #003366;
+  color: white;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.preview-question-btn {
+  background-color: #4caf50;
+}
+
+.image-preview {
+  margin-top: 10px;
+}
+
+/* Fix for the modal display */
+.test-list-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.test-list-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Cải thiện giao diện cho các loại câu hỏi */
+.t3-form-group,
+.t4-form-group,
+.t1-form-group,
+.t2-listening-exercise-form-group {
+  margin-bottom: 15px;
+}
+
+.t3-form-group label,
+.t4-form-group label,
+.t1-form-group label,
+.t2-listening-exercise-form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+}
+
+.t3-form-group input,
+.t3-form-group textarea,
+.t4-form-group input,
+.t4-form-group textarea,
+.t1-form-group input,
+.t1-form-group textarea,
+.t2-listening-exercise-form-group input,
+.t2-listening-exercise-form-group textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  transition: border-color 0.15s ease-in-out;
+}
+
+.t3-form-group input:focus,
+.t3-form-group textarea:focus,
+.t4-form-group input:focus,
+.t4-form-group textarea:focus,
+.t1-form-group input:focus,
+.t1-form-group textarea:focus,
+.t2-listening-exercise-form-group input:focus,
+.t2-listening-exercise-form-group textarea:focus {
+  border-color: #80bdff;
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
 
