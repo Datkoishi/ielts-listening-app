@@ -253,7 +253,7 @@ function renderQuestionsForCurrentPart() {
   // Render each question in this part
   test[`part${window.currentPart}`].forEach((question, index) => {
     const questionDiv = document.createElement("div")
-    questionDiv.className = "question view-mode" // Mặc định ở chế độ xem
+    questionDiv.className = "question view-mode" // Default to view mode
     questionDiv.innerHTML = `
       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionIndex + index + 1}</h4>
       <h3>${getIconForType(question.type)} ${question.type}</h3>
@@ -262,11 +262,20 @@ function renderQuestionsForCurrentPart() {
     `
     part.appendChild(questionDiv)
 
-    // Vô hiệu hóa các trường input khi ở chế độ xem
+    // Disable input fields in view mode
     const inputs = questionDiv.querySelectorAll("input, textarea, select")
     inputs.forEach((input) => {
       input.disabled = true
     })
+
+    // Show edit button and hide save/cancel buttons
+    const editBtn = questionDiv.querySelector(".edit-question-btn")
+    const saveBtn = questionDiv.querySelector(".save-question-btn")
+    const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+    if (editBtn) editBtn.style.display = "inline-block"
+    if (saveBtn) saveBtn.style.display = "none"
+    if (cancelBtn) cancelBtn.style.display = "none"
   })
 }
 
@@ -313,13 +322,13 @@ function renderQuestionContent(question) {
       content = `<p>Không hỗ trợ loại câu hỏi này: ${question.type}</p>`
   }
 
-  // Thêm nút lưu và chỉnh sửa cho từng câu hỏi
+  // Add edit, save, and cancel buttons for each question
   content += `
     <div class="question-actions">
       <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
         <i class="fas fa-edit"></i> Chỉnh sửa
       </button>
-      <button class="save-question-btn" onclick="saveQuestionChanges(this)">
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
         <i class="fas fa-save"></i> Lưu thay đổi
       </button>
       <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
@@ -1557,7 +1566,7 @@ function showValidationResults() {
 }
 
 // Thêm câu hỏi trực tiếp
-const addQuestionDirectly = (questionType) => {
+function addQuestionDirectly(questionType) {
   console.log("addQuestionDirectly function called with type:", questionType)
 
   try {
@@ -1664,7 +1673,7 @@ const addQuestionDirectly = (questionType) => {
 
     // Create the question form in the DOM
     const questionDiv = document.createElement("div")
-    questionDiv.className = "question edit-mode" // Câu hỏi mới ở chế độ chỉnh sửa
+    questionDiv.className = "question edit-mode" // New questions start in edit mode
 
     // Add question header
     const questionNumber = test[`part${window.currentPart}`].length
@@ -1721,7 +1730,7 @@ const addQuestionDirectly = (questionType) => {
     // Add form HTML to question div
     questionDiv.innerHTML += formHTML
 
-    // Thêm nút lưu và chỉnh sửa
+    // Add save and cancel buttons (edit button is hidden in edit mode)
     questionDiv.innerHTML += `
       <div class="question-actions">
         <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
@@ -1787,6 +1796,146 @@ const addQuestionDirectly = (questionType) => {
   } catch (error) {
     console.error("Error creating question:", error)
     showNotification(`Lỗi khi tạo câu hỏi: ${error.message}`, "error")
+  }
+}
+
+// Make sure all functions are available globally
+window.addQuestionDirectly = addQuestionDirectly
+window.renderTestCreation = renderTestCreation
+window.startTestCreation = startTestCreation
+window.previousPart = previousPart
+window.nextPart = nextPart
+window.saveTest = saveTest
+window.deleteQuestion = deleteQuestion
+window.showNotification = showNotification
+window.updateQuestionCount = updateQuestionCount
+window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
+window.previewEntireTest = previewEntireTest
+window.exportTest = exportTest
+window.importTest = importTest
+window.showTestList = showTestList
+window.createNewTest = createNewTest
+window.duplicateTest = duplicateTest
+window.generateTestPDF = generateTestPDF
+window.saveQuestionChanges = saveQuestionChanges
+window.toggleQuestionEdit = toggleQuestionEdit
+window.cancelQuestionEdit = cancelQuestionEdit
+window.setQuestionEditMode = setQuestionEditMode
+window.setQuestionViewMode = setQuestionViewMode
+
+// Sửa đổi hàm document.addEventListener("DOMContentLoaded", ...) để loại bỏ kiểm tra đăng nhập
+document.addEventListener("DOMContentLoaded", () => {
+  // Thêm sự kiện cho nút bắt đầu tạo bài kiểm tra
+  const startButton = document.querySelector(".selection-page button")
+  if (startButton) {
+    startButton.addEventListener("click", startTestCreation)
+  }
+})
+
+// Bắt đầu tạo bài kiểm tra
+function startTestCreation() {
+  // Lấy các loại câu hỏi đã chọn
+  const selectedTypes = []
+  document.querySelectorAll('.question-type input[type="checkbox"]:checked').forEach((checkbox) => {
+    selectedTypes.push(checkbox.value)
+  })
+
+  if (selectedTypes.length === 0) {
+    showNotification("Vui lòng chọn ít nhất một loại câu hỏi", "error")
+    return
+  }
+
+  // Chuyển đến trang tạo bài kiểm tra
+  document.getElementById("selectionPage").classList.add("hidden")
+  document.getElementById("testCreationPage").classList.remove("hidden")
+
+  // Khởi tạo bài kiểm tra mới
+  test = {
+    title: "Bài kiểm tra IELTS Listening mới",
+    description: "Mô tả bài kiểm tra",
+    part1: [],
+    part2: [],
+    part3: [],
+    part4: [],
+  }
+
+  // Hiển thị giao diện tạo bài kiểm tra
+  window.currentPart = 1
+  renderTestCreation()
+
+  // Automatically show question creation form for the first selected type
+  if (selectedTypes.length > 0) {
+    console.log("Automatically creating question form for: " + selectedTypes[0])
+    addQuestionDirectly(selectedTypes[0])
+  }
+}
+
+// Thêm hàm mới để lưu thay đổi cho từng câu hỏi riêng biệt
+function saveQuestionChanges(button) {
+  try {
+    // Tìm phần tử câu hỏi chứa nút được nhấn
+    const questionDiv = button.closest(".question")
+    if (!questionDiv) {
+      showNotification("Không tìm thấy câu hỏi để lưu", "error")
+      return
+    }
+
+    // Lấy chỉ mục của câu hỏi trong phần hiện tại
+    const part = document.getElementById(`part${window.currentPart}`)
+    const questions = Array.from(part.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionDiv)
+
+    if (questionIndex === -1) {
+      showNotification("Không thể xác định vị trí câu hỏi", "error")
+      return
+    }
+
+    // Lấy loại câu hỏi
+    const questionType = questionDiv
+      .querySelector("h3")
+      .textContent.trim()
+      .replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1")
+
+    // Lấy dữ liệu từ form dựa trên loại câu hỏi
+    let updatedQuestion = null
+
+    switch (questionType) {
+      case "Một đáp án":
+        updatedQuestion = saveOneAnswerQuestion(questionDiv)
+        break
+      case "Nhiều đáp án":
+        updatedQuestion = saveMultipleAnswerQuestion(questionDiv)
+        break
+      case "Ghép nối":
+        updatedQuestion = saveMatchingQuestion(questionDiv)
+        break
+      case "Ghi nhãn Bản đồ/Sơ đồ":
+        updatedQuestion = savePlanMapDiagramQuestion(questionDiv)
+        break
+      case "Hoàn thành ghi chú":
+        updatedQuestion = saveNoteCompletionQuestion(questionDiv)
+        break
+      case "Hoàn thành bảng/biểu mẫu":
+        updatedQuestion = saveFormTableCompletionQuestion(questionDiv)
+        break
+      case "Hoàn thành lưu đồ":
+        updatedQuestion = saveFlowChartCompletionQuestion(questionDiv)
+        break
+    }
+
+    if (updatedQuestion) {
+      // Cập nhật câu hỏi trong đối tượng test
+      test[`part${window.currentPart}`][questionIndex] = updatedQuestion
+      showNotification(`Đã lưu thay đổi cho câu hỏi ${questionIndex + 1}`, "success")
+
+      // Chuyển sang chế độ xem sau khi lưu
+      setQuestionViewMode(questionDiv)
+    } else {
+      showNotification("Không thể lưu câu hỏi, vui lòng kiểm tra dữ liệu nhập", "error")
+    }
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi:", error)
+    showNotification(`Lỗi khi lưu câu hỏi: ${error.message}`, "error")
   }
 }
 
@@ -1905,614 +2054,6 @@ function setQuestionViewMode(questionDiv) {
     input.disabled = true
   })
 }
-
-// Cập nhật hàm renderQuestionContent để thêm các nút điều khiển
-// function renderQuestionContent(question) {
-//   let content = "";
-//   switch (question.type) {
-//     case "Một đáp án":
-//       content = renderOneAnswerQuestion(question);
-//       break;
-//     case "Nhiều đáp án":
-//       content = renderMultipleAnswerQuestion(question);
-//       break;
-//     case "Ghép nối":
-//       content = renderMatchingQuestion(question);
-//       break;
-//     case "Ghi nhãn Bản đồ/Sơ đồ":
-//       content = renderPlanMapDiagramQuestion(question);
-//       break;
-//     case "Hoàn thành ghi chú":
-//       content = renderNoteCompletionQuestion(question);
-//       break;
-//     case "Hoàn thành bảng/biểu mẫu":
-//       content = renderFormTableCompletionQuestion(question);
-//       break;
-//     case "Hoàn thành lưu đồ":
-//       content = renderFlowChartCompletionQuestion(question);
-//       break;
-//     default:
-//       content = `<p>Không hỗ trợ loại câu hỏi này: ${question.type}</p>`;
-//   }
-
-//   // Thêm nút lưu và chỉnh sửa cho từng câu hỏi
-//   content += `
-//     <div class="question-actions">
-//       <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
-//         <i class="fas fa-edit"></i> Chỉnh sửa
-//       </button>
-//       <button class="save-question-btn" onclick="saveQuestionChanges(this)">
-//         <i class="fas fa-save"></i> Lưu thay đổi
-//       </button>
-//       <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
-//         <i class="fas fa-times"></i> Hủy
-//       </button>
-//     </div>
-//   `;
-
-//   return content;
-// }
-
-// Cập nhật hàm saveQuestionChanges để xử lý lưu thay đổi
-const saveQuestionChanges = (button) => {
-  try {
-    // Tìm phần tử câu hỏi chứa nút được nhấn
-    const questionDiv = button.closest(".question")
-    if (!questionDiv) {
-      showNotification("Không tìm thấy câu hỏi để lưu", "error")
-      return
-    }
-
-    // Lấy chỉ mục của câu hỏi trong phần hiện tại
-    const part = document.getElementById(`part${window.currentPart}`)
-    const questions = Array.from(part.querySelectorAll(".question"))
-    const questionIndex = questions.indexOf(questionDiv)
-
-    if (questionIndex === -1) {
-      showNotification("Không thể xác định vị trí câu hỏi", "error")
-      return
-    }
-
-    // Lấy loại câu hỏi
-    const questionType = questionDiv
-      .querySelector("h3")
-      .textContent.trim()
-      .replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1")
-
-    // Lấy dữ liệu từ form dựa trên loại câu hỏi
-    let updatedQuestion = null
-
-    switch (questionType) {
-      case "Một đáp án":
-        updatedQuestion = saveOneAnswerQuestion(questionDiv)
-        break
-      case "Nhiều đáp án":
-        updatedQuestion = saveMultipleAnswerQuestion(questionDiv)
-        break
-      case "Ghép nối":
-        updatedQuestion = saveMatchingQuestion(questionDiv)
-        break
-      case "Ghi nhãn Bản đồ/Sơ đồ":
-        updatedQuestion = savePlanMapDiagramQuestion(questionDiv)
-        break
-      case "Hoàn thành ghi chú":
-        updatedQuestion = saveNoteCompletionQuestion(questionDiv)
-        break
-      case "Hoàn thành bảng/biểu mẫu":
-        updatedQuestion = saveFormTableCompletionQuestion(questionDiv)
-        break
-      case "Hoàn thành lưu đồ":
-        updatedQuestion = saveFlowChartCompletionQuestion(questionDiv)
-        break
-    }
-
-    if (updatedQuestion) {
-      // Cập nhật câu hỏi trong đối tượng test
-      test[`part${window.currentPart}`][questionIndex] = updatedQuestion
-      showNotification(`Đã lưu thay đổi cho câu hỏi ${questionIndex + 1}`, "success")
-
-      // Chuyển sang chế độ xem sau khi lưu
-      setQuestionViewMode(questionDiv)
-    } else {
-      showNotification("Không thể lưu câu hỏi, vui lòng kiểm tra dữ liệu nhập", "error")
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi:", error)
-    showNotification(`Lỗi khi lưu câu hỏi: ${error.message}`, "error")
-  }
-}
-
-// Cập nhật hàm addQuestionDirectly để thêm câu hỏi mới ở chế độ chỉnh sửa
-// function addQuestionDirectly(questionType) {
-//   console.log("addQuestionDirectly function called with type:", questionType)
-
-//   try {
-//     console.log("Creating new question of type:", questionType)
-
-//     // Make sure the part container exists
-//     const partId = `part${window.currentPart}`
-//     let partElement = document.getElementById(partId)
-
-//     if (!partElement) {
-//       console.warn(`Part element ${partId} not found, creating it`)
-//       partElement = document.createElement("div")
-//       partElement.id = partId
-//       partElement.className = "part"
-//       partElement.style.display = "block"
-
-//       const testContent = document.getElementById("testContent")
-//       if (testContent) {
-//         testContent.appendChild(partElement)
-//       } else {
-//         throw new Error("Test content container not found")
-//       }
-//     }
-
-//     // Create a new question object
-//     const newQuestion = {
-//       type: questionType,
-//       content: [],
-//       correctAnswers: [],
-//     }
-
-//     // Initialize default content based on question type
-//     switch (questionType) {
-//       case "Một đáp án":
-//         newQuestion.content = ["Nhập câu hỏi ở đây", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"]
-//         newQuestion.correctAnswers = "Lựa chọn A"
-//         break
-//       case "Nhiều đáp án":
-//         newQuestion.content = ["Nhập câu hỏi ở đây", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C", "Lựa chọn D"]
-//         newQuestion.correctAnswers = ["1", "2"]
-//         break
-//       case "Ghép nối":
-//         newQuestion.content = ["Tiêu đề câu hỏi", "Mục 1", "Mục 2", "Mục 3", "Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
-//         newQuestion.correctAnswers = ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
-//         break
-//       case "Ghi nhãn Bản đồ/Sơ đồ":
-//         newQuestion.content = [
-//           "map",
-//           "Hướng dẫn ghi nhãn bản đồ",
-//           "/placeholder.svg?height=300&width=400",
-//           "Nhãn 1",
-//           "Nhãn 2",
-//           "Nhãn 3",
-//         ]
-//         newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
-//         break
-//       case "Hoàn thành ghi chú":
-//         newQuestion.content = [
-//           "Hoàn thành ghi chú dưới đây",
-//           "Chủ đề ghi chú",
-//           "Ghi chú 1 với [ANSWER]",
-//           "Ghi chú 2 với [ANSWER]",
-//           "Ghi chú 3 với [ANSWER]",
-//         ]
-//         newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
-//         break
-//       case "Hoàn thành bảng/biểu mẫu":
-//         newQuestion.content = [
-//           "Hoàn thành bảng dưới đây",
-//           "Hàng 1 Cột 1",
-//           "Hàng 1 Cột 2",
-//           "Hàng 1 Cột 3",
-//           "Hàng 2 Cột 1",
-//           "Hàng 2 Cột 2",
-//           "Hàng 2 Cột 3",
-//         ]
-//         newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2"]
-//         break
-//       case "Hoàn thành lưu đồ":
-//         newQuestion.content = [
-//           "Tiêu đề lưu đồ",
-//           "Hoàn thành lưu đồ dưới đây",
-//           "Bước 1: ___",
-//           "Bước 2: ___",
-//           "Bước 3: ___",
-//           "Lựa chọn A",
-//           "Lựa chọn B",
-//           "Lựa chọn C",
-//         ]
-//         newQuestion.correctAnswers = ["Lựa chọn A", "Lựa chọn B", "Lựa chọn C"]
-//         break
-//     }
-
-//     // Make sure the part array exists
-//     if (!test[`part${window.currentPart}`]) {
-//       test[`part${window.currentPart}`] = []
-//     }
-
-//     // Add the new question to the current part
-//     test[`part${window.currentPart}`].push(newQuestion)
-
-//     // Update the total question count
-//     updateQuestionCount()
-
-//     // Create the question form in the DOM
-//     const questionDiv = document.createElement("div")
-//     questionDiv.className = "question edit-mode" // Câu hỏi mới ở chế độ chỉnh sửa
-
-//     // Add question header
-//     const questionNumber = test[`part${window.currentPart}`].length
-//     questionDiv.innerHTML = `
-//       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-//       <h3>${getIconForType(questionType)} ${questionType}</h3>
-//       <button class="delete-question" onclick="deleteQuestion(${questionNumber - 1})"><i class="fas fa-trash"></i></button>
-//     `
-
-//     // Add the appropriate form based on type
-//     let formHTML = ""
-//     switch (questionType) {
-//       case "Một đáp án":
-//         formHTML =
-//           typeof window.createOneAnswerForm === "function" ? window.createOneAnswerForm() : createOneAnswerForm()
-//         break
-//       case "Nhiều đáp án":
-//         formHTML =
-//           typeof window.createMultipleAnswerForm === "function"
-//             ? window.createMultipleAnswerForm()
-//             : createMultipleAnswerForm()
-//         break
-//       case "Ghép nối":
-//         formHTML = typeof window.createMatchingForm === "function" ? window.createMatchingForm() : createMatchingForm()
-//         break
-//       case "Ghi nhãn Bản đồ/Sơ đồ":
-//         formHTML =
-//           typeof window.createPlanMapDiagramForm === "function"
-//             ? window.createPlanMapDiagramForm()
-//             : createPlanMapDiagramForm()
-//         break
-//       case "Hoàn thành ghi chú":
-//         formHTML =
-//           typeof window.createNoteCompletionForm === "function"
-//             ? window.createNoteCompletionForm()
-//             : createNoteCompletionForm()
-//         break
-//       case "Hoàn thành bảng/biểu mẫu":
-//         formHTML =
-//           typeof window.createFormTableCompletionForm === "function"
-//             ? window.createFormTableCompletionForm()
-//             : createFormTableCompletionForm()
-//         break
-//       case "Hoàn thành lưu đồ":
-//         formHTML =
-//           typeof window.createFlowChartCompletionForm === "function"
-//             ? window.createFlowChartCompletionForm()
-//             : createFlowChartCompletionForm()
-//         break
-//       default:
-//         formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
-//     }
-
-//     // Add form HTML to question div
-//     questionDiv.innerHTML += formHTML
-
-//     // Thêm nút lưu và chỉnh sửa
-//     questionDiv.innerHTML += `
-//       <div class="question-actions">
-//         <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
-//           <i class="fas fa-edit"></i> Chỉnh sửa
-//         </button>
-//         <button class="save-question-btn" onclick="saveQuestionChanges(this)">
-//           <i class="fas fa-save"></i> Lưu thay đổi
-//         </button>
-//         <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)">
-//           <i class="fas fa-times"></i> Hủy
-//         </button>
-//       </div>
-//     `;
-
-//     // Append the question div to the part element
-//     partElement.appendChild(questionDiv)
-
-//     // Initialize form functionality based on type
-//     try {
-//       switch (questionType) {
-//         case "Một đáp án":
-//           if (typeof window.initializeOneAnswerForm === "function") {
-//             window.initializeOneAnswerForm(questionDiv)
-//           }
-//           break
-//         case "Nhiều đáp án":
-//           if (typeof window.initializeMultipleAnswerForm === "function") {
-//             window.initializeMultipleAnswerForm(questionDiv)
-//           }
-//           break
-//         case "Ghép nối":
-//           if (typeof window.initializeMatchingForm === "function") {
-//             window.initializeMatchingForm(questionDiv)
-//           }
-//           break
-//         case "Ghi nhãn Bản đồ/Sơ đồ":
-//           if (typeof window.initializePlanMapDiagram === "function") {
-//             window.initializePlanMapDiagram(questionDiv)
-//           }
-//           break
-//         case "Hoàn thành ghi chú":
-//           if (typeof window.initializeNoteCompletionForm === "function") {
-//             window.initializeNoteCompletionForm(questionDiv)
-//           }
-//           break
-//         case "Hoàn thành bảng/biểu mẫu":
-//           if (typeof window.initializeFormTableCompletionForm === "function") {
-//             window.initializeFormTableCompletionForm(questionDiv)
-//           }
-//           break
-//         case "Hoàn thành lưu đồ":
-//           if (typeof window.initializeFlowChartCompletionForm === "function") {
-//             window.initializeFlowChartCompletionForm(questionDiv)
-//           }
-//           break
-//       }
-//     } catch (error) {
-//       console.error("Error initializing form:", error)
-//     }
-
-//     console.log(`Added new ${questionType} question to part ${window.currentPart}`)
-//     showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${window.currentPart}`, "success")
-//   } catch (error) {
-//     console.error("Error creating question:", error)
-//     showNotification(`Lỗi khi tạo câu hỏi: ${error.message}`, "error")
-//   }
-// }
-
-// Make sure all functions are available globally
-window.addQuestionDirectly = addQuestionDirectly
-window.renderTestCreation = renderTestCreation
-window.startTestCreation = startTestCreation
-window.previousPart = previousPart
-window.nextPart = nextPart
-window.saveTest = saveTest
-window.deleteQuestion = deleteQuestion
-window.showNotification = showNotification
-window.updateQuestionCount = updateQuestionCount
-window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
-window.previewEntireTest = previewEntireTest
-window.exportTest = exportTest
-window.importTest = importTest
-window.showTestList = showTestList
-window.createNewTest = createNewTest
-window.duplicateTest = duplicateTest
-window.generateTestPDF = generateTestPDF
-window.saveQuestionChanges = saveQuestionChanges
-window.toggleQuestionEdit = toggleQuestionEdit
-window.cancelQuestionEdit = cancelQuestionEdit
-window.setQuestionEditMode = setQuestionEditMode
-window.setQuestionViewMode = setQuestionViewMode
-
-// Sửa đổi hàm document.addEventListener("DOMContentLoaded", ...) để loại bỏ kiểm tra đăng nhập
-document.addEventListener("DOMContentLoaded", () => {
-  // Thêm sự kiện cho nút bắt đầu tạo bài kiểm tra
-  const startButton = document.querySelector(".selection-page button")
-  if (startButton) {
-    startButton.addEventListener("click", startTestCreation)
-  }
-})
-
-// Bắt đầu tạo bài kiểm tra
-function startTestCreation() {
-  // Lấy các loại câu hỏi đã chọn
-  const selectedTypes = []
-  document.querySelectorAll('.question-type input[type="checkbox"]:checked').forEach((checkbox) => {
-    selectedTypes.push(checkbox.value)
-  })
-
-  if (selectedTypes.length === 0) {
-    showNotification("Vui lòng chọn ít nhất một loại câu hỏi", "error")
-    return
-  }
-
-  // Chuyển đến trang tạo bài kiểm tra
-  document.getElementById("selectionPage").classList.add("hidden")
-  document.getElementById("testCreationPage").classList.remove("hidden")
-
-  // Khởi tạo bài kiểm tra mới
-  test = {
-    title: "Bài kiểm tra IELTS Listening mới",
-    description: "Mô tả bài kiểm tra",
-    part1: [],
-    part2: [],
-    part3: [],
-    part4: [],
-  }
-
-  // Hiển thị giao diện tạo bài kiểm tra
-  window.currentPart = 1
-  renderTestCreation()
-
-  // Automatically show question creation form for the first selected type
-  if (selectedTypes.length > 0) {
-    console.log("Automatically creating question form for: " + selectedTypes[0])
-    addQuestionDirectly(selectedTypes[0])
-  }
-}
-
-// Thêm hàm mới để lưu thay đổi cho từng câu hỏi riêng biệt
-// function saveQuestionChanges(button) {
-//   try {
-//     // Tìm phần tử câu hỏi chứa nút được nhấn
-//     const questionDiv = button.closest(".question")
-//     if (!questionDiv) {
-//       showNotification("Không tìm thấy câu hỏi để lưu", "error")
-//       return
-//     }
-
-//     // Lấy chỉ mục của câu hỏi trong phần hiện tại
-//     const part = document.getElementById(`part${window.currentPart}`)
-//     const questions = Array.from(part.querySelectorAll(".question"))
-//     const questionIndex = questions.indexOf(questionDiv)
-
-//     if (questionIndex === -1) {
-//       showNotification("Không thể xác định vị trí câu hỏi", "error")
-//       return
-//     }
-
-//     // Lấy loại câu hỏi
-//     const questionType = questionDiv
-//       .querySelector("h3")
-//       .textContent.trim()
-//       .replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1")
-
-//     // Lấy dữ liệu từ form dựa trên loại câu hỏi
-//     let updatedQuestion = null
-
-//     switch (questionType) {
-//       case "Một đáp án":
-//         updatedQuestion = saveOneAnswerQuestion(questionDiv)
-//         break
-//       case "Nhiều đáp án":
-//         updatedQuestion = saveMultipleAnswerQuestion(questionDiv)
-//         break
-//       case "Ghép nối":
-//         updatedQuestion = saveMatchingQuestion(questionDiv)
-//         break
-//       case "Ghi nhãn Bản đồ/Sơ đồ":
-//         updatedQuestion = savePlanMapDiagramQuestion(questionDiv)
-//         break
-//       case "Hoàn thành ghi chú":
-//         updatedQuestion = saveNoteCompletionQuestion(questionDiv)
-//         break
-//       case "Hoàn thành bảng/biểu mẫu":
-//         updatedQuestion = saveFormTableCompletionQuestion(questionDiv)
-//         break
-//       case "Hoàn thành lưu đồ":
-//         updatedQuestion = saveFlowChartCompletionQuestion(questionDiv)
-//         break
-//     }
-
-//     if (updatedQuestion) {
-//       // Cập nhật câu hỏi trong đối tượng test
-//       test[`part${window.currentPart}`][questionIndex] = updatedQuestion
-//       showNotification(`Đã lưu thay đổi cho câu hỏi ${questionIndex + 1}`, "success")
-
-//       // Chuyển sang chế độ xem sau khi lưu
-//       setQuestionViewMode(questionDiv)
-//     } else {
-//       showNotification("Không thể lưu câu hỏi, vui lòng kiểm tra dữ liệu nhập", "error")
-//     }
-//   } catch (error) {
-//     console.error("Lỗi khi lưu câu hỏi:", error)
-//     showNotification(`Lỗi khi lưu câu hỏi: ${error.message}`, "error")
-//   }
-// }
-
-// Thêm hàm để chuyển đổi giữa chế độ xem và chỉnh sửa
-// function toggleQuestionEdit(button) {
-//   const questionDiv = button.closest(".question")
-//   if (!questionDiv) return
-
-//   // Kiểm tra xem câu hỏi đang ở chế độ xem hay chỉnh sửa
-//   const isViewMode = questionDiv.classList.contains("view-mode")
-
-//   if (isViewMode) {
-//     // Chuyển sang chế độ chỉnh sửa
-//     setQuestionEditMode(questionDiv)
-//   } else {
-//     // Chuyển sang chế độ xem
-//     setQuestionViewMode(questionDiv)
-//   }
-// }
-
-// Hàm để hủy chỉnh sửa và quay lại chế độ xem
-// function cancelQuestionEdit(button) {
-//   const questionDiv = button.closest(".question")
-//   if (!questionDiv) return
-
-//   // Lấy chỉ mục của câu hỏi
-//   const part = document.getElementById(`part${window.currentPart}`)
-//   const questions = Array.from(part.querySelectorAll(".question"))
-//   const questionIndex = questions.indexOf(questionDiv)
-
-//   if (questionIndex === -1) return
-
-//   // Lấy dữ liệu câu hỏi gốc
-//   const originalQuestion = test[`part${window.currentPart}`][questionIndex]
-
-//   // Render lại câu hỏi với dữ liệu gốc
-//   const questionType = originalQuestion.type
-//   let contentHTML = ""
-
-//   switch (questionType) {
-//     case "Một đáp án":
-//       contentHTML = renderOneAnswerQuestion(originalQuestion)
-//       break
-//     case "Nhiều đáp án":
-//       contentHTML = renderMultipleAnswerQuestion(originalQuestion)
-//       break
-//     case "Ghép nối":
-//       contentHTML = renderMatchingQuestion(originalQuestion)
-//       break
-//     case "Ghi nhãn Bản đồ/Sơ đồ":
-//       contentHTML = renderPlanMapDiagramQuestion(originalQuestion)
-//       break
-//     case "Hoàn thành ghi chú":
-//       contentHTML = renderNoteCompletionQuestion(originalQuestion)
-//       break
-//     case "Hoàn thành bảng/biểu mẫu":
-//       contentHTML = renderFormTableCompletionQuestion(originalQuestion)
-//       break
-//     case "Hoàn thành lưu đồ":
-//       contentHTML = renderFlowChartCompletionQuestion(originalQuestion)
-//       break
-//   }
-
-//   // Thay thế nội dung form
-//   const formContainer = questionDiv.querySelector(
-//     ".t3-question-creator, .t4-container, .t1-ielts-creator, .t2-listening-exercise-app, .t6-ielts-listening-creator, .t7-ielts-flow-chart-creator",
-//   )
-//   if (formContainer) {
-//     formContainer.outerHTML = contentHTML
-//   }
-
-//   // Chuyển sang chế độ xem
-//   setQuestionViewMode(questionDiv)
-
-//   showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
-// }
-
-// Hàm để thiết lập chế độ chỉnh sửa
-// function setQuestionEditMode(questionDiv) {
-//   // Xóa class view-mode và thêm class edit-mode
-//   questionDiv.classList.remove("view-mode")
-//   questionDiv.classList.add("edit-mode")
-
-//   // Hiển thị nút Hủy và ẩn nút Chỉnh sửa
-//   const editBtn = questionDiv.querySelector(".edit-question-btn")
-//   const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-//   if (editBtn) editBtn.style.display = "none"
-//   if (cancelBtn) cancelBtn.style.display = "inline-block"
-
-//   // Kích hoạt tất cả các trường input
-//   const inputs = questionDiv.querySelectorAll("input, textarea, select")
-//   inputs.forEach((input) => {
-//     input.disabled = false
-//   })
-
-//   showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
-// }
-
-// Hàm để thiết lập chế độ xem
-// function setQuestionViewMode(questionDiv) {
-//   // Xóa class edit-mode và thêm class view-mode
-//   questionDiv.classList.remove("edit-mode")
-//   questionDiv.classList.add("view-mode")
-
-//   // Hiển thị nút Chỉnh sửa và ẩn nút Hủy
-//   const editBtn = questionDiv.querySelector(".edit-question-btn")
-//   const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-//   if (editBtn) editBtn.style.display = "inline-block"
-//   if (cancelBtn) cancelBtn.style.display = "none"
-
-//   // Vô hiệu hóa tất cả các trường input
-//   const inputs = questionDiv.querySelectorAll("input, textarea, select")
-//   inputs.forEach((input) => {
-//     input.disabled = true
-//   })
-
-//   showNotification("Đã chuyển sang chế độ xem", "info")
-// }
 
 // Thêm các hàm lưu cho từng loại câu hỏi
 function saveOneAnswerQuestion(questionDiv) {

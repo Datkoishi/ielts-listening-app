@@ -136,6 +136,7 @@ button i {
   margin-bottom: 15px;
 }
 
+/* Styles for question action buttons */
 .question-actions {
   display: flex;
   gap: 10px;
@@ -211,7 +212,7 @@ button i {
   background-color: #e60000;
 }
 
-/* Styles for view mode */
+/* Add these styles for view and edit modes */
 .question.view-mode {
   background-color: #f9f9f9;
 }
