@@ -839,39 +839,38 @@ textarea[name="note"] {
 
 /* Cải thiện giao diện cho form metadata */
 .test-metadata-form {
-  margin-bottom: 25px;
+  background-color: #f8f9fa;
   padding: 20px;
-  background-color: #f8fafd;
-  border: 1px solid #e0e9f7;
-  border-radius: 10px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .test-metadata-form .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 15px;
 }
 
 .test-metadata-form label {
   display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #1a3a6e;
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
 }
 
 .test-metadata-form input[type="text"],
 .test-metadata-form textarea {
   width: 100%;
-  padding: 12px;
-  border: 1px solid #d1dbe8;
-  border-radius: 8px;
-  font-size: 15px;
-  transition: all 0.3s ease;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .test-metadata-form input[type="text"]:focus,
 .test-metadata-form textarea:focus {
+  border-color: #003366;
   outline: none;
-  border-color: #1a3a6e;
-  box-shadow: 0 0 0 2px rgba(26, 58, 110, 0.1);
+  box-shadow: 0 0 0 2px rgba(0, 51, 102, 0.2);
 }
 
 /* Cải thiện giao diện cho danh sách bài kiểm tra */

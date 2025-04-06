@@ -1,11 +1,11 @@
 const Test = require("../models/Test")
 const { query } = require("../config/database")
 
-// Lấy tất cả bài kiểm tra
+// Update the getAllTests function to include the vietnameseName field
 exports.getAllTests = async (req, res) => {
   try {
     const tests = await query(`
-      SELECT t.id, t.title, t.description, t.created_at
+      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
       FROM tests t
       ORDER BY t.created_at DESC
     `)
@@ -17,11 +17,12 @@ exports.getAllTests = async (req, res) => {
 }
 
 // Lấy bài kiểm tra theo ID
+// Update the getTestById function to include the vietnameseName field
 exports.getTestById = async (req, res) => {
   try {
     const test = await query(
       `
-      SELECT t.id, t.title, t.description, t.created_at
+      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
       FROM tests t
       WHERE t.id = ?
     `,
@@ -59,7 +60,15 @@ exports.getTestById = async (req, res) => {
       }),
     )
 
-    res.json({ ...test[0], parts: partsWithQuestions })
+    // Map vietnamese_name to vietnameseName for frontend consistency
+    const testData = {
+      ...test[0],
+      vietnameseName: test[0].vietnamese_name,
+      parts: partsWithQuestions,
+    }
+    delete testData.vietnamese_name
+
+    res.json(testData)
   } catch (error) {
     console.error("Lỗi lấy bài kiểm tra:", error.message)
     res.status(500).json({ message: "Lỗi máy chủ" })
@@ -68,13 +77,17 @@ exports.getTestById = async (req, res) => {
 
 // Tạo bài kiểm tra mới
 exports.createTest = async (req, res) => {
-  const { title, description, part1, part2, part3, part4 } = req.body
+  const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
 
   try {
     await query("START TRANSACTION")
 
     // Tạo bài kiểm tra
-    const result = await query("INSERT INTO tests (title, description) VALUES (?, ?)", [title, description])
+    const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
+      title,
+      vietnameseName,
+      description,
+    ])
 
     const testId = result.insertId
 
@@ -106,16 +119,21 @@ exports.createTest = async (req, res) => {
   }
 }
 
-// Cập nhật bài kiểm tra
+// Update the updateTest function to handle the vietnameseName field
 exports.updateTest = async (req, res) => {
   const { id } = req.params
-  const { title, description, part1, part2, part3, part4 } = req.body
+  const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
 
   try {
     await query("START TRANSACTION")
 
     // Cập nhật bài kiểm tra
-    await query("UPDATE tests SET title = ?, description = ? WHERE id = ?", [title, description, id])
+    await query("UPDATE tests SET title = ?, vietnamese_name = ?, description = ? WHERE id = ?", [
+      title,
+      vietnameseName,
+      description,
+      id,
+    ])
 
     // Xóa các phần và câu hỏi hiện có
     await query("DELETE FROM parts WHERE test_id = ?", [id])

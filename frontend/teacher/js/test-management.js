@@ -107,6 +107,25 @@ function renderTestCreation() {
 
   // Cập nhật metadata bài kiểm tra
   testContent.innerHTML = `
+    <div class="test-metadata-form">
+      <div class="form-group">
+        <label for="testTitle">Tiêu đề bài kiểm tra (Tiếng Anh):</label>
+        <input type="text" id="testTitle" required 
+          value="${test.title || ""}"
+          placeholder="Nhập tiêu đề bài kiểm tra bằng tiếng Anh">
+      </div>
+      <div class="form-group">
+        <label for="testVietnameseName">Tên bộ câu hỏi (Tiếng Việt):</label>
+        <input type="text" id="testVietnameseName" 
+          value="${test.vietnameseName || ""}"
+          placeholder="Nhập tên bộ câu hỏi bằng tiếng Việt">
+      </div>
+      <div class="form-group">
+        <label for="testDescription">Mô tả (không bắt buộc):</label>
+        <textarea id="testDescription" rows="2"
+          placeholder="Nhập mô tả cho bài kiểm tra">${test.description || ""}</textarea>
+      </div>
+    </div>
     <div class="test-card">
       <div class="test-header">
         <span class="test-icon"><i class="fas fa-pencil-alt"></i></span>
@@ -607,6 +626,7 @@ function saveTest() {
 
     // Cập nhật tiêu đề và mô tả từ form
     test.title = document.getElementById("testTitle").value
+    test.vietnameseName = document.getElementById("testVietnameseName").value
     test.description = document.getElementById("testDescription").value
 
     // Xác thực metadata bài kiểm tra trước
@@ -637,7 +657,7 @@ function saveTest() {
     saveTestToServer(test)
       .then((response) => {
         console.log("Bài kiểm tra đã lưu vào server:", response)
-        showNotification(`Bài kiểm tra "${test.title}" đã lưu thành công!`, "success")
+        showNotification(`Bài kiểm tra "${test.vietnameseName || test.title}" đã lưu thành công!`, "success")
       })
       .catch((error) => {
         console.error("Lỗi khi lưu bài kiểm tra vào server:", error)
@@ -810,7 +830,8 @@ function showTestList() {
               .map(
                 (test) => `
               <div class="test-item" data-id="${test.id}" style="border: 1px solid #ddd; padding: 15px; margin-bottom: 10px; border-radius: 4px;">
-                <h3 style="margin-top: 0;">${test.title}</h3>
+                <h3 style="margin-top: 0;">${test.vietnamese_name || test.title}</h3>
+                <p class="test-english-name" style="color: #666; font-style: italic;">${test.title}</p>
                 <p>${test.description || "Không có mô tả"}</p>
                 <div class="test-actions" style="display: flex; gap: 10px; margin-top: 10px;">
                   <button class="load-test-btn" style="background-color: #003366; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Tải</button>
@@ -887,6 +908,7 @@ function loadTestFromServer(testId) {
 
       // Cập nhật đối tượng bài kiểm tra với dữ liệu từ server
       test.title = testData.title
+      test.vietnameseName = testData.vietnameseName || ""
       test.description = testData.description
 
       // Khởi tạo các phần
@@ -922,7 +944,7 @@ function loadTestFromServer(testId) {
       updateQuestionCount()
 
       // Hiển thị bài kiểm tra đã tải
-      showNotification(`Đã tải bài kiểm tra "${test.title}"`, "success")
+      showNotification(`Đã tải bài kiểm tra "${test.vietnameseName || test.title}"`, "success")
 
       // Chuyển đến trang tạo bài kiểm tra nếu đang ở trang chọn
       if (!document.getElementById("selectionPage").classList.contains("hidden")) {
@@ -1013,10 +1035,15 @@ function importTest() {
 function previewEntireTest() {
   // Cập nhật tiêu đề và mô tả từ form
   test.title = document.getElementById("testTitle").value
+  test.vietnameseName = document.getElementById("testVietnameseName").value
   test.description = document.getElementById("testDescription").value
 
   const previewWindow = window.open("", "Preview", "width=800,height=600")
-  let previewContent = `<h1>${test.title}</h1>`
+  let previewContent = `<h1>${test.vietnameseName || test.title}</h1>`
+
+  if (test.title !== test.vietnameseName && test.vietnameseName) {
+    previewContent += `<h2 class="english-title">${test.title}</h2>`
+  }
 
   if (test.description) {
     previewContent += `<p>${test.description}</p>`
@@ -1051,6 +1078,7 @@ function previewEntireTest() {
           body { font-family: 'Times New Roman', Times, serif; margin: 20px; line-height: 1.6; color: #333; }
           h1 { color: #003366; text-align: center; }
           h2 { color: #003366; text-align: center; margin-bottom: 30px; }
+          h2.english-title { color: #666; font-style: italic; font-size: 1.2em; margin-top: -10px; margin-bottom: 20px; }
           h3 { color: #003366; border-bottom: 1px solid #eee; padding-bottom: 10px; }
           h4 { margin-bottom: 5px; color: #003366; }
           .preview-question { margin-bottom: 20px; border: 1px solid #eee; padding: 15px; border-radius: 5px; }
@@ -1852,6 +1880,7 @@ function startTestCreation() {
   // Khởi tạo bài kiểm tra mới
   test = {
     title: "Bài kiểm tra IELTS Listening mới",
+    vietnameseName: "Bộ câu hỏi IELTS Listening mới",
     description: "Mô tả bài kiểm tra",
     part1: [],
     part2: [],
@@ -2538,5 +2567,38 @@ function createFlowChartCompletionForm() {
       </form>
     </div>
   `
+}
+
+// Update the addTestMetadataForm function to include a Vietnamese name field
+function addTestMetadataForm() {
+  const metadataForm = document.createElement("div")
+  metadataForm.className = "test-metadata-form"
+  metadataForm.innerHTML = `
+  <div class="form-group">
+    <label for="testTitle">Tiêu đề bài kiểm tra:</label>
+    <input type="text" id="testTitle" required 
+      value="${test.title}"
+      onchange="updateTestMetadata('title', this.value)">
+  </div>
+  <div class="form-group">
+    <label for="testVietnameseName">Tên bộ câu hỏi (Tiếng Việt):</label>
+    <input type="text" id="testVietnameseName" 
+      value="${test.vietnameseName || ""}"
+      onchange="updateTestMetadata('vietnameseName', this.value)">
+  </div>
+  <div class="form-group">
+    <label for="testDescription">Mô tả (không bắt buộc):</label>
+    <textarea id="testDescription" rows="2"
+      onchange="updateTestMetadata('description', this.value)">${test.description}</textarea>
+  </div>
+`
+
+  // Thêm form vào đầu nội dung bài kiểm tra
+  const testContent = document.getElementById("testContent")
+  if (testContent) {
+    testContent.insertBefore(metadataForm, testContent.firstChild)
+  } else {
+    console.error("Không tìm thấy phần tử nội dung bài kiểm tra")
+  }
 }
 
