@@ -279,6 +279,20 @@ function renderQuestionsForCurrentPart() {
   })
 }
 
+// Helper function to get icon for question type
+function getIconForType(type) {
+  const icons = {
+    "Một đáp án": '<i class="fas fa-check-circle"></i>',
+    "Nhiều đáp án": '<i class="fas fa-check-double"></i>',
+    "Ghép nối": '<i class="fas fa-link"></i>',
+    "Ghi nhãn Bản đồ/Sơ đồ": '<i class="fas fa-map-marker-alt"></i>',
+    "Hoàn thành ghi chú": '<i class="fas fa-sticky-note"></i>',
+    "Hoàn thành bảng/biểu mẫu": '<i class="fas fa-table"></i>',
+    "Hoàn thành lưu đồ": '<i class="fas fa-project-diagram"></i>',
+  }
+  return icons[type] || '<i class="fas fa-question"></i>'
+}
+
 // Hiển thị nội dung câu hỏi dựa trên loại
 function renderQuestionContent(question) {
   let content = ""
@@ -324,20 +338,6 @@ function renderQuestionContent(question) {
   `
 
   return content
-}
-
-// Helper function to get icon for question type
-function getIconForType(type) {
-  const icons = {
-    "Một đáp án": '<i class="fas fa-check-circle"></i>',
-    "Nhiều đáp án": '<i class="fas fa-check-double"></i>',
-    "Ghép nối": '<i class="fas fa-link"></i>',
-    "Ghi nhãn Bản đồ/Sơ đồ": '<i class="fas fa-map-marker-alt"></i>',
-    "Hoàn thành ghi chú": '<i class="fas fa-sticky-note"></i>',
-    "Hoàn thành bảng/biểu mẫu": '<i class="fas fa-table"></i>',
-    "Hoàn thành lưu đồ": '<i class="fas fa-project-diagram"></i>',
-  }
-  return icons[type] || '<i class="fas fa-question"></i>'
 }
 
 // Hiển thị câu hỏi Một đáp án
