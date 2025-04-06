@@ -12,6 +12,7 @@ let audioDuration = 0
 // Thêm metadata cho đối tượng bài kiểm tra
 const test = {
   title: "",
+  vietnameseName: "",
   description: "",
   part1: [],
   part2: [],
@@ -236,18 +237,24 @@ function addTestMetadataForm() {
   const metadataForm = document.createElement("div")
   metadataForm.className = "test-metadata-form"
   metadataForm.innerHTML = `
-    <div class="form-group">
-      <label for="testTitle">Tiêu đề bài kiểm tra:</label>
-      <input type="text" id="testTitle" required 
-        value="${test.title}"
-        onchange="updateTestMetadata('title', this.value)">
-    </div>
-    <div class="form-group">
-      <label for="testDescription">Mô tả (không bắt buộc):</label>
-      <textarea id="testDescription" rows="2"
-        onchange="updateTestMetadata('description', this.value)">${test.description}</textarea>
-    </div>
-  `
+  <div class="form-group">
+    <label for="testTitle">Tiêu đề bài kiểm tra (Tiếng Anh):</label>
+    <input type="text" id="testTitle" required 
+      value="${test.title}"
+      onchange="updateTestMetadata('title', this.value)">
+  </div>
+  <div class="form-group">
+    <label for="testVietnameseName">Tên bộ câu hỏi (Tiếng Việt):</label>
+    <input type="text" id="testVietnameseName" 
+      value="${test.vietnameseName || ""}"
+      onchange="updateTestMetadata('vietnameseName', this.value)">
+  </div>
+  <div class="form-group">
+    <label for="testDescription">Mô tả (không bắt buộc):</label>
+    <textarea id="testDescription" rows="2"
+      onchange="updateTestMetadata('description', this.value)">${test.description}</textarea>
+  </div>
+`
 
   // Thêm form vào đầu nội dung bài kiểm tra
   const testContent = document.getElementById("testContent")
@@ -396,6 +403,10 @@ function previewQuestion() {
 // Dummy functions to resolve undefined variable errors. Replace with actual implementations.
 function saveTest() {
   console.warn("saveTest function is a placeholder.")
+  // Cập nhật tiêu đề, tên tiếng Việt và mô tả từ form
+  test.title = document.getElementById("testTitle").value
+  test.vietnameseName = document.getElementById("testVietnameseName").value
+  test.description = document.getElementById("testDescription").value
 }
 
 function previewEntireTest() {

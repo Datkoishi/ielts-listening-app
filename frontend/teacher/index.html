@@ -46,6 +46,20 @@
     
     <div class="test-creation-page hidden" id="testCreationPage">
         <h1><i class="fas fa-pencil-alt"></i> Bài kiểm tra IELTS Listening</h1>
+        <div class="test-metadata-form">
+        <div class="form-group">
+          <label for="testTitle">Tiêu đề bài kiểm tra (Tiếng Anh):</label>
+          <input type="text" id="testTitle" required placeholder="Nhập tiêu đề bài kiểm tra bằng tiếng Anh">
+        </div>
+        <div class="form-group">
+          <label for="testVietnameseName">Tên bộ câu hỏi (Tiếng Việt):</label>
+          <input type="text" id="testVietnameseName" placeholder="Nhập tên bộ câu hỏi bằng tiếng Việt">
+        </div>
+        <div class="form-group">
+          <label for="testDescription">Mô tả (không bắt buộc):</label>
+          <textarea id="testDescription" rows="2" placeholder="Nhập mô tả cho bài kiểm tra"></textarea>
+        </div>
+      </div>
         <div id="testContent"></div>
         <div class="nav-buttons">
             <button id="previousPartBtn"><i class="fas fa-arrow-left"></i> Phần trước</button>
