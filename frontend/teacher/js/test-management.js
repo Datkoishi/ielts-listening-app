@@ -2344,31 +2344,12 @@ function saveFlowChartCompletionQuestion(questionDiv) {
   }
 }
 
-// Thêm hàm này vào window object
+// Make sure these functions are available globally
+window.toggleQuestionEdit = toggleQuestionEdit
 window.saveQuestionChanges = saveQuestionChanges
-
-// Expose functions to window object
-window.renderTestCreation = renderTestCreation
-window.showNotification = showNotification
-window.updateQuestionCount = updateQuestionCount
-window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
-
-// Make functions available globally
-window.previewEntireTest = previewEntireTest
-window.exportTest = exportTest
-window.importTest = importTest
-window.showTestList = showTestList
-window.createNewTest = createNewTest
-window.duplicateTest = duplicateTest
-window.generateTestPDF = generateTestPDF
-window.addQuestionDirectly = addQuestionDirectly
-window.deleteQuestion = deleteQuestion
-window.renderTestCreation = renderTestCreation
-window.startTestCreation = startTestCreation
-
-//
-window.startTestCreation = startTestCreation
-window.renderTestCreation = renderTestCreation
+window.cancelQuestionEdit = cancelQuestionEdit
+window.setQuestionEditMode = setQuestionEditMode
+window.setQuestionViewMode = setQuestionViewMode
 
 // Add this at the end of the file to ensure all functions are properly exposed to the global window object:
 

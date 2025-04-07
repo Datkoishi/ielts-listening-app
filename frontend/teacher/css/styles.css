@@ -136,6 +136,55 @@ button i {
   margin-bottom: 15px;
 }
 
+/* Add these styles for view and edit modes */
+.question.view-mode {
+  background-color: #f9f9f9;
+}
+
+.question.view-mode input,
+.question.view-mode textarea,
+.question.view-mode select {
+  background-color: #f0f0f0;
+  border: 1px solid #ddd;
+  cursor: not-allowed;
+}
+
+/* Styles for edit mode */
+.question.edit-mode {
+  background-color: #fff;
+  border: 1px solid #4caf50;
+}
+
+.question.edit-mode input,
+.question.edit-mode textarea,
+.question.edit-mode select {
+  background-color: #fff;
+  border: 1px solid #aaa;
+  cursor: text;
+}
+
+.question.edit-mode input:focus,
+.question.edit-mode textarea:focus,
+.question.edit-mode select:focus {
+  border-color: #4caf50;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}
+
+/* Highlight the question being edited */
+.question.edit-mode::before {
+  content: "";
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: 2px solid #4caf50;
+  border-radius: 10px;
+  pointer-events: none;
+  z-index: -1;
+}
+
 /* Styles for question action buttons */
 .question-actions {
   display: flex;
@@ -210,55 +259,6 @@ button i {
 
 .delete-question:hover {
   background-color: #e60000;
-}
-
-/* Add these styles for view and edit modes */
-.question.view-mode {
-  background-color: #f9f9f9;
-}
-
-.question.view-mode input,
-.question.view-mode textarea,
-.question.view-mode select {
-  background-color: #f0f0f0;
-  border: 1px solid #ddd;
-  cursor: not-allowed;
-}
-
-/* Styles for edit mode */
-.question.edit-mode {
-  background-color: #fff;
-  border: 1px solid #4caf50;
-}
-
-.question.edit-mode input,
-.question.edit-mode textarea,
-.question.edit-mode select {
-  background-color: #fff;
-  border: 1px solid #aaa;
-  cursor: text;
-}
-
-.question.edit-mode input:focus,
-.question.edit-mode textarea:focus,
-.question.edit-mode select:focus {
-  border-color: #4caf50;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
-}
-
-/* Highlight the question being edited */
-.question.edit-mode::before {
-  content: "";
-  position: absolute;
-  top: -3px;
-  left: -3px;
-  right: -3px;
-  bottom: -3px;
-  border: 2px solid #4caf50;
-  border-radius: 10px;
-  pointer-events: none;
-  z-index: -1;
 }
 
 .question-content {
