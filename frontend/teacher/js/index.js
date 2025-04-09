@@ -101,6 +101,90 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   })
+
+  // Adicionar funções para manipular os modos de visualização e edição
+  // Código existente...
+
+  // Garantir que as funções de edição estejam disponíveis globalmente
+  window.toggleQuestionEdit =
+    window.toggleQuestionEdit ||
+    ((button) => {
+      const questionDiv = button.closest(".question")
+      if (!questionDiv) return
+
+      const isViewMode = questionDiv.classList.contains("view-mode")
+      if (isViewMode) {
+        window.setQuestionEditMode(questionDiv)
+      } else {
+        window.setQuestionViewMode(questionDiv)
+      }
+    })
+
+  window.setQuestionEditMode =
+    window.setQuestionEditMode ||
+    ((questionDiv) => {
+      questionDiv.classList.remove("view-mode")
+      questionDiv.classList.add("edit-mode")
+
+      const editBtn = questionDiv.querySelector(".edit-question-btn")
+      const saveBtn = questionDiv.querySelector(".save-question-btn")
+      const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+      if (editBtn) editBtn.style.display = "none"
+      if (saveBtn) saveBtn.style.display = "inline-block"
+      if (cancelBtn) cancelBtn.style.display = "inline-block"
+
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.disabled = false
+      })
+
+      window.showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
+    })
+
+  window.setQuestionViewMode =
+    window.setQuestionViewMode ||
+    ((questionDiv) => {
+      questionDiv.classList.remove("edit-mode")
+      questionDiv.classList.add("view-mode")
+
+      const editBtn = questionDiv.querySelector(".edit-question-btn")
+      const saveBtn = questionDiv.querySelector(".save-question-btn")
+      const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+      if (editBtn) editBtn.style.display = "inline-block"
+      if (saveBtn) saveBtn.style.display = "none"
+      if (cancelBtn) cancelBtn.style.display = "none"
+
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.disabled = true
+      })
+    })
+
+  window.cancelQuestionEdit =
+    window.cancelQuestionEdit ||
+    ((button) => {
+      const questionDiv = button.closest(".question")
+      if (!questionDiv) return
+
+      // Lấy chỉ mục của câu hỏi
+      const part = document.getElementById(`part${window.currentPart}`)
+      const questions = Array.from(part.querySelectorAll(".question"))
+      const questionIndex = questions.indexOf(questionDiv)
+
+      if (questionIndex === -1) return
+
+      // Lấy dữ liệu câu hỏi gốc
+      const originalQuestion = window.test[`part${window.currentPart}`][questionIndex]
+
+      // Render lại câu hỏi với dữ liệu gốc
+      window.renderQuestionsForCurrentPart()
+
+      window.showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
+    })
+
+  // Código existente...
 })
 
 // Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
@@ -718,16 +802,21 @@ window.renderQuestionsForCurrentPart = () => {
   // Hiển thị từng câu hỏi
   questions.forEach((question, index) => {
     const questionDiv = document.createElement("div")
-    questionDiv.className = "question"
+    questionDiv.className = "question view-mode" // Added view-mode class
 
     // Tạo nội dung câu hỏi
     questionDiv.innerHTML = `
     <h4><i class="fas fa-question-circle"></i> Câu hỏi ${index + 1}</h4>
     <h3><i class="fas fa-check-circle"></i> ${question.type}</h3>
-    <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
     <div class="question-content">
       <p><strong>Nội dung:</strong> ${question.content[0]}</p>
       <p><strong>Đáp án:</strong> ${Array.isArray(question.correctAnswers) ? question.correctAnswers.join(", ") : question.correctAnswers}</p>
+    </div>
+    <div class="question-controls">
+      <button class="edit-question-btn" onclick="window.toggleQuestionEdit(this)"><i class="fas fa-edit"></i> Chỉnh sửa</button>
+      <button class="save-question-btn" style="display: none;"><i class="fas fa-save"></i> Lưu</button>
+      <button class="cancel-edit-btn" style="display: none;"><i class="fas fa-times"></i> Hủy</button>
+      <button class="delete-question" type="button"><i class="fas fa-trash"></i></button>
     </div>
   `
 
@@ -2015,4 +2104,3 @@ function saveFlowChartCompletionQuestion(questionDiv) {
     window.showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
   }
 }
-
