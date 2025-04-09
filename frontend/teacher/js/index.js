@@ -187,6 +187,94 @@ document.addEventListener("DOMContentLoaded", () => {
   // Código existente...
 })
 
+// Add these fallback functions to ensure edit functions are globally available
+document.addEventListener("DOMContentLoaded", () => {
+  // Ensure edit functions are available globally
+  window.toggleQuestionEdit =
+    window.toggleQuestionEdit ||
+    ((button) => {
+      const questionDiv = button.closest(".question")
+      if (!questionDiv) return
+
+      const isViewMode = questionDiv.classList.contains("view-mode")
+      if (isViewMode) {
+        window.setQuestionEditMode(questionDiv)
+      } else {
+        window.setQuestionViewMode(questionDiv)
+      }
+    })
+
+  window.setQuestionEditMode =
+    window.setQuestionEditMode ||
+    ((questionDiv) => {
+      questionDiv.classList.remove("view-mode")
+      questionDiv.classList.add("edit-mode")
+
+      const editBtn = questionDiv.querySelector(".edit-question-btn")
+      const saveBtn = questionDiv.querySelector(".save-question-btn")
+      const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+      if (editBtn) editBtn.style.display = "none"
+      if (saveBtn) saveBtn.style.display = "inline-block"
+      if (cancelBtn) cancelBtn.style.display = "inline-block"
+
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.disabled = false
+      })
+
+      if (typeof window.showNotification === "function") {
+        window.showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
+      }
+    })
+
+  window.setQuestionViewMode =
+    window.setQuestionViewMode ||
+    ((questionDiv) => {
+      questionDiv.classList.remove("edit-mode")
+      questionDiv.classList.add("view-mode")
+
+      const editBtn = questionDiv.querySelector(".edit-question-btn")
+      const saveBtn = questionDiv.querySelector(".save-question-btn")
+      const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+      if (editBtn) editBtn.style.display = "inline-block"
+      if (saveBtn) saveBtn.style.display = "none"
+      if (cancelBtn) cancelBtn.style.display = "none"
+
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.disabled = true
+      })
+    })
+
+  window.cancelQuestionEdit =
+    window.cancelQuestionEdit ||
+    ((button) => {
+      const questionDiv = button.closest(".question")
+      if (!questionDiv) return
+
+      // Get the index of this question
+      const part = document.getElementById(`part${window.currentPart}`)
+      const questions = Array.from(part.querySelectorAll(".question"))
+      const questionIndex = questions.indexOf(questionDiv)
+
+      if (questionIndex === -1) return
+
+      // Rerender the question with original data
+      if (typeof window.renderQuestionsForCurrentPart === "function") {
+        window.renderQuestionsForCurrentPart()
+      } else {
+        // Fallback to just switching to view mode
+        window.setQuestionViewMode(questionDiv)
+      }
+
+      if (typeof window.showNotification === "function") {
+        window.showNotification("Đã hủy chỉnh sửa", "info")
+      }
+    })
+})
+
 // Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
 document.addEventListener("DOMContentLoaded", () => {
   console.log("DOM đã được tải")

@@ -136,7 +136,7 @@ button i {
   margin-bottom: 15px;
 }
 
-/* Add these styles for view and edit modes */
+/* Add or update these styles for question edit modes */
 .question.view-mode {
   background-color: #f9f9f9;
   border: 1px solid #e0e0e0;
@@ -152,7 +152,7 @@ button i {
   color: #555;
 }
 
-/* Estilos para o modo de edição */
+/* Styles for edit mode */
 .question.edit-mode {
   background-color: #fff;
   border: 1px solid #4caf50;
@@ -176,7 +176,7 @@ button i {
   box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
 }
 
-/* Destacar a questão sendo editada */
+/* Highlight the question being edited */
 .question.edit-mode::before {
   content: "";
   position: absolute;

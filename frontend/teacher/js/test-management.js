@@ -1651,16 +1651,6 @@ function addQuestionDirectly(questionType) {
         ]
         newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
         break
-      case "Hoàn thành ghi chú":
-        newQuestion.content = [
-          "Hoàn thành ghi chú dưới đây",
-          "Chủ đề ghi chú",
-          "Ghi chú 1 với [ANSWER]",
-          "Ghi chú 2 với [ANSWER]",
-          "Ghi chú 3 với [ANSWER]",
-        ]
-        newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
-        break
       case "Hoàn thành bảng/biểu mẫu":
         newQuestion.content = [
           "Hoàn thành bảng dưới đây",
@@ -1968,39 +1958,85 @@ function saveQuestionChanges(button) {
   }
 }
 
-// Thêm hàm để chuyển đổi giữa chế độ xem và chỉnh sửa
+// Make sure the toggleQuestionEdit function is properly defined and exposed to the global scope
 function toggleQuestionEdit(button) {
   const questionDiv = button.closest(".question")
   if (!questionDiv) return
 
-  // Kiểm tra xem câu hỏi đang ở chế độ xem hay chỉnh sửa
+  // Check if the question is in view mode or edit mode
   const isViewMode = questionDiv.classList.contains("view-mode")
 
   if (isViewMode) {
-    // Chuyển sang chế độ chỉnh sửa
+    // Switch to edit mode
     setQuestionEditMode(questionDiv)
   } else {
-    // Chuyển sang chế độ xem
+    // Switch to view mode
     setQuestionViewMode(questionDiv)
   }
 }
 
-// Hàm để hủy chỉnh sửa và quay lại chế độ xem
+// Function to set question to edit mode
+function setQuestionEditMode(questionDiv) {
+  // Remove view-mode class and add edit-mode class
+  questionDiv.classList.remove("view-mode")
+  questionDiv.classList.add("edit-mode")
+
+  // Show Save and Cancel buttons, hide Edit button
+  const editBtn = questionDiv.querySelector(".edit-question-btn")
+  const saveBtn = questionDiv.querySelector(".save-question-btn")
+  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+  if (editBtn) editBtn.style.display = "none"
+  if (saveBtn) saveBtn.style.display = "inline-block"
+  if (cancelBtn) cancelBtn.style.display = "inline-block"
+
+  // Enable all input fields
+  const inputs = questionDiv.querySelectorAll("input, textarea, select")
+  inputs.forEach((input) => {
+    input.disabled = false
+  })
+
+  showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
+}
+
+// Function to set question to view mode
+function setQuestionViewMode(questionDiv) {
+  // Remove edit-mode class and add view-mode class
+  questionDiv.classList.remove("edit-mode")
+  questionDiv.classList.add("view-mode")
+
+  // Show Edit button, hide Save and Cancel buttons
+  const editBtn = questionDiv.querySelector(".edit-question-btn")
+  const saveBtn = questionDiv.querySelector(".save-question-btn")
+  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+  if (editBtn) editBtn.style.display = "inline-block"
+  if (saveBtn) saveBtn.style.display = "none"
+  if (cancelBtn) cancelBtn.style.display = "none"
+
+  // Disable all input fields
+  const inputs = questionDiv.querySelectorAll("input, textarea, select")
+  inputs.forEach((input) => {
+    input.disabled = true
+  })
+}
+
+// Function to cancel question edit and revert to original data
 function cancelQuestionEdit(button) {
   const questionDiv = button.closest(".question")
   if (!questionDiv) return
 
-  // Lấy chỉ mục của câu hỏi
+  // Get the index of this question in the current part
   const part = document.getElementById(`part${window.currentPart}`)
   const questions = Array.from(part.querySelectorAll(".question"))
   const questionIndex = questions.indexOf(questionDiv)
 
   if (questionIndex === -1) return
 
-  // Lấy dữ liệu câu hỏi gốc
+  // Get the original question data
   const originalQuestion = test[`part${window.currentPart}`][questionIndex]
 
-  // Render lại câu hỏi với dữ liệu gốc
+  // Re-render the question with original data
   const questionType = originalQuestion.type
   let contentHTML = ""
 
@@ -2028,7 +2064,7 @@ function cancelQuestionEdit(button) {
       break
   }
 
-  // Thay thế nội dung form
+  // Replace the form content
   const formContainer = questionDiv.querySelector(
     ".t3-question-creator, .t4-container, .t1-ielts-creator, .t2-listening-exercise-app, .t6-ielts-listening-creator, .t7-ielts-flow-chart-creator",
   )
@@ -2036,53 +2072,17 @@ function cancelQuestionEdit(button) {
     formContainer.outerHTML = contentHTML
   }
 
-  // Chuyển sang chế độ xem
+  // Switch to view mode
   setQuestionViewMode(questionDiv)
 
   showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
 }
 
-// Hàm để thiết lập chế độ chỉnh sửa
-function setQuestionEditMode(questionDiv) {
-  // Xóa class view-mode và thêm class edit-mode
-  questionDiv.classList.remove("view-mode")
-  questionDiv.classList.add("edit-mode")
-
-  // Hiển thị nút Hủy và ẩn nút Chỉnh sửa
-  const editBtn = questionDiv.querySelector(".edit-question-btn")
-  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-  if (editBtn) editBtn.style.display = "none"
-  if (cancelBtn) cancelBtn.style.display = "inline-block"
-
-  // Kích hoạt tất cả các trường input
-  const inputs = questionDiv.querySelectorAll("input, textarea, select")
-  inputs.forEach((input) => {
-    input.disabled = false
-  })
-
-  showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
-}
-
-// Hàm để thiết lập chế độ xem
-function setQuestionViewMode(questionDiv) {
-  // Xóa class edit-mode và thêm class view-mode
-  questionDiv.classList.remove("edit-mode")
-  questionDiv.classList.add("view-mode")
-
-  // Hiển thị nút Chỉnh sửa và ẩn nút Hủy
-  const editBtn = questionDiv.querySelector(".edit-question-btn")
-  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-  if (editBtn) editBtn.style.display = "inline-block"
-  if (cancelBtn) cancelBtn.style.display = "none"
-
-  // Vô hiệu hóa tất cả các trường input
-  const inputs = questionDiv.querySelectorAll("input, textarea, select")
-  inputs.forEach((input) => {
-    input.disabled = true
-  })
-}
+// Make sure these functions are available globally
+window.toggleQuestionEdit = toggleQuestionEdit
+window.setQuestionEditMode = setQuestionEditMode
+window.setQuestionViewMode = setQuestionViewMode
+window.cancelQuestionEdit = cancelQuestionEdit
 
 // Thêm các hàm lưu cho từng loại câu hỏi
 function saveOneAnswerQuestion(questionDiv) {
