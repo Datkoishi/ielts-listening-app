@@ -10,7 +10,7 @@ let test = {
 let totalQuestions = 0
 // Use window.currentPart instead of local currentPart
 // let currentPart = 1
-const MAX_QUESTIONS = 40 // Giới hạn số lượng câu hỏi tối đa là 40
+const MAX_QUESTIONS = 50 // Giới hạn số lượng câu hỏi tối đa là 50
 
 // Hàm hiển thị thông báo
 function showNotification(message, type) {
@@ -1827,78 +1827,6 @@ function addQuestionDirectly(questionType) {
   }
 }
 
-// Make sure all functions are available globally
-window.addQuestionDirectly = addQuestionDirectly
-window.renderTestCreation = renderTestCreation
-window.startTestCreation = startTestCreation
-window.previousPart = previousPart
-window.nextPart = nextPart
-window.saveTest = saveTest
-window.deleteQuestion = deleteQuestion
-window.showNotification = showNotification
-window.updateQuestionCount = updateQuestionCount
-window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
-window.previewEntireTest = previewEntireTest
-window.exportTest = exportTest
-window.importTest = importTest
-window.showTestList = showTestList
-window.createNewTest = createNewTest
-window.duplicateTest = duplicateTest
-window.generateTestPDF = generateTestPDF
-window.saveQuestionChanges = saveQuestionChanges
-window.toggleQuestionEdit = toggleQuestionEdit
-window.cancelQuestionEdit = cancelQuestionEdit
-window.setQuestionEditMode = setQuestionEditMode
-window.setQuestionViewMode = setQuestionViewMode
-
-// Sửa đổi hàm document.addEventListener("DOMContentLoaded", ...) để loại bỏ kiểm tra đăng nhập
-document.addEventListener("DOMContentLoaded", () => {
-  // Thêm sự kiện cho nút bắt đầu tạo bài kiểm tra
-  const startButton = document.querySelector(".selection-page button")
-  if (startButton) {
-    startButton.addEventListener("click", startTestCreation)
-  }
-})
-
-// Bắt đầu tạo bài kiểm tra
-function startTestCreation() {
-  // Lấy các loại câu hỏi đã chọn
-  const selectedTypes = []
-  document.querySelectorAll('.question-type input[type="checkbox"]:checked').forEach((checkbox) => {
-    selectedTypes.push(checkbox.value)
-  })
-
-  if (selectedTypes.length === 0) {
-    showNotification("Vui lòng chọn ít nhất một loại câu hỏi", "error")
-    return
-  }
-
-  // Chuyển đến trang tạo bài kiểm tra
-  document.getElementById("selectionPage").classList.add("hidden")
-  document.getElementById("testCreationPage").classList.remove("hidden")
-
-  // Khởi tạo bài kiểm tra mới
-  test = {
-    title: "Bài kiểm tra IELTS Listening mới",
-    vietnameseName: "Bộ câu hỏi IELTS Listening mới",
-    description: "Mô tả bài kiểm tra",
-    part1: [],
-    part2: [],
-    part3: [],
-    part4: [],
-  }
-
-  // Hiển thị giao diện tạo bài kiểm tra
-  window.currentPart = 1
-  renderTestCreation()
-
-  // Automatically show question creation form for the first selected type
-  if (selectedTypes.length > 0) {
-    console.log("Automatically creating question form for: " + selectedTypes[0])
-    addQuestionDirectly(selectedTypes[0])
-  }
-}
-
 // Thêm hàm mới để lưu thay đổi cho từng câu hỏi riêng biệt
 function saveQuestionChanges(button) {
   try {
@@ -2051,9 +1979,11 @@ function setQuestionEditMode(questionDiv) {
   // Hiển thị nút Hủy và ẩn nút Chỉnh sửa
   const editBtn = questionDiv.querySelector(".edit-question-btn")
   const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+  const saveBtn = questionDiv.querySelector(".save-question-btn")
 
   if (editBtn) editBtn.style.display = "none"
   if (cancelBtn) cancelBtn.style.display = "inline-block"
+  if (saveBtn) saveBtn.style.display = "inline-block"
 
   // Kích hoạt tất cả các trường input
   const inputs = questionDiv.querySelectorAll("input, textarea, select")
@@ -2073,9 +2003,11 @@ function setQuestionViewMode(questionDiv) {
   // Hiển thị nút Chỉnh sửa và ẩn nút Hủy
   const editBtn = questionDiv.querySelector(".edit-question-btn")
   const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+  const saveBtn = questionDiv.querySelector(".save-question-btn")
 
   if (editBtn) editBtn.style.display = "inline-block"
   if (cancelBtn) cancelBtn.style.display = "none"
+  if (saveBtn) saveBtn.style.display = "none"
 
   // Vô hiệu hóa tất cả các trường input
   const inputs = questionDiv.querySelectorAll("input, textarea, select")
@@ -2583,3 +2515,13 @@ function addTestMetadataForm() {
   }
 }
 
+// Declare startTestCreation function
+function startTestCreation() {
+  // Hide the selection page and show the test creation page
+  document.getElementById("selectionPage").classList.add("hidden")
+  document.getElementById("testCreationPage").classList.remove("hidden")
+
+  // Render the test creation form for part 1
+  window.currentPart = 1
+  renderTestCreation()
+}
