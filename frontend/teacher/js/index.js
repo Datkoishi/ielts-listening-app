@@ -106,41 +106,62 @@ document.addEventListener("DOMContentLoaded", () => {
   // Código existente...
 
   // Garantir que as funções de edição estejam disponíveis globalmente
-  window.toggleQuestionEdit =
-    window.toggleQuestionEdit ||
-    ((button) => {
-      const questionDiv = button.closest(".question")
-      if (!questionDiv) return
+  window.toggleQuestionEdit = (button) => {
+    const questionDiv = button.closest(".question")
+    if (!questionDiv) return
 
-      const isViewMode = questionDiv.classList.contains("view-mode")
-      if (isViewMode) {
+    const isViewMode = questionDiv.classList.contains("view-mode")
+    if (isViewMode) {
+      if (typeof window.setQuestionEditMode === "function") {
         window.setQuestionEditMode(questionDiv)
       } else {
-        window.setQuestionViewMode(questionDiv)
+        console.error("setQuestionEditMode function not found")
       }
+    } else {
+      if (typeof window.setQuestionViewMode === "function") {
+        window.setQuestionViewMode(questionDiv)
+      } else {
+        console.error("setQuestionViewMode function not found")
+      }
+    }
+  }
+
+  window.setQuestionEditMode = (questionDiv) => {
+    questionDiv.classList.remove("view-mode")
+    questionDiv.classList.add("edit-mode")
+
+    const editBtn = questionDiv.querySelector(".edit-question-btn")
+    const saveBtn = questionDiv.querySelector(".save-question-btn")
+    const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+    if (editBtn) editBtn.style.display = "none"
+    if (saveBtn) saveBtn.style.display = "inline-block"
+    if (cancelBtn) cancelBtn.style.display = "inline-block"
+
+    // Enable all input fields
+    const inputs = questionDiv.querySelectorAll("input, textarea, select")
+    inputs.forEach((input) => {
+      input.disabled = false
     })
 
-  window.setQuestionEditMode =
-    window.setQuestionEditMode ||
-    ((questionDiv) => {
-      questionDiv.classList.remove("view-mode")
-      questionDiv.classList.add("edit-mode")
+    // Get the question data to populate the form
+    const partElement = questionDiv.closest(".part")
+    if (partElement) {
+      const questions = Array.from(partElement.querySelectorAll(".question"))
+      const questionIndex = questions.indexOf(questionDiv)
 
-      const editBtn = questionDiv.querySelector(".edit-question-btn")
-      const saveBtn = questionDiv.querySelector(".save-question-btn")
-      const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+      if (questionIndex !== -1 && window.test && window.test[`part${window.currentPart}`]) {
+        const questionData = window.test[`part${window.currentPart}`][questionIndex]
 
-      if (editBtn) editBtn.style.display = "none"
-      if (saveBtn) saveBtn.style.display = "inline-block"
-      if (cancelBtn) cancelBtn.style.display = "inline-block"
+        // Re-render the question form with the existing data if needed
+        // This is now handled in the test-management.js file
+      }
+    }
 
-      const inputs = questionDiv.querySelectorAll("input, textarea, select")
-      inputs.forEach((input) => {
-        input.disabled = false
-      })
-
+    if (typeof window.showNotification === "function") {
       window.showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
-    })
+    }
+  }
 
   window.setQuestionViewMode =
     window.setQuestionViewMode ||
@@ -162,27 +183,31 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     })
 
-  window.cancelQuestionEdit =
-    window.cancelQuestionEdit ||
-    ((button) => {
-      const questionDiv = button.closest(".question")
-      if (!questionDiv) return
+  window.cancelQuestionEdit = (button) => {
+    const questionDiv = button.closest(".question")
+    if (!questionDiv) return
 
-      // Lấy chỉ mục của câu hỏi
-      const part = document.getElementById(`part${window.currentPart}`)
-      const questions = Array.from(part.querySelectorAll(".question"))
-      const questionIndex = questions.indexOf(questionDiv)
+    // Get the index of this question
+    const part = document.getElementById(`part${window.currentPart}`)
+    if (!part) return
 
-      if (questionIndex === -1) return
+    const questions = Array.from(part.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionDiv)
 
-      // Lấy dữ liệu câu hỏi gốc
-      const originalQuestion = window.test[`part${window.currentPart}`][questionIndex]
+    if (questionIndex === -1) return
 
-      // Render lại câu hỏi với dữ liệu gốc
+    // Rerender the question with original data
+    if (typeof window.renderQuestionsForCurrentPart === "function") {
       window.renderQuestionsForCurrentPart()
+    } else {
+      // Fallback to just switching to view mode
+      window.setQuestionViewMode(questionDiv)
+    }
 
-      window.showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
-    })
+    if (typeof window.showNotification === "function") {
+      window.showNotification("Đã hủy chỉnh sửa", "info")
+    }
+  }
 
   // Código existente...
 })
@@ -1027,7 +1052,7 @@ function createOneAnswerForm() {
 }
 
 function createMultipleAnswerForm() {
-  // Không gọi window.createMultipleAnswerForm ở đây để tránh đệ quy
+  // Não gọi window.createMultipleAnswerForm ở đây để tránh đệ quy
   return `
   <div class="multiple-answer-form">
     <label for="question">Câu hỏi:</label>
