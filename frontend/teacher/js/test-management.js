@@ -1898,6 +1898,473 @@ function startTestCreation() {
 }
 
 // Thêm hàm mới để lưu thay đổi cho từng câu hỏi riêng biệt
+// Cập nhật hàm toggleQuestionEdit để xử lý việc chuyển đổi giữa chế độ xem và chỉnh sửa
+function toggleQuestionEdit(button) {
+  const questionDiv = button.closest(".question")
+  if (!questionDiv) return
+
+  // Kiểm tra xem câu hỏi đang ở chế độ xem hay chỉnh sửa
+  const isViewMode = questionDiv.classList.contains("view-mode")
+
+  if (isViewMode) {
+    // Chuyển sang chế độ chỉnh sửa
+    if (typeof window.setQuestionEditMode === "function") {
+      window.setQuestionEditMode(questionDiv)
+    } else {
+      setQuestionEditMode(questionDiv)
+    }
+  } else {
+    // Chuyển sang chế độ xem
+    if (typeof window.setQuestionViewMode === "function") {
+      window.setQuestionViewMode(questionDiv)
+    } else {
+      setQuestionViewMode(questionDiv)
+    }
+  }
+}
+
+// Thêm hàm để lấy form gốc từ form-handlers.js
+function getOriginalForm(questionType) {
+  console.log("Đang lấy form gốc cho loại câu hỏi:", questionType)
+
+  try {
+    switch (questionType) {
+      case "Một đáp án":
+        return typeof window.createOneAnswerFormOriginal === "function"
+          ? window.createOneAnswerFormOriginal()
+          : createOneAnswerForm()
+      case "Nhiều đáp án":
+        return typeof window.createMultipleAnswerFormOriginal === "function"
+          ? window.createMultipleAnswerFormOriginal()
+          : createMultipleAnswerForm()
+      case "Ghép nối":
+        return typeof window.createMatchingFormOriginal === "function"
+          ? window.createMatchingFormOriginal()
+          : createMatchingForm()
+      case "Ghi nhãn Bản đồ/Sơ đồ":
+        return typeof window.createPlanMapDiagramFormOriginal === "function"
+          ? window.createPlanMapDiagramFormOriginal()
+          : createPlanMapDiagramForm()
+      case "Hoàn thành ghi chú":
+        return typeof window.createNoteCompletionFormOriginal === "function"
+          ? window.createNoteCompletionFormOriginal()
+          : createNoteCompletionForm()
+      case "Hoàn thành bảng/biểu mẫu":
+        return typeof window.createFormTableCompletionFormOriginal === "function"
+          ? window.createFormTableCompletionFormOriginal()
+          : createFormTableCompletionForm()
+      case "Hoàn thành lưu đồ":
+        return typeof window.createFlowChartCompletionFormOriginal === "function"
+          ? window.createFlowChartCompletionFormOriginal()
+          : createFlowChartCompletionForm()
+      default:
+        console.warn("Không hỗ trợ loại câu hỏi:", questionType)
+        return `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
+    }
+  } catch (error) {
+    console.error("Lỗi khi lấy form gốc:", error)
+    return `<p>Lỗi khi lấy form: ${error.message}</p>`
+  }
+}
+
+// Cập nhật hàm setQuestionEditMode để sử dụng form gốc
+function setQuestionEditMode(questionDiv) {
+  try {
+    console.log("Đang chuyển sang chế độ chỉnh sửa...")
+
+    // Lấy dữ liệu câu hỏi
+    const partElement = questionDiv.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionDiv)
+
+    if (questionIndex !== -1 && test[`part${window.currentPart}`]) {
+      const questionData = test[`part${window.currentPart}`][questionIndex]
+      const questionType = questionData.type
+
+      // Lưu lại nội dung cũ để có thể khôi phục khi hủy
+      questionDiv.setAttribute("data-original-content", questionDiv.innerHTML)
+
+      // Lưu lại chỉ mục câu hỏi để sử dụng khi lưu
+      questionDiv.setAttribute("data-question-index", questionIndex)
+
+      // Xóa nội dung cũ
+      questionDiv.innerHTML = ""
+
+      // Thêm tiêu đề và nút xóa
+      const questionNumber = questionIndex + 1
+      questionDiv.innerHTML = `
+        <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+        <h3>${getIconForType(questionType)} ${questionType}</h3>
+        <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
+      `
+
+      // Lấy form gốc từ form-handlers.js
+      const formHTML = getOriginalForm(questionType)
+
+      // Thêm form vào câu hỏi
+      questionDiv.innerHTML += formHTML
+
+      // Thêm nút lưu và hủy
+      const actionButtons = document.createElement("div")
+      actionButtons.className = "question-actions"
+      actionButtons.innerHTML = `
+        <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
+          <i class="fas fa-edit"></i> Chỉnh sửa
+        </button>
+        <button class="save-question-btn" onclick="saveQuestionChanges(this)">
+          <i class="fas fa-save"></i> Lưu thay đổi
+        </button>
+        <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)">
+          <i class="fas fa-times"></i> Hủy
+        </button>
+      `
+      questionDiv.appendChild(actionButtons)
+
+      // Chuyển sang chế độ chỉnh sửa
+      questionDiv.classList.remove("view-mode")
+      questionDiv.classList.add("edit-mode")
+
+      // Điền dữ liệu vào form
+      setTimeout(() => {
+        fillFormWithQuestionData(questionDiv, questionData)
+
+        // Khởi tạo các chức năng của form
+        initializeFormFunctions(questionDiv, questionType)
+
+        // Hiển thị thông báo
+        showNotification("Đã chuyển sang chế độ chỉnh sửa. Form đã được điền sẵn dữ liệu hiện có.", "info")
+      }, 100) // Đợi một chút để đảm bảo DOM đã được cập nhật
+    } else {
+      showNotification("Không tìm thấy dữ liệu câu hỏi để chỉnh sửa", "error")
+    }
+  } catch (error) {
+    console.error("Lỗi khi chuyển sang chế độ chỉnh sửa:", error)
+    showNotification("Đã xảy ra lỗi khi chuyển sang chế độ chỉnh sửa: " + error.message, "error")
+  }
+}
+
+// Cập nhật hàm fillFormWithQuestionData để điền dữ liệu chính xác vào form
+function fillFormWithQuestionData(questionDiv, questionData) {
+  try {
+    console.log("Đang điền dữ liệu vào form:", questionData)
+    const questionType = questionData.type
+
+    switch (questionType) {
+      case "Một đáp án":
+        const oneAnswerForm = questionDiv.querySelector(".t3-one-answer-form")
+        if (oneAnswerForm) {
+          const questionText = oneAnswerForm.querySelector("#t3-questionText")
+          const options = oneAnswerForm.querySelector("#t3-options")
+          const correctAnswer = oneAnswerForm.querySelector("#t3-correctAnswer")
+
+          if (questionText) questionText.value = questionData.content[0] || ""
+          if (options) options.value = questionData.content.slice(1).join("\n") || ""
+          if (correctAnswer) correctAnswer.value = questionData.correctAnswers || ""
+
+          console.log("Đã điền dữ liệu vào form Một đáp án")
+        } else {
+          console.warn("Không tìm thấy form Một đáp án")
+        }
+        break
+      case "Nhiều đáp án":
+        const multipleAnswerForm = questionDiv.querySelector("#t4-questionForm")
+        if (multipleAnswerForm) {
+          const questionText = multipleAnswerForm.querySelector("#t4-questionText")
+          const options = multipleAnswerForm.querySelector("#t4-options")
+          const correctAnswers = multipleAnswerForm.querySelector("#t4-correctAnswers")
+
+          if (questionText) questionText.value = questionData.content[0] || ""
+          if (options) options.value = questionData.content.slice(1).join("\n") || ""
+          if (correctAnswers)
+            correctAnswers.value = Array.isArray(questionData.correctAnswers)
+              ? questionData.correctAnswers.join(", ")
+              : questionData.correctAnswers || ""
+
+          console.log("Đã điền dữ liệu vào form Nhiều đáp án")
+        } else {
+          console.warn("Không tìm thấy form Nhiều đáp án")
+        }
+        break
+      case "Ghép nối":
+        const matchingForm = questionDiv.querySelector("#t3-questionForm")
+        if (matchingForm) {
+          const title = matchingForm.querySelector("#t3-questionTitle")
+          const people = matchingForm.querySelector("#t3-people")
+          const responsibilities = matchingForm.querySelector("#t3-responsibilities")
+          const correctAnswers = matchingForm.querySelector("#t3-correctAnswers")
+
+          const midPoint = Math.ceil(questionData.content.length / 2)
+
+          if (title) title.value = questionData.content[0] || ""
+          if (people) people.value = questionData.content.slice(1, midPoint).join("\n") || ""
+          if (responsibilities) responsibilities.value = questionData.content.slice(midPoint).join("\n") || ""
+          if (correctAnswers)
+            correctAnswers.value = Array.isArray(questionData.correctAnswers)
+              ? questionData.correctAnswers.join("\n")
+              : questionData.correctAnswers || ""
+
+          console.log("Đã điền dữ liệu vào form Ghép nối")
+        } else {
+          console.warn("Không tìm thấy form Ghép nối")
+        }
+        break
+      case "Ghi nhãn Bản đồ/Sơ đồ":
+        const mapForm = questionDiv.querySelector("#questionForm")
+        if (mapForm) {
+          const type = mapForm.querySelector("#questionType")
+          const instructions = mapForm.querySelector("#instructions")
+
+          if (type) type.value = questionData.content[0] || "map"
+          if (instructions) instructions.value = questionData.content[1] || ""
+
+          // Thêm hình ảnh nếu có
+          const imageContainer = document.createElement("div")
+          imageContainer.className = "t1-form-group"
+          imageContainer.innerHTML = `
+            <label for="imageFile">Hình ảnh đã tải lên:</label>
+            <img src="${questionData.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
+          `
+          mapForm.appendChild(imageContainer)
+
+          // Thêm các nhãn và đáp án
+          const answerInputs = mapForm.querySelector("#answerInputs") || document.createElement("div")
+          answerInputs.id = "answerInputs"
+          answerInputs.innerHTML = ""
+
+          for (let i = 0; i < questionData.content.slice(3).length; i++) {
+            const label = questionData.content[i + 3]
+            const answer = questionData.correctAnswers[i] || ""
+
+            const answerGroup = document.createElement("div")
+            answerGroup.className = "t1-form-group"
+            answerGroup.innerHTML = `
+              <label for="answer${i}">Nhãn ${i + 1}:</label>
+              <input type="text" id="answer${i}" value="${label}" required>
+              <label for="correctAnswer${i}">Đáp án đúng cho nhãn ${i + 1}:</label>
+              ${
+                questionData.content[0] === "map"
+                  ? `<select id="correctAnswer${i}" required>
+                    ${["A", "B", "C", "D", "E", "F", "G", "H"]
+                      .map(
+                        (letter) =>
+                          `<option value="${letter}" ${answer === letter ? "selected" : ""}>${letter}</option>`,
+                      )
+                      .join("")}
+                  </select>`
+                  : `<input type="text" id="correctAnswer${i}" value="${answer}" required>`
+              }
+            `
+            answerInputs.appendChild(answerGroup)
+          }
+
+          if (!mapForm.querySelector("#answerInputs")) {
+            mapForm.appendChild(answerInputs)
+          }
+
+          console.log("Đã điền dữ liệu vào form Ghi nhãn Bản đồ/Sơ đồ")
+        } else {
+          console.warn("Không tìm thấy form Ghi nhãn Bản đồ/Sơ đồ")
+        }
+        break
+      case "Hoàn thành ghi chú":
+        const noteForm = questionDiv.querySelector("#t2ListeningExerciseForm")
+        if (noteForm) {
+          const instructions = noteForm.querySelector("#t2ListeningExerciseInstructions")
+          const topic = noteForm.querySelector("#t2ListeningExerciseTopic")
+
+          if (instructions) instructions.value = questionData.content[0] || ""
+          if (topic) topic.value = questionData.content[1] || ""
+
+          // Thêm các ghi chú và đáp án
+          const questionContainer =
+            noteForm.querySelector("#t2ListeningExerciseQuestionContainer") || document.createElement("div")
+          questionContainer.id = "t2ListeningExerciseQuestionContainer"
+          questionContainer.innerHTML = ""
+
+          for (let i = 0; i < questionData.content.slice(2).length; i++) {
+            const note = questionData.content[i + 2]
+            const answer = questionData.correctAnswers[i] || ""
+
+            const noteGroup = document.createElement("div")
+            noteGroup.className = "t2-listening-exercise-form-group"
+            noteGroup.innerHTML = `
+              <label for="t2ListeningExerciseQuestion${i + 1}">Câu hỏi ${i + 1}:</label>
+              <div class="t2-listening-exercise-answer-fields">
+                <textarea id="t2ListeningExerciseQuestion${i + 1}" name="question${i + 1}">${note}</textarea>
+              </div>
+              <div class="t2-listening-exercise-correct-answers" id="t2ListeningExerciseCorrectAnswers${i + 1}">
+                <span class="t2-listening-exercise-correct-answer-label">Đáp án đúng:</span>
+                <input type="text" class="t2-listening-exercise-correct-answer-input" value="${answer}">
+              </div>
+            `
+            questionContainer.appendChild(noteGroup)
+          }
+
+          if (!noteForm.querySelector("#t2ListeningExerciseQuestionContainer")) {
+            noteForm.appendChild(questionContainer)
+          }
+
+          console.log("Đã điền dữ liệu vào form Hoàn thành ghi chú")
+        } else {
+          console.warn("Không tìm thấy form Hoàn thành ghi chú")
+        }
+        break
+      case "Hoàn thành bảng/biểu mẫu":
+        const tableSection = questionDiv.querySelector("#tableSection")
+        if (tableSection) {
+          const instruction = tableSection.querySelector("#tableInstruction")
+          const table = tableSection.querySelector("#fareTable")
+
+          if (instruction) instruction.value = questionData.content[0] || ""
+
+          // Thêm các hàng vào bảng
+          const tbody = table.querySelector("tbody") || table
+          tbody.innerHTML = `
+            <tr>
+              <th>Phương tiện</th>
+              <th>Giá tiền mặt</th>
+              <th>Giá thẻ</th>
+              <th>Đáp án đúng</th>
+              <th>Thao tác</th>
+            </tr>
+          `
+
+          const rowCount = Math.floor((questionData.content.length - 1) / 3)
+          for (let i = 0; i < rowCount; i++) {
+            const startIdx = 1 + i * 3
+            const row = document.createElement("tr")
+            row.innerHTML = `
+              <td><input type="text" value="${questionData.content[startIdx] || ""}"></td>
+              <td><input type="text" value="${questionData.content[startIdx + 1] || ""}"></td>
+              <td><input type="text" value="${questionData.content[startIdx + 2] || ""}"></td>
+              <td><input type="text" class="t6-correct-answer-input" value="${questionData.correctAnswers[i] || ""}"></td>
+              <td><button class="t6-delete-btn">Xóa</button></td>
+            `
+            tbody.appendChild(row)
+          }
+
+          console.log("Đã điền dữ liệu vào form Hoàn thành bảng/biểu mẫu")
+        } else {
+          console.warn("Không tìm thấy form Hoàn thành bảng/biểu mẫu")
+        }
+        break
+      case "Hoàn thành lưu đồ":
+        const flowForm = questionDiv.querySelector("#teacherForm")
+        if (flowForm) {
+          const title = flowForm.querySelector("#title")
+          const instructions = flowForm.querySelector("#instructions")
+          const flowItems = flowForm.querySelector("#flowItems1")
+          const options = flowForm.querySelector("#options1")
+          const correctAnswers = flowForm.querySelector("#correctAnswers1")
+
+          if (title) title.value = questionData.content[0] || ""
+          if (instructions) instructions.value = questionData.content[1] || ""
+
+          const flowItemCount = Math.floor((questionData.content.length - 2) / 2)
+
+          if (flowItems) flowItems.value = questionData.content.slice(2, 2 + flowItemCount).join("\n") || ""
+          if (options) options.value = questionData.content.slice(2 + flowItemCount).join("\n") || ""
+          if (correctAnswers)
+            correctAnswers.value = Array.isArray(questionData.correctAnswers)
+              ? questionData.correctAnswers.join(", ")
+              : questionData.correctAnswers || ""
+
+          console.log("Đã điền dữ liệu vào form Hoàn thành lưu đồ")
+        } else {
+          console.warn("Không tìm thấy form Hoàn thành lưu đồ")
+        }
+        break
+      default:
+        console.warn("Không hỗ trợ loại câu hỏi:", questionType)
+    }
+  } catch (error) {
+    console.error("Lỗi khi điền dữ liệu vào form:", error)
+    showNotification("Đã xảy ra lỗi khi điền dữ liệu vào form: " + error.message, "error")
+  }
+}
+
+// Cập nhật hàm initializeFormFunctions để khởi tạo các chức năng của form
+function initializeFormFunctions(questionDiv, questionType) {
+  try {
+    console.log("Đang khởi tạo các chức năng của form cho loại câu hỏi:", questionType)
+
+    switch (questionType) {
+      case "Một đáp án":
+        if (typeof window.initializeOneAnswerForm === "function") {
+          window.initializeOneAnswerForm(questionDiv)
+        }
+        break
+      case "Nhiều đáp án":
+        if (typeof window.initializeMultipleAnswerForm === "function") {
+          window.initializeMultipleAnswerForm(questionDiv)
+        }
+        break
+      case "Ghép nối":
+        if (typeof window.initializeMatchingForm === "function") {
+          window.initializeMatchingForm(questionDiv)
+        }
+        break
+      case "Ghi nhãn Bản đồ/Sơ đồ":
+        if (typeof window.initializePlanMapDiagram === "function") {
+          window.initializePlanMapDiagram(questionDiv)
+        }
+        break
+      case "Hoàn thành ghi chú":
+        if (typeof window.initializeNoteCompletionForm === "function") {
+          window.initializeNoteCompletionForm(questionDiv)
+        }
+        break
+      case "Hoàn thành bảng/biểu mẫu":
+        if (typeof window.initializeFormTableCompletionForm === "function") {
+          window.initializeFormTableCompletionForm(questionDiv)
+        }
+        break
+      case "Hoàn thành lưu đồ":
+        if (typeof window.initializeFlowChartCompletionForm === "function") {
+          window.initializeFlowChartCompletionForm(questionDiv)
+        }
+        break
+      default:
+        console.warn("Không hỗ trợ loại câu hỏi:", questionType)
+    }
+
+    console.log("Đã khởi tạo các chức năng của form thành công")
+  } catch (error) {
+    console.error("Lỗi khi khởi tạo các chức năng của form:", error)
+    showNotification("Đã xảy ra lỗi khi khởi tạo các chức năng của form: " + error.message, "error")
+  }
+}
+
+// Cập nhật hàm cancelQuestionEdit để hiển thị thông báo
+function cancelQuestionEdit(button) {
+  try {
+    const questionDiv = button.closest(".question")
+    if (!questionDiv) {
+      showNotification("Không tìm thấy câu hỏi để hủy chỉnh sửa", "error")
+      return
+    }
+
+    // Khôi phục nội dung gốc nếu có
+    const originalContent = questionDiv.getAttribute("data-original-content")
+    if (originalContent) {
+      questionDiv.innerHTML = originalContent
+      showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
+    } else {
+      // Nếu không có nội dung gốc, render lại câu hỏi
+      renderQuestionsForCurrentPart()
+      showNotification("Đã hủy chỉnh sửa và render lại câu hỏi", "info")
+    }
+
+    // Chuyển về chế độ xem
+    questionDiv.classList.remove("edit-mode")
+    questionDiv.classList.add("view-mode")
+  } catch (error) {
+    console.error("Lỗi khi hủy chỉnh sửa:", error)
+    showNotification("Đã xảy ra lỗi khi hủy chỉnh sửa: " + error.message, "error")
+  }
+}
+
+// Cập nhật hàm saveQuestionChanges để hiển thị thông báo chi tiết hơn
 function saveQuestionChanges(button) {
   try {
     // Tìm phần tử câu hỏi chứa nút được nhấn
@@ -1908,13 +2375,18 @@ function saveQuestionChanges(button) {
     }
 
     // Lấy chỉ mục của câu hỏi trong phần hiện tại
-    const part = document.getElementById(`part${window.currentPart}`)
-    const questions = Array.from(part.querySelectorAll(".question"))
-    const questionIndex = questions.indexOf(questionDiv)
+    const questionIndex = Number.parseInt(questionDiv.getAttribute("data-question-index"))
+    if (isNaN(questionIndex)) {
+      const part = document.getElementById(`part${window.currentPart}`)
+      const questions = Array.from(part.querySelectorAll(".question"))
+      const index = questions.indexOf(questionDiv)
 
-    if (questionIndex === -1) {
-      showNotification("Không thể xác định vị trí câu hỏi", "error")
-      return
+      if (index === -1) {
+        showNotification("Không thể xác định vị trí câu hỏi", "error")
+        return
+      }
+
+      questionDiv.setAttribute("data-question-index", index)
     }
 
     // Lấy loại câu hỏi
@@ -1952,8 +2424,9 @@ function saveQuestionChanges(button) {
 
     if (updatedQuestion) {
       // Cập nhật câu hỏi trong đối tượng test
-      test[`part${window.currentPart}`][questionIndex] = updatedQuestion
-      showNotification(`Đã lưu thay đổi cho câu hỏi ${questionIndex + 1}`, "success")
+      const index = Number.parseInt(questionDiv.getAttribute("data-question-index"))
+      test[`part${window.currentPart}`][index] = updatedQuestion
+      showNotification(`Đã lưu thay đổi cho câu hỏi ${index + 1} thành công!`, "success")
 
       // Chuyển sang chế độ xem sau khi lưu
       setQuestionViewMode(questionDiv)
@@ -1966,638 +2439,80 @@ function saveQuestionChanges(button) {
   }
 }
 
-// Cập nhật hàm toggleQuestionEdit để xử lý việc chuyển đổi giữa chế độ xem và chỉnh sửa
-function toggleQuestionEdit(button) {
-  const questionDiv = button.closest(".question")
-  if (!questionDiv) return
-
-  // Kiểm tra xem câu hỏi đang ở chế độ xem hay chỉnh sửa
-  const isViewMode = questionDiv.classList.contains("view-mode")
-
-  if (isViewMode) {
-    // Chuyển sang chế độ chỉnh sửa
-    if (typeof window.setQuestionEditMode === "function") {
-      window.setQuestionEditMode(questionDiv)
-    } else {
-      setQuestionEditMode(questionDiv)
-    }
-  } else {
-    // Chuyển sang chế độ xem
-    if (typeof window.setQuestionViewMode === "function") {
-      window.setQuestionViewMode(questionDiv)
-    } else {
-      setQuestionViewMode(questionDiv)
-    }
-  }
-}
-
-// Cập nhật hàm setQuestionEditMode để hiển thị form giống như khi tạo câu hỏi mới
-function setQuestionEditMode(questionDiv) {
-  // Lấy dữ liệu câu hỏi
-  const partElement = questionDiv.closest(".part")
-  const questions = Array.from(partElement.querySelectorAll(".question"))
-  const questionIndex = questions.indexOf(questionDiv)
-
-  if (questionIndex !== -1) {
-    const questionData = test[`part${window.currentPart}`][questionIndex]
-    const questionType = questionData.type
-
-    // Xóa nội dung hiện tại của câu hỏi, chỉ giữ lại tiêu đề và nút xóa
-    const questionHeader = questionDiv.querySelector("h4").cloneNode(true)
-    const questionTypeHeader = questionDiv.querySelector("h3").cloneNode(true)
-    const deleteButton = questionDiv.querySelector(".delete-question").cloneNode(true)
-
-    // Lưu lại nội dung cũ để có thể khôi phục khi hủy
-    questionDiv.setAttribute("data-original-content", questionDiv.innerHTML)
-
-    // Xóa nội dung cũ
-    questionDiv.innerHTML = ""
-
-    // Thêm lại tiêu đề và nút xóa
-    questionDiv.appendChild(questionHeader)
-    questionDiv.appendChild(questionTypeHeader)
-    questionDiv.appendChild(deleteButton)
-
-    // Tạo form mới dựa trên loại câu hỏi
-    let formHTML = ""
-
-    switch (questionType) {
-      case "Một đáp án":
-        formHTML =
-          typeof window.createOneAnswerFormOriginal === "function"
-            ? window.createOneAnswerFormOriginal()
-            : createOneAnswerForm()
-        break
-      case "Nhiều đáp án":
-        formHTML =
-          typeof window.createMultipleAnswerFormOriginal === "function"
-            ? window.createMultipleAnswerFormOriginal()
-            : createMultipleAnswerForm()
-        break
-      case "Ghép nối":
-        formHTML =
-          typeof window.createMatchingFormOriginal === "function"
-            ? window.createMatchingFormOriginal()
-            : createMatchingForm()
-        break
-      case "Ghi nhãn Bản đồ/Sơ đồ":
-        formHTML =
-          typeof window.createPlanMapDiagramFormOriginal === "function"
-            ? window.createPlanMapDiagramFormOriginal()
-            : createPlanMapDiagramForm()
-        break
-      case "Hoàn thành ghi chú":
-        formHTML =
-          typeof window.createNoteCompletionFormOriginal === "function"
-            ? window.createNoteCompletionFormOriginal()
-            : createNoteCompletionForm()
-        break
-      case "Hoàn thành bảng/biểu mẫu":
-        formHTML =
-          typeof window.createFormTableCompletionFormOriginal === "function"
-            ? window.createFormTableCompletionFormOriginal()
-            : createFormTableCompletionForm()
-        break
-      case "Hoàn thành lưu đồ":
-        formHTML =
-          typeof window.createFlowChartCompletionFormOriginal === "function"
-            ? window.createFlowChartCompletionFormOriginal()
-            : createFlowChartCompletionForm()
-        break
-    }
-
-    // Thêm form vào câu hỏi
-    const formContainer = document.createElement("div")
-    formContainer.className = "question-form-container"
-    formContainer.innerHTML = formHTML
-    questionDiv.appendChild(formContainer)
-
-    // Thêm nút lưu và hủy
-    const actionButtons = document.createElement("div")
-    actionButtons.className = "question-actions"
-    actionButtons.innerHTML = `
-      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
-        <i class="fas fa-edit"></i> Chỉnh sửa
-      </button>
-      <button class="save-question-btn" onclick="saveQuestionChanges(this)">
-        <i class="fas fa-save"></i> Lưu thay đổi
-      </button>
-      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)">
-        <i class="fas fa-times"></i> Hủy
-      </button>
-    `
-    questionDiv.appendChild(actionButtons)
-
-    // Chuyển sang chế độ chỉnh sửa
-    questionDiv.classList.remove("view-mode")
-    questionDiv.classList.add("edit-mode")
-
-    // Điền dữ liệu vào form
-    fillFormWithQuestionData(questionDiv, questionData)
-
-    // Khởi tạo các chức năng của form
-    initializeFormFunctions(questionDiv, questionType)
-  }
-
-  showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
-}
-
-// Thêm hàm mới để điền dữ liệu vào form
-function fillFormWithQuestionData(questionDiv, questionData) {
-  const questionType = questionData.type
-
-  switch (questionType) {
-    case "Một đáp án":
-      const oneAnswerForm = questionDiv.querySelector(".t3-one-answer-form")
-      if (oneAnswerForm) {
-        const questionText = oneAnswerForm.querySelector("#t3-questionText")
-        const options = oneAnswerForm.querySelector("#t3-options")
-        const correctAnswer = oneAnswerForm.querySelector("#t3-correctAnswer")
-
-        if (questionText) questionText.value = questionData.content[0] || ""
-        if (options) options.value = questionData.content.slice(1).join("\n") || ""
-        if (correctAnswer) correctAnswer.value = questionData.correctAnswers || ""
-      }
-      break
-    case "Nhiều đáp án":
-      const multipleAnswerForm = questionDiv.querySelector("#t4-questionForm")
-      if (multipleAnswerForm) {
-        const questionText = multipleAnswerForm.querySelector("#t4-questionText")
-        const options = multipleAnswerForm.querySelector("#t4-options")
-        const correctAnswers = multipleAnswerForm.querySelector("#t4-correctAnswers")
-
-        if (questionText) questionText.value = questionData.content[0] || ""
-        if (options) options.value = questionData.content.slice(1).join("\n") || ""
-        if (correctAnswers)
-          correctAnswers.value = Array.isArray(questionData.correctAnswers)
-            ? questionData.correctAnswers.join(", ")
-            : questionData.correctAnswers || ""
-      }
-      break
-    case "Ghép nối":
-      const matchingForm = questionDiv.querySelector("#t3-questionForm")
-      if (matchingForm) {
-        const title = matchingForm.querySelector("#t3-questionTitle")
-        const people = matchingForm.querySelector("#t3-people")
-        const responsibilities = matchingForm.querySelector("#t3-responsibilities")
-        const correctAnswers = matchingForm.querySelector("#t3-correctAnswers")
-
-        const midPoint = Math.ceil(questionData.content.length / 2)
-
-        if (title) title.value = questionData.content[0] || ""
-        if (people) people.value = questionData.content.slice(1, midPoint).join("\n") || ""
-        if (responsibilities) responsibilities.value = questionData.content.slice(midPoint).join("\n") || ""
-        if (correctAnswers)
-          correctAnswers.value = Array.isArray(questionData.correctAnswers)
-            ? questionData.correctAnswers.join("\n")
-            : questionData.correctAnswers || ""
-      }
-      break
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      const mapForm = questionDiv.querySelector("#questionForm")
-      if (mapForm) {
-        const type = mapForm.querySelector("#questionType")
-        const instructions = mapForm.querySelector("#instructions")
-
-        if (type) type.value = questionData.content[0] || "map"
-        if (instructions) instructions.value = questionData.content[1] || ""
-
-        // Thêm hình ảnh nếu có
-        const imageContainer = document.createElement("div")
-        imageContainer.className = "t1-form-group"
-        imageContainer.innerHTML = `
-          <label for="imageFile">Hình ảnh đã tải lên:</label>
-          <img src="${questionData.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
-        `
-        mapForm.appendChild(imageContainer)
-
-        // Thêm các nhãn và đáp án
-        const answerInputs = mapForm.querySelector("#answerInputs") || document.createElement("div")
-        answerInputs.id = "answerInputs"
-        answerInputs.innerHTML = ""
-
-        for (let i = 0; i < questionData.content.slice(3).length; i++) {
-          const label = questionData.content[i + 3]
-          const answer = questionData.correctAnswers[i] || ""
-
-          const answerGroup = document.createElement("div")
-          answerGroup.className = "t1-form-group"
-          answerGroup.innerHTML = `
-            <label for="answer${i}">Nhãn ${i + 1}:</label>
-            <input type="text" id="answer${i}" value="${label}" required>
-            <label for="correctAnswer${i}">Đáp án đúng cho nhãn ${i + 1}:</label>
-            ${
-              questionData.content[0] === "map"
-                ? `<select id="correctAnswer${i}" required>
-                  ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                    .map(
-                      (letter) => `<option value="${letter}" ${answer === letter ? "selected" : ""}>${letter}</option>`,
-                    )
-                    .join("")}
-                </select>`
-                : `<input type="text" id="correctAnswer${i}" value="${answer}" required>`
-            }
-          `
-          answerInputs.appendChild(answerGroup)
-        }
-
-        if (!mapForm.querySelector("#answerInputs")) {
-          mapForm.appendChild(answerInputs)
-        }
-      }
-      break
-    // Thêm các trường hợp khác tương tự...
-  }
-}
-
-// Thêm hàm mới để khởi tạo các chức năng của form
-function initializeFormFunctions(questionDiv, questionType) {
-  switch (questionType) {
-    case "Một đáp án":
-      if (typeof window.initializeOneAnswerForm === "function") {
-        window.initializeOneAnswerForm(questionDiv)
-      } else if (typeof initializeOneAnswerForm === "function") {
-        initializeOneAnswerForm(questionDiv)
-      }
-      break
-    case "Nhiều đáp án":
-      if (typeof window.initializeMultipleAnswerForm === "function") {
-        window.initializeMultipleAnswerForm(questionDiv)
-      } else if (typeof initializeMultipleAnswerForm === "function") {
-        initializeMultipleAnswerForm(questionDiv)
-      }
-      break
-    case "Ghép nối":
-      if (typeof window.initializeMatchingForm === "function") {
-        window.initializeMatchingForm(questionDiv)
-      } else if (typeof initializeMatchingForm === "function") {
-        initializeMatchingForm(questionDiv)
-      }
-      break
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      if (typeof window.initializePlanMapDiagram === "function") {
-        window.initializePlanMapDiagram(questionDiv)
-      } else if (typeof initializePlanMapDiagram === "function") {
-        initializePlanMapDiagram(questionDiv)
-      }
-      break
-    case "Hoàn thành ghi chú":
-      if (typeof window.initializeNoteCompletionForm === "function") {
-        window.initializeNoteCompletionForm(questionDiv)
-      } else if (typeof initializeNoteCompletionForm === "function") {
-        initializeNoteCompletionForm(questionDiv)
-      }
-      break
-    case "Hoàn thành bảng/biểu mẫu":
-      if (typeof window.initializeFormTableCompletionForm === "function") {
-        window.initializeFormTableCompletionForm(questionDiv)
-      } else if (typeof initializeFormTableCompletionForm === "function") {
-        initializeFormTableCompletionForm(questionDiv)
-      }
-      break
-    case "Hoàn thành lưu đồ":
-      if (typeof window.initializeFlowChartCompletionForm === "function") {
-        window.initializeFlowChartCompletionForm(questionDiv)
-      } else if (typeof initializeFlowChartCompletionForm === "function") {
-        initializeFlowChartCompletionForm(questionDiv)
-      }
-      break
-  }
-}
-
-// Cập nhật hàm cancelQuestionEdit để khôi phục nội dung gốc
-function cancelQuestionEdit(button) {
-  const questionDiv = button.closest(".question")
-  if (!questionDiv) return
-
-  // Khôi phục nội dung gốc nếu có
-  const originalContent = questionDiv.getAttribute("data-original-content")
-  if (originalContent) {
-    questionDiv.innerHTML = originalContent
-  } else {
-    // Nếu không có nội dung gốc, render lại câu hỏi
-    const part = document.getElementById(`part${window.currentPart}`)
-    const questions = Array.from(part.querySelectorAll(".question"))
+// Cập nhật hàm setQuestionViewMode để hiển thị thông báo
+function setQuestionViewMode(questionDiv) {
+  try {
+    // Re-render the question content in view mode
+    const partElement = questionDiv.closest(".part")
+    const questions = Array.from(partElement.querySelectorAll(".question"))
     const questionIndex = questions.indexOf(questionDiv)
 
     if (questionIndex !== -1) {
-      renderQuestionsForCurrentPart()
-    }
-  }
+      const questionData = test[`part${window.currentPart}`][questionIndex]
 
-  // Chuyển về chế độ xem
-  questionDiv.classList.remove("edit-mode")
-  questionDiv.classList.add("view-mode")
+      // Clear the current content
+      questionDiv.innerHTML = ""
 
-  showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
-}
+      // Add question header
+      const questionNumber = questionIndex + 1
+      questionDiv.innerHTML = `
+        <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+        <h3>${getIconForType(questionData.type)} ${questionData.type}</h3>
+        <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
+        ${renderQuestionContent(questionData)}
+      `
 
-// Make sure these functions are available globally
-window.toggleQuestionEdit = toggleQuestionEdit
-window.setQuestionEditMode = setQuestionEditMode
-window.setQuestionViewMode = setQuestionViewMode
-window.cancelQuestionEdit = cancelQuestionEdit
+      // Disable input fields in view mode
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.disabled = true
+      })
 
-// Thêm các hàm lưu cho từng loại câu hỏi
-function saveOneAnswerQuestion(questionDiv) {
-  try {
-    const form = questionDiv.querySelector(".t3-one-answer-form")
-    const questionText = form.querySelector("#t3-questionText").value
-    const options = form
-      .querySelector("#t3-options")
-      .value.split("\n")
-      .filter((option) => option.trim() !== "")
-    const correctAnswer = form.querySelector("#t3-correctAnswer").value
+      // Add action buttons for editing
+      const questionContent = questionDiv.querySelector(".question-content") || questionDiv
+      const actionDiv = document.createElement("div")
+      actionDiv.className = "question-actions"
+      actionDiv.innerHTML = `
+        <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+          <i class="fas fa-edit"></i> Chỉnh sửa
+        </button>
+        <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+          <i class="fas fa-save"></i> Lưu thay đổi
+        </button>
+        <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+          <i class="fas fa-times"></i> Hủy
+        </button>
+      `
+      questionContent.appendChild(actionDiv)
 
-    if (!questionText || options.length === 0 || !correctAnswer) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi một đáp án", "error")
-      return null
-    }
+      // Switch to view mode
+      questionDiv.classList.remove("edit-mode")
+      questionDiv.classList.add("view-mode")
 
-    return {
-      type: "Một đáp án",
-      content: [questionText, ...options],
-      correctAnswers: correctAnswer,
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi một đáp án:", error)
-    return null
-  }
-}
-
-function saveMultipleAnswerQuestion(questionDiv) {
-  try {
-    const form = questionDiv.querySelector("#t4-questionForm")
-    const questionText = form.querySelector("#t4-questionText").value
-    const options = form
-      .querySelector("#t4-options")
-      .value.split("\n")
-      .filter((option) => option.trim() !== "")
-    const correctAnswersInput = form.querySelector("#t4-correctAnswers").value
-    const correctAnswers = correctAnswersInput
-      .split(",")
-      .map((num) => num.trim())
-      .filter((num) => num)
-
-    if (!questionText || options.length === 0 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi nhiều đáp án", "error")
-      return null
-    }
-
-    return {
-      type: "Nhiều đáp án",
-      content: [questionText, ...options],
-      correctAnswers: correctAnswers,
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi nhiều đáp án:", error)
-    return null
-  }
-}
-
-function saveMatchingQuestion(questionDiv) {
-  try {
-    const form = questionDiv.querySelector("#t3-questionForm")
-    const title = form.querySelector("#t3-questionTitle").value
-    const people = form
-      .querySelector("#t3-people")
-      .value.split("\n")
-      .filter((p) => p.trim() !== "")
-    const responsibilities = form
-      .querySelector("#t3-responsibilities")
-      .value.split("\n")
-      .filter((r) => r.trim() !== "")
-    const correctAnswers = form
-      .querySelector("#t3-correctAnswers")
-      .value.split("\n")
-      .filter((a) => a.trim() !== "")
-
-    if (!title || people.length === 0 || responsibilities.length === 0 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi ghép nối", "error")
-      return null
-    }
-
-    return {
-      type: "Ghép nối",
-      content: [title, ...people, ...responsibilities],
-      correctAnswers: correctAnswers,
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi ghép nối:", error)
-    return null
-  }
-}
-
-function savePlanMapDiagramQuestion(questionDiv) {
-  try {
-    const form = questionDiv.querySelector("#questionForm")
-    const questionType = form.querySelector("#questionType").value
-    const instructions = form.querySelector("#instructions").value
-
-    // Lấy URL hình ảnh từ thẻ img hoặc từ input file
-    let imageSource = ""
-    const imgElement = form.querySelector("img")
-    if (imgElement) {
-      imageSource = imgElement.src
+      showNotification("Đã chuyển sang chế độ xem", "info")
     } else {
-      showNotification("Không tìm thấy hình ảnh cho câu hỏi bản đồ/sơ đồ", "error")
-      return null
-    }
-
-    // Lấy các nhãn và đáp án
-    const labels = []
-    const correctAnswers = []
-
-    const answerInputs = form.querySelector("#answerInputs")
-    const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
-
-    answerGroups.forEach((group, index) => {
-      const label = group.querySelector(`#answer${index}`) ? group.querySelector(`#answer${index}`).value : ""
-      const answer = group.querySelector(`#correctAnswer${index}`)
-        ? group.querySelector(`#correctAnswer${index}`).value
-        : ""
-
-      if (label && answer) {
-        labels.push(label)
-        correctAnswers.push(answer)
-      }
-    })
-
-    if (!instructions || labels.length === 0 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi bản đồ/sơ đồ", "error")
-      return null
-    }
-
-    return {
-      type: "Ghi nhãn Bản đồ/Sơ đồ",
-      content: [questionType, instructions, imageSource, ...labels],
-      correctAnswers: correctAnswers,
+      showNotification("Không tìm thấy dữ liệu câu hỏi để hiển thị", "error")
     }
   } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi bản đồ/sơ đồ:", error)
-    return null
+    console.error("Lỗi khi chuyển sang chế độ xem:", error)
+    showNotification("Đã xảy ra lỗi khi chuyển sang chế độ xem: " + error.message, "error")
   }
 }
 
-function saveNoteCompletionQuestion(questionDiv) {
-  try {
-    const form = questionDiv.querySelector("#t2ListeningExerciseForm")
-    const instructions = form.querySelector("#t2ListeningExerciseInstructions").value
-    const topic = form.querySelector("#t2ListeningExerciseTopic").value
-
-    const notes = []
-    const correctAnswers = []
-
-    // Lấy tất cả các câu hỏi và đáp án
-    const questionContainer = form.querySelector("#t2ListeningExerciseQuestionContainer")
-    const questionGroups = questionContainer.querySelectorAll(".t2-listening-exercise-form-group")
-
-    questionGroups.forEach((group, index) => {
-      const noteTextarea = group.querySelector(`textarea`)
-      const answerInput = group.querySelector(`.t2-listening-exercise-correct-answer-input`)
-
-      if (noteTextarea && answerInput) {
-        notes.push(noteTextarea.value)
-        correctAnswers.push(answerInput.value)
-      }
-    })
-
-    if (!instructions || !topic || notes.length === 0 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi hoàn thành ghi chú", "error")
-      return null
-    }
-
-    return {
-      type: "Hoàn thành ghi chú",
-      content: [instructions, topic, ...notes],
-      correctAnswers: correctAnswers,
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi hoàn thành ghi chú:", error)
-    return null
-  }
-}
-
-function saveFormTableCompletionQuestion(questionDiv) {
-  try {
-    const tableSection = questionDiv.querySelector("#tableSection")
-    const instruction = tableSection.querySelector("#tableInstruction").value
-    const table = tableSection.querySelector("#fareTable")
-    const rows = table.querySelectorAll("tr")
-
-    const content = [instruction]
-    const correctAnswers = []
-
-    // Bỏ qua hàng tiêu đề (index 0)
-    for (let i = 1; i < rows.length; i++) {
-      const cells = rows[i].querySelectorAll("td")
-
-      // Lấy nội dung từ 3 ô đầu tiên
-      for (let j = 0; j < 3; j++) {
-        if (cells[j] && cells[j].querySelector("input")) {
-          content.push(cells[j].querySelector("input").value)
-        }
-      }
-
-      // Lấy đáp án đúng
-      if (cells[3] && cells[3].querySelector(".t6-correct-answer-input")) {
-        correctAnswers.push(cells[3].querySelector(".t6-correct-answer-input").value)
-      }
-    }
-
-    if (content.length <= 1 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi hoàn thành bảng/biểu mẫu", "error")
-      return null
-    }
-
-    return {
-      type: "Hoàn thành bảng/biểu mẫu",
-      content: content,
-      correctAnswers: correctAnswers,
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi hoàn thành bảng/biểu mẫu:", error)
-    return null
-  }
-}
-
-function saveFlowChartCompletionQuestion(questionDiv) {
-  try {
-    const form = questionDiv.querySelector("#teacherForm")
-    const title = form.querySelector("#title").value
-    const instructions = form.querySelector("#instructions").value
-
-    const flowItems = form
-      .querySelector("#flowItems1")
-      .value.split("\n")
-      .filter((item) => item.trim() !== "")
-    const options = form
-      .querySelector("#options1")
-      .value.split("\n")
-      .filter((option) => option.trim() !== "")
-
-    const correctAnswersInput = form.querySelector("#correctAnswers1").value
-    const correctAnswers = correctAnswersInput
-      .split(",")
-      .map((ans) => ans.trim())
-      .filter((ans) => ans)
-
-    if (!title || !instructions || flowItems.length === 0 || options.length === 0 || correctAnswers.length === 0) {
-      showNotification("Vui lòng điền đầy đủ thông tin câu hỏi hoàn thành lưu đồ", "error")
-      return null
-    }
-
-    return {
-      type: "Hoàn thành lưu đồ",
-      content: [title, instructions, ...flowItems, ...options],
-      correctAnswers: correctAnswers,
-    }
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi hoàn thành lưu đồ:", error)
-    return null
-  }
-}
+// Đảm bảo các hàm được xuất ra toàn cục
+window.setQuestionEditMode = setQuestionEditMode
+window.setQuestionViewMode = setQuestionViewMode
+window.cancelQuestionEdit = cancelQuestionEdit
+window.saveQuestionChanges = saveQuestionChanges
+window.fillFormWithQuestionData = fillFormWithQuestionData
+window.initializeFormFunctions = initializeFormFunctions
+window.getOriginalForm = getOriginalForm
 
 // Make sure these functions are available globally
 window.toggleQuestionEdit = toggleQuestionEdit
-window.saveQuestionChanges = saveQuestionChanges
+
 window.cancelQuestionEdit = cancelQuestionEdit
 window.setQuestionEditMode = setQuestionEditMode
-window.setQuestionViewMode = setQuestionViewMode
-
-// Add this at the end of the file to ensure all functions are properly exposed to the global window object:
-
-// Make sure all functions are available globally
-window.addQuestionDirectly = addQuestionDirectly
-window.renderTestCreation = renderTestCreation
-window.startTestCreation = startTestCreation
-window.previousPart = previousPart
-window.nextPart = nextPart
-window.saveTest = saveTest
-window.deleteQuestion = deleteQuestion
-window.showNotification = showNotification
-window.updateQuestionCount = updateQuestionCount
-window.renderQuestionsForCurrentPart = renderQuestionsForCurrentPart
-window.previewEntireTest = previewEntireTest
-window.exportTest = exportTest
-window.importTest = importTest
-window.showTestList = showTestList
-window.createNewTest = createNewTest
-window.duplicateTest = duplicateTest
-window.generateTestPDF = generateTestPDF
-window.saveQuestionChanges = saveQuestionChanges
-
-// Initialize currentPart in the global scope if it doesn't exist
-if (typeof window.currentPart === "undefined") {
-  window.currentPart = 1
-}
-
-console.log("test-management.js loaded successfully")
-console.log("Functions exposed to window:", {
-  addQuestionDirectly: typeof window.addQuestionDirectly,
-  renderTestCreation: typeof window.renderTestCreation,
-  startTestCreation: typeof window.startTestCreation,
-})
 
 // Declare the missing form creation functions
 function createOneAnswerForm() {
@@ -2856,4 +2771,195 @@ function setQuestionViewMode(questionDiv) {
 
     showNotification("Đã chuyển sang chế độ xem", "info")
   }
+}
+
+// Functions to save question data
+function saveOneAnswerQuestion(questionDiv) {
+  const form = questionDiv.querySelector(".t3-one-answer-form")
+  if (!form) {
+    console.error("Form not found")
+    return null
+  }
+
+  const questionText = form.querySelector("#t3-questionText").value
+  const optionsText = form.querySelector("#t3-options").value
+  const correctAnswer = form.querySelector("#t3-correctAnswer").value
+
+  const options = optionsText.split("\n").map((option) => option.trim())
+
+  return {
+    type: "Một đáp án",
+    content: [questionText, ...options],
+    correctAnswers: correctAnswer,
+  }
+}
+
+function saveMultipleAnswerQuestion(questionDiv) {
+  const form = questionDiv.querySelector("#t4-questionForm")
+  if (!form) {
+    console.error("Form not found")
+    return null
+  }
+
+  const questionText = form.querySelector("#t4-questionText").value
+  const optionsText = form.querySelector("#t4-options").value
+  const correctAnswersText = form.querySelector("#t4-correctAnswers").value
+
+  const options = optionsText.split("\n").map((option) => option.trim())
+  const correctAnswers = correctAnswersText.split(",").map((answer) => answer.trim())
+
+  return {
+    type: "Nhiều đáp án",
+    content: [questionText, ...options],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function saveMatchingQuestion(questionDiv) {
+  const form = questionDiv.querySelector("#t3-questionForm")
+  if (!form) {
+    console.error("Form not found")
+    return null
+  }
+
+  const questionTitle = form.querySelector("#t3-questionTitle").value
+  const peopleText = form.querySelector("#t3-people").value
+  const responsibilitiesText = form.querySelector("#t3-responsibilities").value
+  const correctAnswersText = form.querySelector("#t3-correctAnswers").value
+
+  const people = peopleText.split("\n").map((person) => person.trim())
+  const responsibilities = responsibilitiesText.split("\n").map((responsibility) => responsibility.trim())
+  const correctAnswers = correctAnswersText.split("\n").map((answer) => answer.trim())
+
+  return {
+    type: "Ghép nối",
+    content: [questionTitle, ...people, ...responsibilities],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function savePlanMapDiagramQuestion(questionDiv) {
+  const form = questionDiv.querySelector("#questionForm")
+  if (!form) {
+    console.error("Form not found")
+    return null
+  }
+
+  const questionType = form.querySelector("#questionType").value
+  const instructions = form.querySelector("#instructions").value
+
+  // Collect labels and correct answers
+  const answerInputs = Array.from(form.querySelectorAll(".t1-form-group"))
+    .map((group, index) => {
+      const label = group.querySelector(`#answer${index}`)?.value
+      const correctAnswer = group.querySelector(`#correctAnswer${index}`)?.value
+      return { label, correctAnswer }
+    })
+    .filter((item) => item.label !== undefined && item.correctAnswer !== undefined)
+
+  const labels = answerInputs.map((item) => item.label)
+  const correctAnswers = answerInputs.map((item) => item.correctAnswer)
+
+  return {
+    type: "Ghi nhãn Bản đồ/Sơ đồ",
+    content: [questionType, instructions, "/placeholder.svg?height=300&width=400", ...labels],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function saveNoteCompletionQuestion(questionDiv) {
+  const form = questionDiv.querySelector("#t2ListeningExerciseForm")
+  if (!form) {
+    console.error("Form not found")
+    return null
+  }
+
+  const instructions = form.querySelector("#t2ListeningExerciseInstructions").value
+  const topic = form.querySelector("#t2ListeningExerciseTopic").value
+
+  // Collect questions and correct answers
+  const questionInputs = Array.from(form.querySelectorAll(".t2-listening-exercise-form-group"))
+    .map((group, index) => {
+      const question = group.querySelector(`#t2ListeningExerciseQuestion${index + 1}`)?.value
+      const correctAnswer = group.querySelector(".t2-listening-exercise-correct-answer-input")?.value
+      return { question, correctAnswer }
+    })
+    .filter((item) => item.question !== undefined && item.correctAnswer !== undefined)
+
+  const questions = questionInputs.map((item) => item.question)
+  const correctAnswers = questionInputs.map((item) => item.correctAnswer)
+
+  return {
+    type: "Hoàn thành ghi chú",
+    content: [instructions, topic, ...questions],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function saveFormTableCompletionQuestion(questionDiv) {
+  const tableSection = questionDiv.querySelector("#tableSection")
+  if (!tableSection) {
+    console.error("Table section not found")
+    return null
+  }
+
+  const instruction = tableSection.querySelector("#tableInstruction").value
+  const table = tableSection.querySelector("#fareTable")
+
+  // Collect table data and correct answers
+  const rows = Array.from(table.querySelectorAll("tr")).slice(1) // Skip header row
+  const tableData = rows.map((row) => {
+    const cells = Array.from(row.querySelectorAll("td input[type='text']")).map((input) => input.value)
+    return cells
+  })
+
+  const correctAnswers = rows.map((row) => {
+    const correctAnswerInput = row.querySelector(".t6-correct-answer-input")
+    return correctAnswerInput ? correctAnswerInput.value : ""
+  })
+
+  // Flatten table data
+  const content = [instruction, ...tableData.flat()]
+
+  return {
+    type: "Hoàn thành bảng/biểu mẫu",
+    content: content,
+    correctAnswers: correctAnswers,
+  }
+}
+
+function saveFlowChartCompletionQuestion(questionDiv) {
+  const form = questionDiv.querySelector("#teacherForm")
+  if (!form) {
+    console.error("Form not found")
+    return null
+  }
+
+  const title = form.querySelector("#title").value
+  const instructions = form.querySelector("#instructions").value
+  const flowItems = form.querySelector("#flowItems1").value
+  const options = form.querySelector("#options1").value
+  const correctAnswers = form.querySelector("#correctAnswers1").value
+
+  const flowItemsArray = flowItems.split("\n").map((item) => item.trim())
+  const optionsArray = options.split("\n").map((option) => option.trim())
+  const correctAnswersArray = correctAnswers.split(",").map((answer) => answer.trim())
+
+  return {
+    type: "Hoàn thành lưu đồ",
+    content: [title, instructions, ...flowItemsArray, ...optionsArray],
+    correctAnswers: correctAnswersArray,
+  }
+}
+
+console.log("test-management.js loaded successfully")
+console.log("Functions exposed to window:", {
+  addQuestionDirectly: typeof window.addQuestionDirectly,
+  renderTestCreation: typeof window.renderTestCreation,
+  startTestCreation: typeof window.startTestCreation,
+})
+
+// Initialize currentPart in the global scope if it doesn't exist
+if (typeof window.currentPart === "undefined") {
+  window.currentPart = 1
 }
