@@ -277,20 +277,7 @@ function renderQuestionsForCurrentPart() {
       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionIndex + index + 1}</h4>
       <h3>${getIconForType(question.type)} ${question.type}</h3>
       <button class="delete-question" onclick="deleteQuestion(${index})"><i class="fas fa-trash"></i></button>
-      <div class="question-content">
-        ${renderQuestionContent(question)}
-      </div>
-      <div class="question-actions">
-        <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
-          <i class="fas fa-edit"></i> Chỉnh sửa
-        </button>
-        <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
-          <i class="fas fa-save"></i> Lưu thay đổi
-        </button>
-        <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
-          <i class="fas fa-times"></i> Hủy
-        </button>
-      </div>
+      ${renderQuestionContent(question)}
     `
     part.appendChild(questionDiv)
 
@@ -299,6 +286,23 @@ function renderQuestionsForCurrentPart() {
     inputs.forEach((input) => {
       input.disabled = true
     })
+
+    // Add action buttons for editing
+    const questionContent = questionDiv.querySelector(".question-content") || questionDiv
+    const actionDiv = document.createElement("div")
+    actionDiv.className = "question-actions"
+    actionDiv.innerHTML = `
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+        <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-times"></i> Hủy
+      </button>
+    `
+    questionContent.appendChild(actionDiv)
   })
 }
 
@@ -321,165 +325,46 @@ function renderQuestionContent(question) {
   let content = ""
   switch (question.type) {
     case "Một đáp án":
-      content = `
-        <p><strong>Câu hỏi:</strong> ${question.content[0]}</p>
-        <p><strong>Lựa chọn:</strong></p>
-        <ul>
-          ${question.content
-            .slice(1)
-            .map(
-              (option) =>
-                `<li>${option} ${option === question.correctAnswers ? '<span class="correct-answer">(Đúng)</span>' : ""}</li>`,
-            )
-            .join("")}
-        </ul>
-      `
+      content = renderOneAnswerQuestion(question)
       break
     case "Nhiều đáp án":
-      content = `
-        <p><strong>Câu hỏi:</strong> ${question.content[0]}</p>
-        <p><strong>Lựa chọn:</strong></p>
-        <ul>
-          ${question.content
-            .slice(1)
-            .map(
-              (option, index) =>
-                `<li>${option} ${question.correctAnswers.includes((index + 1).toString()) ? '<span class="correct-answer">(Đúng)</span>' : ""}</li>`,
-            )
-            .join("")}
-        </ul>
-      `
+      content = renderMultipleAnswerQuestion(question)
       break
     case "Ghép nối":
-      const midPoint = Math.ceil(question.content.length / 2)
-      return `
-        <p><strong>Tiêu đề:</strong> ${question.content[0]}</p>
-        <div style="display: flex; gap: 20px;">
-          <div style="flex: 1;">
-            <h4>Mục</h4>
-            <ul>
-              ${question.content
-                .slice(1, midPoint)
-                .map((item, idx) => `<li>${item} → ${question.correctAnswers[idx] || ""}</li>`)
-                .join("")}
-            </ul>
-          </div>
-          <div style="flex: 1;">
-            <h4>Lựa chọn</h4>
-            <ul>
-              ${question.content
-                .slice(midPoint)
-                .map((item) => `<li>${item}</li>`)
-                .join("")}
-            </ul>
-          </div>
-        </div>
-      `
+      content = renderMatchingQuestion(question)
+      break
     case "Ghi nhãn Bản đồ/Sơ đồ":
-      return `
-        <p><strong>Loại:</strong> ${question.content[0]}</p>
-        <p><strong>Hướng dẫn:</strong> ${question.content[1]}</p>
-        <div>
-          <img src="${question.content[2]}" alt="Sơ đồ" style="max-width: 400px;">
-        </div>
-        <p><strong>Nhãn:</strong></p>
-        <ul>
-          ${question.content
-            .slice(3)
-            .map((label, idx) => `<li>${label} → ${question.correctAnswers[idx] || ""}</li>`)
-            .join("")}
-        </ul>
-      `
+      content = renderPlanMapDiagramQuestion(question)
+      break
     case "Hoàn thành ghi chú":
-      return `
-        <p><strong>Hướng dẫn:</strong> ${question.content[0]}</p>
-        <p><strong>Chủ đề:</strong> ${question.content[1]}</p>
-        <div>
-          ${question.content
-            .slice(2)
-            .map((note, idx) => {
-              // Thay thế [ANSWER] bằng đáp án đúng và làm nổi bật nó
-              const highlightedNote = note.replace(
-                /\[ANSWER\]/g,
-                `<span class="correct-answer">${question.correctAnswers[idx] || "_____"}</span>`,
-              )
-              return `<p>${idx + 1}. ${highlightedNote}</p>`
-            })
-            .join("")}
-        </div>
-      `
+      content = renderNoteCompletionQuestion(question)
+      break
     case "Hoàn thành bảng/biểu mẫu":
-      const rowCount = Math.floor((question.content.length - 1) / 3)
-      return `
-        <p><strong>Hướng dẫn:</strong> ${question.content[0]}</p>
-        <table>
-          <tr>
-            <th>Cột 1</th>
-            <th>Cột 2</th>
-            <th>Cột 3</th>
-          </tr>
-          ${Array(rowCount)
-            .fill()
-            .map((_, rowIdx) => {
-              const startIdx = 1 + rowIdx * 3
-              return `
-              <tr>
-                <td>${question.content[startIdx] || ""}</td>
-                <td>${question.content[startIdx + 1] || ""}</td>
-                <td>${question.content[startIdx + 2] || ""}</td>
-              </tr>
-            `
-            })
-            .join("")}
-        </table>
-        <p><strong>Đáp án đúng:</strong> ${question.correctAnswers.join(", ")}</p>
-      `
+      content = renderFormTableCompletionQuestion(question)
+      break
     case "Hoàn thành lưu đồ":
-      const flowItemCount = Math.floor(question.content.length / 2)
-      return `
-        <p><strong>Tiêu đề:</strong> ${question.content[0]}</p>
-        <p><strong>Hướng dẫn:</strong> ${question.content[1]}</p>
-        <div style="display: flex; flex-direction: column; align-items: center;">
-          ${question.content
-            .slice(2, 2 + flowItemCount)
-            .map((item, idx) => {
-              // Thay thế ___ bằng đáp án đúng và làm nổi bật nó
-              const highlightedItem = item.replace(
-                /___/g,
-                `<span class="correct-answer">${question.correctAnswers[idx] || "_____"}</span>`,
-              )
-              return `
-              <div style="border: 1px solid #ddd; padding: 10px; margin: 5px; width: 80%; text-align: center;">
-                ${highlightedItem}
-              </div>
-              ${idx < flowItemCount - 1 ? '<div style="font-size: 24px;">↓</div>' : ""}
-            `
-            })
-            .join("")}
-        </div>
-        <p><strong>Lựa chọn:</strong> ${question.content.slice(2 + flowItemCount).join(", ")}</p>
-      `
+      content = renderFlowChartCompletionQuestion(question)
+      break
     default:
-      return `<p>Loại câu hỏi không xác định: ${question.type}</p>`
+      content = `<p>Không hỗ trợ loại câu hỏi này: ${question.type}</p>`
   }
-}
 
-// Add edit, save, and cancel buttons for each question
-// content += `
-//   <div class="question-actions">
-//     <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
-//       <i class="fas fa-edit"></i> Chỉnh sửa
-//     </button>
-//     <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
-//       <i class="fas fa-save"></i> Lưu thay đổi
-//     </button>
-//     <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
-//       <i class="fas fa-times"></i> Hủy
-//     </button>
-//   </div>
-// `
+  // Add edit, save, and cancel buttons for each question
+  content += `
+    <div class="question-actions">
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+        <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-times"></i> Hủy
+      </button>
+    </div>
+  `
 
-return content
+  return content
 }
 
 // Hiển thị câu hỏi Một đáp án
@@ -2081,7 +1966,7 @@ function saveQuestionChanges(button) {
   }
 }
 
-// Thay thế hàm toggleQuestionEdit hiện tại bằng phiên bản cải tiến này
+// Cập nhật hàm toggleQuestionEdit để xử lý việc chuyển đổi giữa chế độ xem và chỉnh sửa
 function toggleQuestionEdit(button) {
   const questionDiv = button.closest(".question")
   if (!questionDiv) return
@@ -2091,43 +1976,93 @@ function toggleQuestionEdit(button) {
 
   if (isViewMode) {
     // Chuyển sang chế độ chỉnh sửa
-    const questionType = questionDiv.querySelector("h3").textContent.trim()
-    const partElement = questionDiv.closest(".part")
-    const questions = Array.from(partElement.querySelectorAll(".question"))
-    const questionIndex = questions.indexOf(questionDiv)
-
-    // Lấy dữ liệu câu hỏi từ đối tượng test
-    const questionData = test[`part${window.currentPart}`][questionIndex]
-
-    // Xóa nội dung hiện tại của câu hỏi
-    const questionContent = questionDiv.querySelector(".question-content")
-    if (questionContent) {
-      questionContent.remove()
+    if (typeof window.setQuestionEditMode === "function") {
+      window.setQuestionEditMode(questionDiv)
+    } else {
+      setQuestionEditMode(questionDiv)
     }
+  } else {
+    // Chuyển sang chế độ xem
+    if (typeof window.setQuestionViewMode === "function") {
+      window.setQuestionViewMode(questionDiv)
+    } else {
+      setQuestionViewMode(questionDiv)
+    }
+  }
+}
 
-    // Tạo form chỉnh sửa dựa trên loại câu hỏi
+// Cập nhật hàm setQuestionEditMode để hiển thị form giống như khi tạo câu hỏi mới
+function setQuestionEditMode(questionDiv) {
+  // Lấy dữ liệu câu hỏi
+  const partElement = questionDiv.closest(".part")
+  const questions = Array.from(partElement.querySelectorAll(".question"))
+  const questionIndex = questions.indexOf(questionDiv)
+
+  if (questionIndex !== -1) {
+    const questionData = test[`part${window.currentPart}`][questionIndex]
+    const questionType = questionData.type
+
+    // Xóa nội dung hiện tại của câu hỏi, chỉ giữ lại tiêu đề và nút xóa
+    const questionHeader = questionDiv.querySelector("h4").cloneNode(true)
+    const questionTypeHeader = questionDiv.querySelector("h3").cloneNode(true)
+    const deleteButton = questionDiv.querySelector(".delete-question").cloneNode(true)
+
+    // Lưu lại nội dung cũ để có thể khôi phục khi hủy
+    questionDiv.setAttribute("data-original-content", questionDiv.innerHTML)
+
+    // Xóa nội dung cũ
+    questionDiv.innerHTML = ""
+
+    // Thêm lại tiêu đề và nút xóa
+    questionDiv.appendChild(questionHeader)
+    questionDiv.appendChild(questionTypeHeader)
+    questionDiv.appendChild(deleteButton)
+
+    // Tạo form mới dựa trên loại câu hỏi
     let formHTML = ""
-    switch (questionType.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1")) {
+
+    switch (questionType) {
       case "Một đáp án":
-        formHTML = renderOneAnswerForm(questionData)
+        formHTML =
+          typeof window.createOneAnswerFormOriginal === "function"
+            ? window.createOneAnswerFormOriginal()
+            : createOneAnswerForm()
         break
       case "Nhiều đáp án":
-        formHTML = renderMultipleAnswerForm(questionData)
+        formHTML =
+          typeof window.createMultipleAnswerFormOriginal === "function"
+            ? window.createMultipleAnswerFormOriginal()
+            : createMultipleAnswerForm()
         break
       case "Ghép nối":
-        formHTML = renderMatchingForm(questionData)
+        formHTML =
+          typeof window.createMatchingFormOriginal === "function"
+            ? window.createMatchingFormOriginal()
+            : createMatchingForm()
         break
       case "Ghi nhãn Bản đồ/Sơ đồ":
-        formHTML = renderPlanMapDiagramForm(questionData)
+        formHTML =
+          typeof window.createPlanMapDiagramFormOriginal === "function"
+            ? window.createPlanMapDiagramFormOriginal()
+            : createPlanMapDiagramForm()
         break
       case "Hoàn thành ghi chú":
-        formHTML = renderNoteCompletionForm(questionData)
+        formHTML =
+          typeof window.createNoteCompletionFormOriginal === "function"
+            ? window.createNoteCompletionFormOriginal()
+            : createNoteCompletionForm()
         break
       case "Hoàn thành bảng/biểu mẫu":
-        formHTML = renderFormTableCompletionForm(questionData)
+        formHTML =
+          typeof window.createFormTableCompletionFormOriginal === "function"
+            ? window.createFormTableCompletionFormOriginal()
+            : createFormTableCompletionForm()
         break
       case "Hoàn thành lưu đồ":
-        formHTML = renderFlowChartCompletionForm(questionData)
+        formHTML =
+          typeof window.createFlowChartCompletionFormOriginal === "function"
+            ? window.createFlowChartCompletionFormOriginal()
+            : createFlowChartCompletionForm()
         break
     }
 
@@ -2137,833 +2072,222 @@ function toggleQuestionEdit(button) {
     formContainer.innerHTML = formHTML
     questionDiv.appendChild(formContainer)
 
-    // Khởi tạo các phần tử form động
-    initializeDynamicFormElements(questionDiv, questionType)
+    // Thêm nút lưu và hủy
+    const actionButtons = document.createElement("div")
+    actionButtons.className = "question-actions"
+    actionButtons.innerHTML = `
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)">
+        <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)">
+        <i class="fas fa-times"></i> Hủy
+      </button>
+    `
+    questionDiv.appendChild(actionButtons)
 
     // Chuyển sang chế độ chỉnh sửa
-    setQuestionEditMode(questionDiv)
+    questionDiv.classList.remove("view-mode")
+    questionDiv.classList.add("edit-mode")
 
-    showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
-  } else {
-    // Chuyển sang chế độ xem
-    setQuestionViewMode(questionDiv)
+    // Điền dữ liệu vào form
+    fillFormWithQuestionData(questionDiv, questionData)
+
+    // Khởi tạo các chức năng của form
+    initializeFormFunctions(questionDiv, questionType)
   }
-}
-
-// Thêm các hàm mới để tạo form chỉnh sửa
-function renderOneAnswerForm(question) {
-  const questionText = question.content[0] || ""
-  const options = question.content.slice(1) || []
-  const correctAnswer = question.correctAnswers || ""
-
-  return `
-    <div class="one-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" value="${questionText}" required>
-      <div class="options-container">
-        <label>Lựa chọn:</label>
-        <div id="options-list">
-          ${options
-            .map(
-              (option, index) => `
-            <div class="option-item">
-              <input type="text" name="option" value="${option}" required>
-              <input type="radio" name="correctAnswer" value="${index}" ${option === correctAnswer ? "checked" : ""}>
-              <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function renderMultipleAnswerForm(question) {
-  const questionText = question.content[0] || ""
-  const options = question.content.slice(1) || []
-  const correctAnswers = Array.isArray(question.correctAnswers) ? question.correctAnswers : [question.correctAnswers]
-
-  return `
-    <div class="multiple-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" value="${questionText}" required>
-      <div class="options-container">
-        <label>Lựa chọn:</label>
-        <div id="options-list">
-          ${options
-            .map(
-              (option, index) => `
-            <div class="option-item">
-              <input type="text" name="option" value="${option}" required>
-              <input type="checkbox" name="correctAnswer" value="${index}" ${correctAnswers.includes(option) ? "checked" : ""}>
-              <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function renderMatchingForm(question) {
-  const title = question.content[0] || ""
-  const midPoint = Math.ceil(question.content.length / 2)
-  const items = question.content.slice(1, midPoint) || []
-  const matches = question.content.slice(midPoint) || []
-  const correctAnswers = Array.isArray(question.correctAnswers) ? question.correctAnswers : []
-
-  return `
-    <div class="matching-form">
-      <div class="form-group">
-        <label for="title">Tiêu đề bài ghép nối:</label>
-        <input type="text" id="title" name="title" value="${title}" required>
-      </div>
-      
-      <div class="matching-container">
-        <div class="matching-items">
-          <div class="section-title-container">
-            <input type="text" class="section-title-input" id="itemsTitle" name="itemsTitle" value="Danh sách câu hỏi">
-            <i class="fas fa-question section-icon"></i>
-          </div>
-          <div id="items-list">
-            ${items
-              .map(
-                (item, index) => `
-              <div class="item-row">
-                <input type="text" name="item" value="${item}" required>
-                <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-              </div>
-            `,
-              )
-              .join("")}
-          </div>
-          <button type="button" class="add-item-btn"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
-        </div>
-        
-        <div class="matching-matches">
-          <div class="section-title-container">
-            <input type="text" class="section-title-input" id="matchesTitle" name="matchesTitle" value="Danh sách từ khóa nối">
-            <i class="fas fa-link section-icon"></i>
-          </div>
-          <div id="matches-list">
-            ${matches
-              .map(
-                (match, index) => `
-              <div class="match-row">
-                <input type="text" name="match" value="${match}" required>
-                <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-              </div>
-            `,
-              )
-              .join("")}
-          </div>
-          <button type="button" class="add-match-btn"><i class="fas fa-plus"></i> Thêm từ khóa nối</button>
-        </div>
-      </div>
-      
-      <div class="matching-answers">
-        <h4><i class="fas fa-exchange-alt"></i> Thiết lập ghép nối</h4>
-        <p class="matching-help">Chọn từ khóa nối tương ứng với mỗi câu hỏi:</p>
-        <div id="matching-answers-list">
-          ${items
-            .map(
-              (item, index) => `
-            <div class="answer-row">
-              <span class="item-label">${item}:</span>
-              <select name="matchingAnswer" required>
-                <option value="">-- Chọn từ khóa nối --</option>
-                ${matches
-                  .map(
-                    (match, idx) => `
-                  <option value="${match}" ${correctAnswers[index] === match ? "selected" : ""}>${match}</option>
-                `,
-                  )
-                  .join("")}
-              </select>
-              <button type="button" class="preview-match-btn" title="Xem trước"><i class="fas fa-eye"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-      </div>
-      
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function renderPlanMapDiagramForm(question) {
-  const type = question.content[0] || "map"
-  const instructions = question.content[1] || ""
-  const imageUrl = question.content[2] || ""
-  const labels = question.content.slice(3) || []
-  const correctAnswers = Array.isArray(question.correctAnswers) ? question.correctAnswers : []
-
-  return `
-    <div class="plan-map-diagram-form">
-      <div class="form-group">
-        <label for="type">Loại câu hỏi:</label>
-        <select id="type" name="type" required onchange="updatePlanMapDiagramForm(this)">
-          <option value="map" ${type === "map" ? "selected" : ""}>Ghi nhãn Bản đồ (Chọn từ A-H)</option>
-          <option value="ship" ${type === "ship" ? "selected" : ""}>Sơ đồ Tàu (Nhập đáp án)</option>
-        </select>
-        <p class="form-help-text" id="typeHelpText">
-          <i class="fas fa-info-circle"></i> 
-          <span>${type === "map" ? "Ghi nhãn Bản đồ: Người dùng chọn đáp án từ các lựa chọn có sẵn (A-H)" : "Sơ đồ Tàu: Người dùng nhập đáp án vào ô trống (không có lựa chọn sẵn)"}</span>
-        </p>
-      </div>
-      
-      <div class="form-group">
-        <label for="instructions">Hướng dẫn:</label>
-        <textarea id="instructions" name="instructions" rows="3" required>${instructions}</textarea>
-      </div>
-      
-      <div class="form-group">
-        <label for="image">Hình ảnh:</label>
-        <input type="file" id="image" name="image" accept="image/*">
-        <div id="imagePreview" class="image-preview">
-          ${imageUrl ? `<img src="${imageUrl}" alt="Preview" style="max-width: 200px; max-height: 200px;">` : ""}
-        </div>
-      </div>
-      
-      <div id="labels-container">
-        <h4><i class="fas fa-tags"></i> Danh sách nhãn và đáp án</h4>
-        ${labels
-          .map(
-            (label, index) => `
-          <div class="label-row">
-            <div class="label-input-group">
-              <label for="label${index + 1}">Nhãn ${index + 1}:</label>
-              <input type="text" id="label${index + 1}" name="label" value="${label}" required>
-            </div>
-            <div class="answer-input-group map-answer-group" ${type !== "map" ? 'style="display: none;"' : ""}>
-              <label for="answer${index + 1}">Đáp án:</label>
-              <select id="answer${index + 1}" name="answer" required>
-                <option value="">-- Chọn --</option>
-                ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                  .map(
-                    (letter) =>
-                      `<option value="${letter}" ${correctAnswers[index] === letter ? "selected" : ""}>${letter}</option>`,
-                  )
-                  .join("")}
-              </select>
-            </div>
-            <div class="answer-input-group ship-answer-group" ${type !== "ship" ? 'style="display: none;"' : ""}>
-              <label for="shipAnswer${index + 1}">Đáp án:</label>
-              <input type="text" id="shipAnswer${index + 1}" name="shipAnswer" value="${correctAnswers[index] || ""}" required>
-            </div>
-            <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-          </div>
-        `,
-          )
-          .join("")}
-      </div>
-      
-      <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function renderNoteCompletionForm(question) {
-  const instructions = question.content[0] || ""
-  const topic = question.content[1] || ""
-  const notes = question.content.slice(2) || []
-  const correctAnswers = Array.isArray(question.correctAnswers) ? question.correctAnswers : []
-
-  return `
-    <div class="note-completion-form">
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" value="${instructions}" required>
-      <label for="topic">Chủ đề:</label>
-      <input type="text" id="topic" name="topic" value="${topic}" required>
-      <div id="notes-container">
-        ${notes
-          .map(
-            (note, index) => `
-          <div class="note-row">
-            <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-            <textarea name="note" required>${note}</textarea>
-            <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
-          </div>
-        `,
-          )
-          .join("")}
-      </div>
-      <button type="button" class="add-note-btn"><i class="fas fa-plus"></i> Thêm ghi chú</button>
-      <div id="answers-container">
-        <label>Đáp án đúng (theo thứ tự [ANSWER]):</label>
-        <div id="note-answers-list">
-          ${correctAnswers
-            .map(
-              (answer, index) => `
-            <div class="answer-row">
-              <span class="answer-label">Đáp án ${index + 1}:</span>
-              <input type="text" name="noteAnswer" value="${answer}" required>
-              <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-        <button type="button" class="add-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function renderFormTableCompletionForm(question) {
-  const instructions = question.content[0] || ""
-  const cells = question.content.slice(1) || []
-  const correctAnswers = Array.isArray(question.correctAnswers) ? question.correctAnswers : []
-
-  // Tạo các hàng bảng, mỗi hàng có 3 ô
-  const rows = []
-  for (let i = 0; i < cells.length; i += 3) {
-    rows.push(cells.slice(i, i + 3))
-  }
-
-  return `
-    <div class="form-table-completion-form">
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" value="${instructions}" required>
-      <table id="formTable">
-        <thead>
-          <tr>
-            <th>Cột 1</th>
-            <th>Cột 2</th>
-            <th>Cột 3</th>
-            <th>Đáp án</th>
-            <th>Thao tác</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${rows
-            .map(
-              (row, rowIndex) => `
-            <tr>
-              <td><input type="text" name="cell" value="${row[0] || ""}" required></td>
-              <td><input type="text" name="cell" value="${row[1] || ""}" required></td>
-              <td><input type="text" name="cell" value="${row[2] || ""}" required></td>
-              <td><input type="text" name="tableAnswer" value="${correctAnswers[rowIndex] || ""}" required></td>
-              <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
-            </tr>
-          `,
-            )
-            .join("")}
-        </tbody>
-      </table>
-      <button type="button" class="add-row-btn"><i class="fas fa-plus"></i> Thêm hàng</button>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-function renderFlowChartCompletionForm(question) {
-  const title = question.content[0] || ""
-  const instructions = question.content[1] || ""
-  const midPoint = Math.floor(question.content.length / 2) + 2
-  const flowItems = question.content.slice(2, midPoint) || []
-  const flowOptions = question.content.slice(midPoint) || []
-  const correctAnswers = Array.isArray(question.correctAnswers) ? question.correctAnswers : []
-
-  return `
-    <div class="flow-chart-completion-form">
-      <label for="title">Tiêu đề:</label>
-      <input type="text" id="title" name="title" value="${title}" required>
-      <label for="instructions">Hướng dẫn:</label>
-      <input type="text" id="instructions" name="instructions" value="${instructions}" required>
-      <div id="flow-items-container">
-        <label>Mục (sử dụng ___ cho chỗ trống):</label>
-        <div id="flow-items-list">
-          ${flowItems
-            .map(
-              (item, index) => `
-            <div class="flow-item-row">
-              <input type="text" name="flowItem" value="${item}" required>
-              <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-        <button type="button" class="add-flow-item-btn"><i class="fas fa-plus"></i> Thêm mục</button>
-      </div>
-      <div id="flow-options-container">
-        <label>Lựa chọn:</label>
-        <div id="flow-options-list">
-          ${flowOptions
-            .map(
-              (option, index) => `
-            <div class="flow-option-row">
-              <input type="text" name="flowOption" value="${option}" required>
-              <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-        <button type="button" class="add-flow-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-      </div>
-      <div id="flow-answers-container">
-        <label>Đáp án đúng (theo thứ tự khoảng trống):</label>
-        <div id="flow-answers-list">
-          ${correctAnswers
-            .map(
-              (answer, index) => `
-            <div class="flow-answer-row">
-              <span class="answer-label">Đáp án ${index + 1}:</span>
-              <input type="text" name="flowAnswer" value="${answer}" required>
-              <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
-            </div>
-          `,
-            )
-            .join("")}
-        </div>
-        <button type="button" class="add-flow-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
-}
-
-// Function to initialize dynamic form elements
-function initializeDynamicFormElements(questionDiv, questionType) {
-  switch (questionType.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1")) {
-    case "Một đáp án":
-      // Add option
-      questionDiv.querySelector(".add-option-btn").addEventListener("click", () => {
-        const optionsList = questionDiv.querySelector("#options-list")
-        const newOptionIndex = optionsList.children.length
-        const newOption = document.createElement("div")
-        newOption.className = "option-item"
-        newOption.innerHTML = `
-          <input type="text" name="option" required>
-          <input type="radio" name="correctAnswer" value="${newOptionIndex}">
-          <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-        `
-        optionsList.appendChild(newOption)
-
-        // Remove option
-        newOption.querySelector(".remove-option-btn").addEventListener("click", () => {
-          newOption.remove()
-        })
-      })
-
-      // Remove option
-      questionDiv.querySelectorAll(".remove-option-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".option-item").remove()
-        })
-      })
-      break
-
-    case "Nhiều đáp án":
-      // Add option
-      questionDiv.querySelector(".add-option-btn").addEventListener("click", () => {
-        const optionsList = questionDiv.querySelector("#options-list")
-        const newOptionIndex = optionsList.children.length
-        const newOption = document.createElement("div")
-        newOption.className = "option-item"
-        newOption.innerHTML = `
-          <input type="text" name="option" required>
-          <input type="checkbox" name="correctAnswer" value="${newOptionIndex}">
-          <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-        `
-        optionsList.appendChild(newOption)
-
-        // Remove option
-        newOption.querySelector(".remove-option-btn").addEventListener("click", () => {
-          newOption.remove()
-        })
-      })
-
-      // Remove option
-      questionDiv.querySelectorAll(".remove-option-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".option-item").remove()
-        })
-      })
-      break
-
-    case "Ghép nối":
-      // Add item
-      questionDiv.querySelector(".add-item-btn").addEventListener("click", () => {
-        const itemsList = questionDiv.querySelector("#items-list")
-        const newItem = document.createElement("div")
-        newItem.className = "item-row"
-        newItem.innerHTML = `
-          <input type="text" name="item" required>
-          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-        `
-        itemsList.appendChild(newItem)
-
-        // Remove item
-        newItem.querySelector(".remove-item-btn").addEventListener("click", () => {
-          newItem.remove()
-        })
-      })
-
-      // Add match
-      questionDiv.querySelector(".add-match-btn").addEventListener("click", () => {
-        const matchesList = questionDiv.querySelector("#matches-list")
-        const newMatch = document.createElement("div")
-        newMatch.className = "match-row"
-        newMatch.innerHTML = `
-          <input type="text" name="match" required>
-          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-        `
-        matchesList.appendChild(newMatch)
-
-        // Remove match
-        newMatch.querySelector(".remove-match-btn").addEventListener("click", () => {
-          newMatch.remove()
-        })
-      })
-
-      // Remove item
-      questionDiv.querySelectorAll(".remove-item-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".item-row").remove()
-        })
-      })
-
-      // Remove match
-      questionDiv.querySelectorAll(".remove-match-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".match-row").remove()
-        })
-      })
-      break
-
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      // Add label
-      questionDiv.querySelector(".add-label-btn").addEventListener("click", () => {
-        const labelsContainer = questionDiv.querySelector("#labels-container")
-        const newLabelIndex = labelsContainer.children.length
-        const newLabel = document.createElement("div")
-        newLabel.className = "label-row"
-        newLabel.innerHTML = `
-          <div class="label-input-group">
-            <label for="label${newLabelIndex + 1}">Nhãn ${newLabelIndex + 1}:</label>
-            <input type="text" id="label${newLabelIndex + 1}" name="label" required>
-          </div>
-          <div class="answer-input-group map-answer-group">
-            <label for="answer${newLabelIndex + 1}">Đáp án:</label>
-            <select id="answer${newLabelIndex + 1}" name="answer" required>
-              <option value="">-- Chọn --</option>
-              ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                .map((letter) => `<option value="${letter}">${letter}</option>`)
-                .join("")}
-            </select>
-          </div>
-          <div class="answer-input-group ship-answer-group" style="display: none;">
-            <label for="shipAnswer${newLabelIndex + 1}">Đáp án:</label>
-            <input type="text" id="shipAnswer${newLabelIndex + 1}" name="shipAnswer" required>
-          </div>
-          <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-        `
-        labelsContainer.appendChild(newLabel)
-
-        // Remove label
-        newLabel.querySelector(".remove-label-btn").addEventListener("click", () => {
-          newLabel.remove()
-        })
-      })
-
-      // Remove label
-      questionDiv.querySelectorAll(".remove-label-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".label-row").remove()
-        })
-      })
-      break
-
-    case "Hoàn thành ghi chú":
-      // Add note
-      questionDiv.querySelector(".add-note-btn").addEventListener("click", () => {
-        const notesContainer = questionDiv.querySelector("#notes-container")
-        const newNote = document.createElement("div")
-        newNote.className = "note-row"
-        newNote.innerHTML = `
-          <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-          <textarea name="note" required></textarea>
-          <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
-        `
-        notesContainer.appendChild(newNote)
-
-        // Remove note
-        newNote.querySelector(".remove-note-btn").addEventListener("click", () => {
-          newNote.remove()
-        })
-      })
-
-      // Add answer
-      questionDiv.querySelector(".add-answer-btn").addEventListener("click", () => {
-        const noteAnswersList = questionDiv.querySelector("#note-answers-list")
-        const newAnswerIndex = noteAnswersList.children.length
-        const newAnswer = document.createElement("div")
-        newAnswer.className = "answer-row"
-        newAnswer.innerHTML = `
-          <span class="answer-label">Đáp án ${newAnswerIndex + 1}:</span>
-          <input type="text" name="noteAnswer" required>
-          <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
-        `
-        noteAnswersList.appendChild(newAnswer)
-
-        // Remove answer
-        newAnswer.querySelector(".remove-answer-btn").addEventListener("click", () => {
-          newAnswer.remove()
-        })
-      })
-
-      // Remove note
-      questionDiv.querySelectorAll(".remove-note-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".note-row").remove()
-        })
-      })
-
-      // Remove answer
-      questionDiv.querySelectorAll(".remove-answer-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".answer-row").remove()
-        })
-      })
-      break
-
-    case "Hoàn thành bảng/biểu mẫu":
-      // Add row
-      questionDiv.querySelector(".add-row-btn").addEventListener("click", () => {
-        const formTable = questionDiv.querySelector("#formTable tbody")
-        const newRow = document.createElement("tr")
-        newRow.innerHTML = `
-          <td><input type="text" name="cell" required></td>
-          <td><input type="text" name="cell" required></td>
-          <td><input type="text" name="cell" required></td>
-          <td><input type="text" name="tableAnswer" required></td>
-          <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
-        `
-        formTable.appendChild(newRow)
-
-        // Remove row
-        newRow.querySelector(".remove-row-btn").addEventListener("click", () => {
-          newRow.remove()
-        })
-      })
-
-      // Remove row
-      questionDiv.querySelectorAll(".remove-row-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest("tr").remove()
-        })
-      })
-      break
-
-    case "Hoàn thành lưu đồ":
-      // Add flow item
-      questionDiv.querySelector(".add-flow-item-btn").addEventListener("click", () => {
-        const flowItemsList = questionDiv.querySelector("#flow-items-list")
-        const newFlowItem = document.createElement("div")
-        newFlowItem.className = "flow-item-row"
-        newFlowItem.innerHTML = `
-          <input type="text" name="flowItem" required>
-          <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
-        `
-        flowItemsList.appendChild(newFlowItem)
-
-        // Remove flow item
-        newFlowItem.querySelector(".remove-flow-item-btn").addEventListener("click", () => {
-          newFlowItem.remove()
-        })
-      })
-
-      // Add flow option
-      questionDiv.querySelector(".add-flow-option-btn").addEventListener("click", () => {
-        const flowOptionsList = questionDiv.querySelector("#flow-options-list")
-        const newFlowOption = document.createElement("div")
-        newFlowOption.className = "flow-option-row"
-        newFlowOption.innerHTML = `
-          <input type="text" name="flowOption" required>
-          <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
-        `
-        flowOptionsList.appendChild(newFlowOption)
-
-        // Remove flow option
-        newFlowOption.querySelector(".remove-flow-option-btn").addEventListener("click", () => {
-          newFlowOption.remove()
-        })
-      })
-
-      // Add flow answer
-      questionDiv.querySelector(".add-flow-answer-btn").addEventListener("click", () => {
-        const flowAnswersList = questionDiv.querySelector("#flow-answers-list")
-        const newFlowAnswerIndex = flowAnswersList.children.length
-        const newFlowAnswer = document.createElement("div")
-        newFlowAnswer.className = "flow-answer-row"
-        newFlowAnswer.innerHTML = `
-          <span class="answer-label">Đáp án ${newFlowAnswerIndex + 1}:</span>
-          <input type="text" name="flowAnswer" required>
-          <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
-        `
-        flowAnswersList.appendChild(newFlowAnswer)
-
-        // Remove flow answer
-        newFlowAnswer.querySelector(".remove-flow-answer-btn").addEventListener("click", () => {
-          newFlowAnswer.remove()
-        })
-      })
-
-      // Remove flow item
-      questionDiv.querySelectorAll(".remove-flow-item-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".flow-item-row").remove()
-        })
-      })
-
-      // Remove flow option
-      questionDiv.querySelectorAll(".remove-flow-option-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".flow-option-row").remove()
-        })
-      })
-
-      // Remove flow answer
-      questionDiv.querySelectorAll(".remove-flow-answer-btn").forEach((button) => {
-        button.addEventListener("click", function () {
-          this.closest(".flow-answer-row").remove()
-        })
-      })
-      break
-  }
-}
-
-// Make sure the toggleQuestionEdit function is properly defined and exposed to the global scope
-// function toggleQuestionEdit(button) {
-//   const questionDiv = button.closest(".question")
-//   if (!questionDiv) return
-
-//   // Check if the question is in view mode or edit mode
-//   const isViewMode = questionDiv.classList.contains("view-mode")
-
-//   if (isViewMode) {
-//     // Switch to edit mode
-//     setQuestionEditMode(questionDiv)
-//   } else {
-//     // Switch to view mode
-//     setQuestionViewMode(questionDiv)
-//   }
-// }
-
-// Function to set question to edit mode
-function setQuestionEditMode(questionDiv) {
-  // Remove view-mode class and add edit-mode class
-  questionDiv.classList.remove("view-mode")
-  questionDiv.classList.add("edit-mode")
-
-  // Show Save and Cancel buttons, hide Edit button
-  const editBtn = questionDiv.querySelector(".edit-question-btn")
-  const saveBtn = questionDiv.querySelector(".save-question-btn")
-  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-  if (editBtn) editBtn.style.display = "none"
-  if (saveBtn) saveBtn.style.display = "inline-block"
-  if (cancelBtn) cancelBtn.style.display = "inline-block"
-
-  // Enable all input fields
-  const inputs = questionDiv.querySelectorAll("input, textarea, select")
-  inputs.forEach((input) => {
-    input.disabled = false
-  })
 
   showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
 }
 
-// Function to set question to view mode
-function setQuestionViewMode(questionDiv) {
-  // Remove edit-mode class and add view-mode class
-  questionDiv.classList.remove("edit-mode")
-  questionDiv.classList.add("view-mode")
+// Thêm hàm mới để điền dữ liệu vào form
+function fillFormWithQuestionData(questionDiv, questionData) {
+  const questionType = questionData.type
 
-  // Show Edit button, hide Save and Cancel buttons
-  const editBtn = questionDiv.querySelector(".edit-question-btn")
-  const saveBtn = questionDiv.querySelector(".save-question-btn")
-  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+  switch (questionType) {
+    case "Một đáp án":
+      const oneAnswerForm = questionDiv.querySelector(".t3-one-answer-form")
+      if (oneAnswerForm) {
+        const questionText = oneAnswerForm.querySelector("#t3-questionText")
+        const options = oneAnswerForm.querySelector("#t3-options")
+        const correctAnswer = oneAnswerForm.querySelector("#t3-correctAnswer")
 
-  if (editBtn) editBtn.style.display = "inline-block"
-  if (saveBtn) saveBtn.style.display = "none"
-  if (cancelBtn) cancelBtn.style.display = "none"
+        if (questionText) questionText.value = questionData.content[0] || ""
+        if (options) options.value = questionData.content.slice(1).join("\n") || ""
+        if (correctAnswer) correctAnswer.value = questionData.correctAnswers || ""
+      }
+      break
+    case "Nhiều đáp án":
+      const multipleAnswerForm = questionDiv.querySelector("#t4-questionForm")
+      if (multipleAnswerForm) {
+        const questionText = multipleAnswerForm.querySelector("#t4-questionText")
+        const options = multipleAnswerForm.querySelector("#t4-options")
+        const correctAnswers = multipleAnswerForm.querySelector("#t4-correctAnswers")
 
-  // Disable all input fields
-  const inputs = questionDiv.querySelectorAll("input, textarea, select")
-  inputs.forEach((input) => {
-    input.disabled = true
-  })
+        if (questionText) questionText.value = questionData.content[0] || ""
+        if (options) options.value = questionData.content.slice(1).join("\n") || ""
+        if (correctAnswers)
+          correctAnswers.value = Array.isArray(questionData.correctAnswers)
+            ? questionData.correctAnswers.join(", ")
+            : questionData.correctAnswers || ""
+      }
+      break
+    case "Ghép nối":
+      const matchingForm = questionDiv.querySelector("#t3-questionForm")
+      if (matchingForm) {
+        const title = matchingForm.querySelector("#t3-questionTitle")
+        const people = matchingForm.querySelector("#t3-people")
+        const responsibilities = matchingForm.querySelector("#t3-responsibilities")
+        const correctAnswers = matchingForm.querySelector("#t3-correctAnswers")
+
+        const midPoint = Math.ceil(questionData.content.length / 2)
+
+        if (title) title.value = questionData.content[0] || ""
+        if (people) people.value = questionData.content.slice(1, midPoint).join("\n") || ""
+        if (responsibilities) responsibilities.value = questionData.content.slice(midPoint).join("\n") || ""
+        if (correctAnswers)
+          correctAnswers.value = Array.isArray(questionData.correctAnswers)
+            ? questionData.correctAnswers.join("\n")
+            : questionData.correctAnswers || ""
+      }
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      const mapForm = questionDiv.querySelector("#questionForm")
+      if (mapForm) {
+        const type = mapForm.querySelector("#questionType")
+        const instructions = mapForm.querySelector("#instructions")
+
+        if (type) type.value = questionData.content[0] || "map"
+        if (instructions) instructions.value = questionData.content[1] || ""
+
+        // Thêm hình ảnh nếu có
+        const imageContainer = document.createElement("div")
+        imageContainer.className = "t1-form-group"
+        imageContainer.innerHTML = `
+          <label for="imageFile">Hình ảnh đã tải lên:</label>
+          <img src="${questionData.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
+        `
+        mapForm.appendChild(imageContainer)
+
+        // Thêm các nhãn và đáp án
+        const answerInputs = mapForm.querySelector("#answerInputs") || document.createElement("div")
+        answerInputs.id = "answerInputs"
+        answerInputs.innerHTML = ""
+
+        for (let i = 0; i < questionData.content.slice(3).length; i++) {
+          const label = questionData.content[i + 3]
+          const answer = questionData.correctAnswers[i] || ""
+
+          const answerGroup = document.createElement("div")
+          answerGroup.className = "t1-form-group"
+          answerGroup.innerHTML = `
+            <label for="answer${i}">Nhãn ${i + 1}:</label>
+            <input type="text" id="answer${i}" value="${label}" required>
+            <label for="correctAnswer${i}">Đáp án đúng cho nhãn ${i + 1}:</label>
+            ${
+              questionData.content[0] === "map"
+                ? `<select id="correctAnswer${i}" required>
+                  ${["A", "B", "C", "D", "E", "F", "G", "H"]
+                    .map(
+                      (letter) => `<option value="${letter}" ${answer === letter ? "selected" : ""}>${letter}</option>`,
+                    )
+                    .join("")}
+                </select>`
+                : `<input type="text" id="correctAnswer${i}" value="${answer}" required>`
+            }
+          `
+          answerInputs.appendChild(answerGroup)
+        }
+
+        if (!mapForm.querySelector("#answerInputs")) {
+          mapForm.appendChild(answerInputs)
+        }
+      }
+      break
+    // Thêm các trường hợp khác tương tự...
+  }
 }
 
-// Function to cancel question edit and revert to original data
+// Thêm hàm mới để khởi tạo các chức năng của form
+function initializeFormFunctions(questionDiv, questionType) {
+  switch (questionType) {
+    case "Một đáp án":
+      if (typeof window.initializeOneAnswerForm === "function") {
+        window.initializeOneAnswerForm(questionDiv)
+      } else if (typeof initializeOneAnswerForm === "function") {
+        initializeOneAnswerForm(questionDiv)
+      }
+      break
+    case "Nhiều đáp án":
+      if (typeof window.initializeMultipleAnswerForm === "function") {
+        window.initializeMultipleAnswerForm(questionDiv)
+      } else if (typeof initializeMultipleAnswerForm === "function") {
+        initializeMultipleAnswerForm(questionDiv)
+      }
+      break
+    case "Ghép nối":
+      if (typeof window.initializeMatchingForm === "function") {
+        window.initializeMatchingForm(questionDiv)
+      } else if (typeof initializeMatchingForm === "function") {
+        initializeMatchingForm(questionDiv)
+      }
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      if (typeof window.initializePlanMapDiagram === "function") {
+        window.initializePlanMapDiagram(questionDiv)
+      } else if (typeof initializePlanMapDiagram === "function") {
+        initializePlanMapDiagram(questionDiv)
+      }
+      break
+    case "Hoàn thành ghi chú":
+      if (typeof window.initializeNoteCompletionForm === "function") {
+        window.initializeNoteCompletionForm(questionDiv)
+      } else if (typeof initializeNoteCompletionForm === "function") {
+        initializeNoteCompletionForm(questionDiv)
+      }
+      break
+    case "Hoàn thành bảng/biểu mẫu":
+      if (typeof window.initializeFormTableCompletionForm === "function") {
+        window.initializeFormTableCompletionForm(questionDiv)
+      } else if (typeof initializeFormTableCompletionForm === "function") {
+        initializeFormTableCompletionForm(questionDiv)
+      }
+      break
+    case "Hoàn thành lưu đồ":
+      if (typeof window.initializeFlowChartCompletionForm === "function") {
+        window.initializeFlowChartCompletionForm(questionDiv)
+      } else if (typeof initializeFlowChartCompletionForm === "function") {
+        initializeFlowChartCompletionForm(questionDiv)
+      }
+      break
+  }
+}
+
+// Cập nhật hàm cancelQuestionEdit để khôi phục nội dung gốc
 function cancelQuestionEdit(button) {
   const questionDiv = button.closest(".question")
   if (!questionDiv) return
 
-  // Get the index of this question in the current part
-  const part = document.getElementById(`part${window.currentPart}`)
-  const questions = Array.from(part.querySelectorAll(".question"))
-  const questionIndex = questions.indexOf(questionDiv)
+  // Khôi phục nội dung gốc nếu có
+  const originalContent = questionDiv.getAttribute("data-original-content")
+  if (originalContent) {
+    questionDiv.innerHTML = originalContent
+  } else {
+    // Nếu không có nội dung gốc, render lại câu hỏi
+    const part = document.getElementById(`part${window.currentPart}`)
+    const questions = Array.from(part.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionDiv)
 
-  if (questionIndex === -1) return
-
-  // Get the original question data
-  const originalQuestion = test[`part${window.currentPart}`][questionIndex]
-
-  // Re-render the question with original data
-  const questionType = originalQuestion.type
-  let contentHTML = ""
-
-  switch (questionType) {
-    case "Một đáp án":
-      contentHTML = renderOneAnswerQuestion(originalQuestion)
-      break
-    case "Nhiều đáp án":
-      contentHTML = renderMultipleAnswerQuestion(originalQuestion)
-      break
-    case "Ghép nối":
-      contentHTML = renderMatchingQuestion(originalQuestion)
-      break
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      contentHTML = renderPlanMapDiagramQuestion(originalQuestion)
-      break
-    case "Hoàn thành ghi chú":
-      contentHTML = renderNoteCompletionQuestion(originalQuestion)
-      break
-    case "Hoàn thành bảng/biểu mẫu":
-      contentHTML = renderFormTableCompletionQuestion(originalQuestion)
-      break
-    case "Hoàn thành lưu đồ":
-      contentHTML = renderFlowChartCompletionQuestion(originalQuestion)
-      break
+    if (questionIndex !== -1) {
+      renderQuestionsForCurrentPart()
+    }
   }
 
-  // Replace the form content
-  const formContainer = questionDiv.querySelector(
-    ".t3-question-creator, .t4-container, .t1-ielts-creator, .t2-listening-exercise-app, .t6-ielts-listening-creator, .t7-ielts-flow-chart-creator",
-  )
-  if (formContainer) {
-    formContainer.outerHTML = contentHTML
-  }
-
-  // Switch to view mode
-  setQuestionViewMode(questionDiv)
+  // Chuyển về chế độ xem
+  questionDiv.classList.remove("edit-mode")
+  questionDiv.classList.add("view-mode")
 
   showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
 }
@@ -3262,7 +2586,6 @@ window.createNewTest = createNewTest
 window.duplicateTest = duplicateTest
 window.generateTestPDF = generateTestPDF
 window.saveQuestionChanges = saveQuestionChanges
-window.initializeDynamicFormElements = initializeDynamicFormElements
 
 // Initialize currentPart in the global scope if it doesn't exist
 if (typeof window.currentPart === "undefined") {
@@ -3471,5 +2794,66 @@ function addTestMetadataForm() {
     testContent.insertBefore(metadataForm, testContent.firstChild)
   } else {
     console.error("Không tìm thấy phần tử nội dung bài kiểm tra")
+  }
+}
+
+function initializeOneAnswerForm(questionDiv) {}
+function initializeMultipleAnswerForm(questionDiv) {}
+function initializeMatchingForm(questionDiv) {}
+function initializePlanMapDiagram(questionDiv) {}
+function initializeNoteCompletionForm(questionDiv) {}
+function initializeFormTableCompletionForm(questionDiv) {}
+function initializeFlowChartCompletionForm(questionDiv) {}
+
+// Declare setQuestionViewMode
+function setQuestionViewMode(questionDiv) {
+  // Re-render the question content in view mode
+  const partElement = questionDiv.closest(".part")
+  const questions = Array.from(partElement.querySelectorAll(".question"))
+  const questionIndex = questions.indexOf(questionDiv)
+
+  if (questionIndex !== -1) {
+    const questionData = test[`part${window.currentPart}`][questionIndex]
+
+    // Clear the current content
+    questionDiv.innerHTML = ""
+
+    // Add question header
+    const questionNumber = questionIndex + 1
+    questionDiv.innerHTML = `
+      <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+      <h3>${getIconForType(questionData.type)} ${questionData.type}</h3>
+      <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
+      ${renderQuestionContent(questionData)}
+    `
+
+    // Disable input fields in view mode
+    const inputs = questionDiv.querySelectorAll("input, textarea, select")
+    inputs.forEach((input) => {
+      input.disabled = true
+    })
+
+    // Add action buttons for editing
+    const questionContent = questionDiv.querySelector(".question-content") || questionDiv
+    const actionDiv = document.createElement("div")
+    actionDiv.className = "question-actions"
+    actionDiv.innerHTML = `
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+        <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-times"></i> Hủy
+      </button>
+    `
+    questionContent.appendChild(actionDiv)
+
+    // Switch to view mode
+    questionDiv.classList.remove("edit-mode")
+    questionDiv.classList.add("view-mode")
+
+    showNotification("Đã chuyển sang chế độ xem", "info")
   }
 }
