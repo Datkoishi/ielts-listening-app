@@ -107,39 +107,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Garantir que as funções de edição estejam disponíveis globalmente
   window.toggleQuestionEdit = (button) => {
-    const questionDiv = button.closest(".question")
-    if (!questionDiv) return
+    console.log("Gọi toggleQuestionEdit từ index.js")
 
-    const isViewMode = questionDiv.classList.contains("view-mode")
-    if (isViewMode) {
-      if (typeof window.setQuestionEditMode === "function") {
+    // Kiểm tra xem hàm có tồn tại trong test-management.js không
+    if (typeof window.toggleQuestionEdit === "function") {
+      window.toggleQuestionEdit(button)
+    } else {
+      console.error("Không tìm thấy hàm toggleQuestionEdit trong test-management.js")
+
+      // Triển khai dự phòng
+      const questionDiv = button.closest(".question")
+      if (!questionDiv) return
+
+      const isViewMode = questionDiv.classList.contains("view-mode")
+      if (isViewMode) {
         window.setQuestionEditMode(questionDiv)
       } else {
-        console.error("setQuestionEditMode function not found")
-      }
-    } else {
-      if (typeof window.setQuestionViewMode === "function") {
         window.setQuestionViewMode(questionDiv)
-      } else {
-        console.error("setQuestionViewMode function not found")
       }
     }
   }
 
-  window.setQuestionEditMode = (questionDiv) => {
-    // Get the question data
-    const partElement = questionDiv.closest(".part")
-    const questions = Array.from(partElement.querySelectorAll(".question"))
-    const questionIndex = questions.indexOf(questionDiv)
-
-    if (questionIndex !== -1 && window.test && window.test[`part${window.currentPart}`]) {
-      const questionData = window.test[`part${window.currentPart}`][questionIndex]
-
-      // Remove view-mode class and add edit-mode class
+  window.setQuestionEditMode =
+    window.setQuestionEditMode ||
+    ((questionDiv) => {
       questionDiv.classList.remove("view-mode")
       questionDiv.classList.add("edit-mode")
 
-      // Show Save and Cancel buttons, hide Edit button
       const editBtn = questionDiv.querySelector(".edit-question-btn")
       const saveBtn = questionDiv.querySelector(".save-question-btn")
       const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
@@ -148,90 +142,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (saveBtn) saveBtn.style.display = "inline-block"
       if (cancelBtn) cancelBtn.style.display = "inline-block"
 
-      // Enable all input fields
       const inputs = questionDiv.querySelectorAll("input, textarea, select")
       inputs.forEach((input) => {
         input.disabled = false
       })
 
-      // If we have the question data, re-render the form
-      if (questionData) {
-        // Re-render the question form with the current data
-        const questionType = questionData.type
-        let formHTML = ""
-
-        // Use the appropriate render function based on question type
-        if (typeof window.renderOneAnswerQuestion === "function" && questionType === "Một đáp án") {
-          formHTML = window.renderOneAnswerQuestion(questionData)
-        } else if (typeof window.renderMultipleAnswerQuestion === "function" && questionType === "Nhiều đáp án") {
-          formHTML = window.renderMultipleAnswerQuestion(questionData)
-        } else if (typeof window.renderMatchingQuestion === "function" && questionType === "Ghép nối") {
-          formHTML = window.renderMatchingQuestion(questionData)
-        } else if (
-          typeof window.renderPlanMapDiagramQuestion === "function" &&
-          questionType === "Ghi nhãn Bản đồ/Sơ đồ"
-        ) {
-          formHTML = window.renderPlanMapDiagramQuestion(questionData)
-        } else if (typeof window.renderNoteCompletionQuestion === "function" && questionType === "Hoàn thành ghi chú") {
-          formHTML = window.renderNoteCompletionQuestion(questionData)
-        } else if (
-          typeof window.renderFormTableCompletionQuestion === "function" &&
-          questionType === "Hoàn thành bảng/biểu mẫu"
-        ) {
-          formHTML = window.renderFormTableCompletionQuestion(questionData)
-        } else if (
-          typeof window.renderFlowChartCompletionQuestion === "function" &&
-          questionType === "Hoàn thành lưu đồ"
-        ) {
-          formHTML = window.renderFlowChartCompletionQuestion(questionData)
-        }
-
-        // If we have form HTML, replace the content
-        if (formHTML) {
-          const formContainer = questionDiv.querySelector(
-            ".t3-question-creator, .t4-container, .t1-ielts-creator, .t2-listening-exercise-app, .t6-ielts-listening-creator, .t7-ielts-flow-chart-creator",
-          )
-
-          if (formContainer) {
-            formContainer.outerHTML = formHTML
-
-            // Initialize the form based on the question type
-            if (typeof window.initializeOneAnswerForm === "function" && questionType === "Một đáp án") {
-              window.initializeOneAnswerForm(questionDiv)
-            } else if (typeof window.initializeMultipleAnswerForm === "function" && questionType === "Nhiều đáp án") {
-              window.initializeMultipleAnswerForm(questionDiv)
-            } else if (typeof window.initializeMatchingForm === "function" && questionType === "Ghép nối") {
-              window.initializeMatchingForm(questionDiv)
-            } else if (
-              typeof window.initializePlanMapDiagram === "function" &&
-              questionType === "Ghi nhãn Bản đồ/Sơ đồ"
-            ) {
-              window.initializePlanMapDiagram(questionDiv)
-            } else if (
-              typeof window.initializeNoteCompletionForm === "function" &&
-              questionType === "Hoàn thành ghi chú"
-            ) {
-              window.initializeNoteCompletionForm(questionDiv)
-            } else if (
-              typeof window.initializeFormTableCompletionForm === "function" &&
-              questionType === "Hoàn thành bảng/biểu mẫu"
-            ) {
-              window.initializeFormTableCompletionForm(questionDiv)
-            } else if (
-              typeof window.initializeFlowChartCompletionForm === "function" &&
-              questionType === "Hoàn thành lưu đồ"
-            ) {
-              window.initializeFlowChartCompletionForm(questionDiv)
-            }
-          }
-        }
-      }
-    }
-
-    if (typeof window.showNotification === "function") {
       window.showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
-    }
-  }
+    })
 
   window.setQuestionViewMode =
     window.setQuestionViewMode ||
@@ -1276,7 +1193,12 @@ function updatePlanMapDiagramForm(selectElement) {
 
 // Khởi tạo các phần tử form động
 function initializeDynamicFormElements(questionDiv, questionType) {
-  switch (questionType) {
+  // Xác định loại câu hỏi thực tế từ chuỗi có thể chứa biểu tượng
+  const actualType = questionType.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1")
+
+  console.log("Khởi tạo form động cho loại câu hỏi:", actualType)
+
+  switch (actualType) {
     case "Một đáp án":
       initializeOneAnswerForm(questionDiv)
       break
@@ -1299,7 +1221,7 @@ function initializeDynamicFormElements(questionDiv, questionType) {
       initializeFlowChartCompletionForm(questionDiv)
       break
     default:
-      console.warn("Không hỗ trợ loại câu hỏi:", questionType)
+      console.warn("Không hỗ trợ loại câu hỏi:", actualType)
   }
 }
 
