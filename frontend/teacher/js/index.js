@@ -155,54 +155,281 @@ document.addEventListener("DOMContentLoaded", () => {
         <button class="delete-question" onclick="deleteQuestion(this)"><i class="fas fa-trash"></i></button>
       `
 
-        // Sử dụng CHÍNH XÁC cùng một hàm tạo form như khi tạo câu hỏi mới
-        // Gọi trực tiếp hàm addQuestionDirectly nhưng không thêm câu hỏi vào test
-        const tempDiv = document.createElement("div")
-        tempDiv.className = "question"
-
-        // Thêm tiêu đề loại câu hỏi
-        tempDiv.innerHTML = `
-        <h3>${getIconForType(questionType)} ${questionType}</h3>
-      `
-
-        // Thêm form phù hợp dựa trên loại - sử dụng cùng logic như trong addQuestionDirectly
+        // Gọi lại chính xác cùng một đoạn code từ addQuestionDirectly để tạo form
         let formHTML = ""
         switch (questionType) {
           case "Một đáp án":
-            formHTML = window.createOneAnswerFormOriginal
-              ? window.createOneAnswerFormOriginal()
-              : window.createOneAnswerForm()
+            formHTML = `
+    <div class="one-answer-form">
+      <label for="question">Câu hỏi:</label>
+      <input type="text" id="question" name="question" required>
+      <div class="options-container">
+        <label>Lựa chọn:</label>
+        <div id="options-list">
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 1">
+            <input type="radio" name="correctAnswer" value="0" checked>
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 2">
+            <input type="radio" name="correctAnswer" value="1">
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
+      </div>
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
             break
           case "Nhiều đáp án":
-            formHTML = window.createMultipleAnswerFormOriginal
-              ? window.createMultipleAnswerFormOriginal()
-              : window.createMultipleAnswerForm()
+            formHTML = `
+    <div class="multiple-answer-form">
+      <label for="question">Câu hỏi:</label>
+      <input type="text" id="question" name="question" required>
+      <div class="options-container">
+        <label>Lựa chọn:</label>
+        <div id="options-list">
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 1">
+            <input type="checkbox" name="correctAnswer" value="0">
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="option-item">
+            <input type="text" name="option" required placeholder="Lựa chọn 2">
+            <input type="checkbox" name="correctAnswer" value="1">
+            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+          </div>
+        </div>
+        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
+      </div>
+      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+    </div>
+  `
             break
           case "Ghép nối":
-            formHTML = window.createMatchingFormOriginal
-              ? window.createMatchingFormOriginal()
-              : window.createMatchingForm()
+            formHTML = `
+<div class="matching-form">
+  <div class="form-group">
+    <label for="title">Tiêu đề bài ghép nối:</label>
+    <input type="text" id="title" name="title" required placeholder="Ví dụ: Ghép nối người với công việc">
+  </div>
+  
+  <div class="matching-container">
+    <div class="matching-items">
+      <div class="section-title-container">
+        <input type="text" class="section-title-input" id="itemsTitle" name="itemsTitle" value="Danh sách câu hỏi" placeholder="Đặt tên cho danh sách câu hỏi">
+        <i class="fas fa-question section-icon"></i>
+      </div>
+      <div id="items-list">
+        <div class="item-row">
+          <input type="text" name="item" required placeholder="Câu hỏi 1">
+          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="item-row">
+          <input type="text" name="item" required placeholder="Câu hỏi 2">
+          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <button type="button" class="add-item-btn"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
+    </div>
+    
+    <div class="matching-matches">
+      <div class="section-title-container">
+        <input type="text" class="section-title-input" id="matchesTitle" name="matchesTitle" value="Danh sách từ khóa nối" placeholder="Đặt tên cho danh sách từ khóa">
+        <i class="fas fa-link section-icon"></i>
+      </div>
+      <div id="matches-list">
+        <div class="match-row">
+          <input type="text" name="match" required placeholder="Từ khóa nối 1">
+          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="match-row">
+          <input type="text" name="match" required placeholder="Từ khóa nối 2">
+          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <button type="button" class="add-match-btn"><i class="fas fa-plus"></i> Thêm từ khóa nối</button>
+    </div>
+  </div>
+  
+  <div class="matching-answers">
+    <h4><i class="fas fa-exchange-alt"></i> Thiết lập ghép nối</h4>
+    <p class="matching-help">Chọn từ khóa nối tương ứng với mỗi câu hỏi:</p>
+    <div id="matching-answers-list">
+      <!-- Sẽ được điền động bằng JavaScript -->
+    </div>
+  </div>
+  
+  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+</div>
+`
             break
           case "Ghi nhãn Bản đồ/Sơ đồ":
-            formHTML = window.createPlanMapDiagramFormOriginal
-              ? window.createPlanMapDiagramFormOriginal()
-              : window.createPlanMapDiagramForm()
+            formHTML = `
+<div class="plan-map-diagram-form">
+  <div class="form-group">
+    <label for="type">Loại câu hỏi:</label>
+    <select id="type" name="type" required onchange="updatePlanMapDiagramForm(this)">
+      <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
+      <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
+    </select>
+    <p class="form-help-text" id="typeHelpText">
+      <i class="fas fa-info-circle"></i> 
+      <span>Ghi nhãn Bản đồ: Người dùng chọn đáp án từ các lựa chọn có sẵn (A-H)</span>
+    </p>
+  </div>
+  
+  <div class="form-group">
+    <label for="instructions">Hướng dẫn:</label>
+    <textarea id="instructions" name="instructions" rows="3" required placeholder="Nhập hướng dẫn cho câu hỏi"></textarea>
+  </div>
+  
+  <div class="form-group">
+    <label for="image">Hình ảnh:</label>
+    <input type="file" id="image" name="image" accept="image/*" required>
+    <div id="imagePreview" class="image-preview"></div>
+  </div>
+  
+  <div id="labels-container">
+    <h4><i class="fas fa-tags"></i> Danh sách nhãn và đáp án</h4>
+    <div class="label-row">
+      <div class="label-input-group">
+        <label for="label1">Nhãn 1:</label>
+        <input type="text" id="label1" name="label" required placeholder="Nhập nhãn">
+      </div>
+      <div class="answer-input-group map-answer-group">
+        <label for="answer1">Đáp án:</label>
+        <select id="answer1" name="answer" required>
+          <option value="">-- Chọn --</option>
+          <option value="A">A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="D">D</option>
+          <option value="E">E</option>
+          <option value="F">F</option>
+          <option value="G">G</option>
+          <option value="H">H</option>
+        </select>
+      </div>
+      <div class="answer-input-group ship-answer-group" style="display: none;">
+        <label for="shipAnswer1">Đáp án:</label>
+        <input type="text" id="shipAnswer1" name="shipAnswer" required placeholder="Nhập đáp án">
+      </div>
+      <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+  
+  <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
+  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+</div>
+`
             break
           case "Hoàn thành ghi chú":
-            formHTML = window.createNoteCompletionFormOriginal
-              ? window.createNoteCompletionFormOriginal()
-              : window.createNoteCompletionForm()
+            formHTML = `
+<div class="note-completion-form">
+  <label for="instructions">Hướng dẫn:</label>
+  <input type="text" id="instructions" name="instructions" value="Hoàn thành ghi chú. Viết MỘT TỪ VÀ/HOẶC MỘT SỐ vào mỗi khoảng trống." required>
+  <label for="topic">Chủ đề:</label>
+  <input type="text" id="topic" name="topic" required>
+  <div id="notes-container">
+    <div class="note-row">
+      <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+      <textarea name="note" required></textarea>
+      <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
+    </div>
+  </div>
+  <button type="button" class="add-note-btn"><i class="fas fa-plus"></i> Thêm ghi chú</button>
+  <div id="answers-container">
+    <label>Đáp án đúng (theo thứ tự [ANSWER]):</label>
+    <div id="note-answers-list">
+      <div class="answer-row">
+        <span class="answer-label">Đáp án 1:</span>
+        <input type="text" name="noteAnswer" required>
+        <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <button type="button" class="add-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
+  </div>
+  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+</div>
+`
             break
           case "Hoàn thành bảng/biểu mẫu":
-            formHTML = window.createFormTableCompletionFormOriginal
-              ? window.createFormTableCompletionFormOriginal()
-              : window.createFormTableCompletionForm()
+            formHTML = `
+<div class="form-table-completion-form">
+  <label for="instructions">Hướng dẫn:</label>
+  <input type="text" id="instructions" name="instructions" value="Hoàn thành bảng. Viết KHÔNG QUÁ MỘT TỪ VÀ/HOẶC MỘT SỐ cho mỗi khoảng trống." required>
+  <table id="formTable">
+    <thead>
+      <tr>
+        <th>Cột 1</th>
+        <th>Cột 2</th>
+        <th>Cột 3</th>
+        <th>Đáp án</th>
+        <th>Thao tác</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><input type="text" name="cell" required></td>
+        <td><input type="text" name="cell" required></td>
+        <td><input type="text" name="cell" required></td>
+        <td><input type="text" name="tableAnswer" required></td>
+        <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
+      </tr>
+    </tbody>
+  </table>
+  <button type="button" class="add-row-btn"><i class="fas fa-plus"></i> Thêm hàng</button>
+  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+</div>
+`
             break
           case "Hoàn thành lưu đồ":
-            formHTML = window.createFlowChartCompletionFormOriginal
-              ? window.createFlowChartCompletionFormOriginal()
-              : window.createFlowChartCompletionForm()
+            formHTML = `
+<div class="flow-chart-completion-form">
+  <label for="title">Tiêu đề:</label>
+  <input type="text" id="title" name="title" required>
+  <label for="instructions">Hướng dẫn:</label>
+  <input type="text" id="instructions" name="instructions" required>
+  <div id="flow-items-container">
+    <label>Mục (sử dụng ___ cho chỗ trống):</label>
+    <div id="flow-items-list">
+      <div class="flow-item-row">
+        <input type="text" name="flowItem" required>
+        <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <button type="button" class="add-flow-item-btn"><i class="fas fa-plus"></i> Thêm mục</button>
+  </div>
+  <div id="flow-options-container">
+    <label>Lựa chọn:</label>
+    <div id="flow-options-list">
+      <div class="flow-option-row">
+        <input type="text" name="flowOption" required>
+        <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <button type="button" class="add-flow-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
+  </div>
+  <div id="flow-answers-container">
+    <label>Đáp án đúng (theo thứ tự khoảng trống):</label>
+    <div id="flow-answers-list">
+      <div class="flow-answer-row">
+        <span class="answer-label">Đáp án 1:</span>
+        <input type="text" name="flowAnswer" required>
+        <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
+      </div>
+    </div>
+    <button type="button" class="add-flow-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
+  </div>
+  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+</div>
+`
             break
+          default:
+            formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
         }
 
         // Thêm form vào câu hỏi
@@ -236,39 +463,25 @@ document.addEventListener("DOMContentLoaded", () => {
           try {
             switch (questionType) {
               case "Một đáp án":
-                if (typeof window.initializeOneAnswerForm === "function") {
-                  window.initializeOneAnswerForm(questionDiv)
-                }
+                initializeOneAnswerForm(questionDiv)
                 break
               case "Nhiều đáp án":
-                if (typeof window.initializeMultipleAnswerForm === "function") {
-                  window.initializeMultipleAnswerForm(questionDiv)
-                }
+                initializeMultipleAnswerForm(questionDiv)
                 break
               case "Ghép nối":
-                if (typeof window.initializeMatchingForm === "function") {
-                  window.initializeMatchingForm(questionDiv)
-                }
+                initializeMatchingForm(questionDiv)
                 break
               case "Ghi nhãn Bản đồ/Sơ đồ":
-                if (typeof window.initializePlanMapDiagram === "function") {
-                  window.initializePlanMapDiagram(questionDiv)
-                }
+                initializePlanMapDiagram(questionDiv)
                 break
               case "Hoàn thành ghi chú":
-                if (typeof window.initializeNoteCompletionForm === "function") {
-                  window.initializeNoteCompletionForm(questionDiv)
-                }
+                initializeNoteCompletionForm(questionDiv)
                 break
               case "Hoàn thành bảng/biểu mẫu":
-                if (typeof window.initializeFormTableCompletionForm === "function") {
-                  window.initializeFormTableCompletionForm(questionDiv)
-                }
+                initializeFormTableCompletionForm(questionDiv)
                 break
               case "Hoàn thành lưu đồ":
-                if (typeof window.initializeFlowChartCompletionForm === "function") {
-                  window.initializeFlowChartCompletionForm(questionDiv)
-                }
+                initializeFlowChartCompletionForm(questionDiv)
                 break
             }
           } catch (error) {
