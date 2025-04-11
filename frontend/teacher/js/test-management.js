@@ -287,14 +287,22 @@ function renderQuestionsForCurrentPart() {
       input.disabled = true
     })
 
-    // Show edit button and hide save/cancel buttons
-    const editBtn = questionDiv.querySelector(".edit-question-btn")
-    const saveBtn = questionDiv.querySelector(".save-question-btn")
-    const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-    if (editBtn) editBtn.style.display = "inline-block"
-    if (saveBtn) saveBtn.style.display = "none"
-    if (cancelBtn) cancelBtn.style.display = "none"
+    // Add action buttons for editing
+    const questionContent = questionDiv.querySelector(".question-content") || questionDiv
+    const actionDiv = document.createElement("div")
+    actionDiv.className = "question-actions"
+    actionDiv.innerHTML = `
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+        <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-times"></i> Hủy
+      </button>
+    `
+    questionContent.appendChild(actionDiv)
   })
 }
 
@@ -1772,29 +1780,21 @@ function addQuestionDirectly(questionType) {
         case "Một đáp án":
           if (typeof window.initializeOneAnswerForm === "function") {
             window.initializeOneAnswerForm(questionDiv)
-          } else {
-            initializeOneAnswerForm(questionDiv)
           }
           break
         case "Nhiều đáp án":
           if (typeof window.initializeMultipleAnswerForm === "function") {
             window.initializeMultipleAnswerForm(questionDiv)
-          } else {
-            initializeMultipleAnswerForm(questionDiv)
           }
           break
         case "Ghép nối":
           if (typeof window.initializeMatchingForm === "function") {
             window.initializeMatchingForm(questionDiv)
-          } else {
-            initializeMatchingForm(questionDiv)
           }
           break
         case "Ghi nhãn Bản đồ/Sơ đồ":
           if (typeof window.initializePlanMapDiagram === "function") {
             window.initializePlanMapDiagram(questionDiv)
-          } else {
-            initializePlanMapDiagram(questionDiv)
           }
           break
         case "Hoàn thành ghi chú":
@@ -2012,7 +2012,7 @@ function setQuestionEditMode(questionDiv) {
   if (questionIndex !== -1) {
     const questionData = test[`part${window.currentPart}`][questionIndex]
 
-    // Re-render the question form with the existing data
+    // Re-render the question form with the current data
     const questionType = questionData.type
     let formHTML = ""
 
@@ -2047,35 +2047,57 @@ function setQuestionEditMode(questionDiv) {
 
     if (formContainer) {
       formContainer.outerHTML = formHTML
-    }
 
-    // Initialize form functionality based on type
-    switch (questionType) {
-      case "Một đáp án":
-        initializeOneAnswerForm(questionDiv)
-        break
-      case "Nhiều đáp án":
-        initializeMultipleAnswerForm(questionDiv)
-        break
-      case "Ghép nối":
-        initializeMatchingForm(questionDiv)
-        break
-      case "Ghi nhãn Bản đồ/Sơ đồ":
-        initializePlanMapDiagram(questionDiv)
-        break
-      case "Hoàn thành ghi chú":
-        initializeNoteCompletionForm(questionDiv)
-        break
-      case "Hoàn thành bảng/biểu mẫu":
-        initializeFormTableCompletionQuestion(questionDiv)
-        break
-      case "Hoàn thành lưu đồ":
-        initializeFlowChartCompletionQuestion(questionDiv)
-        break
+      // Initialize the form based on the question type
+      switch (questionType) {
+        case "Một đáp án":
+          initializeOneAnswerForm(questionDiv)
+          break
+        case "Nhiều đáp án":
+          initializeMultipleAnswerForm(questionDiv)
+          break
+        case "Ghép nối":
+          initializeMatchingForm(questionDiv)
+          break
+        case "Ghi nhãn Bản đồ/Sơ đồ":
+          initializePlanMapDiagram(questionDiv)
+          break
+        case "Hoàn thành ghi chú":
+          initializeNoteCompletionForm(questionDiv)
+          break
+        case "Hoàn thành bảng/biểu mẫu":
+          initializeFormTableCompletionQuestion(questionDiv)
+          break
+        case "Hoàn thành lưu đồ":
+          initializeFlowChartCompletionForm(questionDiv)
+          break
+      }
     }
   }
 
   showNotification("Đã chuyển sang chế độ chỉnh sửa", "info")
+}
+
+// Function to set question to view mode
+function setQuestionViewMode(questionDiv) {
+  // Remove edit-mode class and add view-mode class
+  questionDiv.classList.remove("edit-mode")
+  questionDiv.classList.add("view-mode")
+
+  // Show Edit button, hide Save and Cancel buttons
+  const editBtn = questionDiv.querySelector(".edit-question-btn")
+  const saveBtn = questionDiv.querySelector(".save-question-btn")
+  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+  if (editBtn) editBtn.style.display = "inline-block"
+  if (saveBtn) saveBtn.style.display = "none"
+  if (cancelBtn) cancelBtn.style.display = "none"
+
+  // Disable all input fields
+  const inputs = questionDiv.querySelectorAll("input, textarea, select")
+  inputs.forEach((input) => {
+    input.disabled = true
+  })
 }
 
 // Function to cancel question edit and revert to original data
@@ -2640,62 +2662,10 @@ function addTestMetadataForm() {
   }
 }
 
-// Declare the missing initialize form functions
-function initializeOneAnswerForm(questionDiv) {
-  // Initialization logic for One Answer form
-  console.log("Initializing One Answer Form")
-}
-
-function initializeMultipleAnswerForm(questionDiv) {
-  // Initialization logic for Multiple Answer form
-  console.log("Initializing Multiple Answer Form")
-}
-
-function initializeMatchingForm(questionDiv) {
-  // Initialization logic for Matching form
-  console.log("Initializing Matching Form")
-}
-
-function initializePlanMapDiagram(questionDiv) {
-  // Initialization logic for Plan Map Diagram form
-  console.log("Initializing Plan Map Diagram Form")
-}
-
-function initializeNoteCompletionForm(questionDiv) {
-  // Initialization logic for Note Completion form
-  console.log("Initializing Note Completion Form")
-}
-
-function initializeFormTableCompletionQuestion(questionDiv) {
-  // Initialization logic for Form Table Completion form
-  console.log("Initializing Form Table Completion Form")
-}
-
-function initializeFlowChartCompletionForm(questionDiv) {
-  // Initialization logic for Flow Chart Completion form
-  console.log("Initializing Flow Chart Completion Form")
-}
-
-// Declare the missing setQuestionViewMode function
-function setQuestionViewMode(questionDiv) {
-  // Remove edit-mode class and add view-mode class
-  questionDiv.classList.remove("edit-mode")
-  questionDiv.classList.add("view-mode")
-
-  // Show Edit button, hide Save and Cancel buttons
-  const editBtn = questionDiv.querySelector(".edit-question-btn")
-  const saveBtn = questionDiv.querySelector(".save-question-btn")
-  const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-  if (editBtn) editBtn.style.display = "inline-block"
-  if (saveBtn) saveBtn.style.display = "none"
-  if (cancelBtn) cancelBtn.style.display = "none"
-
-  // Disable all input fields
-  const inputs = questionDiv.querySelectorAll("input, textarea, select")
-  inputs.forEach((input) => {
-    input.disabled = true
-  })
-
-  showNotification("Đã chuyển sang chế độ xem", "info")
-}
+function initializeOneAnswerForm(questionDiv) {}
+function initializeMultipleAnswerForm(questionDiv) {}
+function initializeMatchingForm(questionDiv) {}
+function initializePlanMapDiagram(questionDiv) {}
+function initializeNoteCompletionForm(questionDiv) {}
+function initializeFormTableCompletionForm(questionDiv) {}
+function initializeFlowChartCompletionForm(questionDiv) {}

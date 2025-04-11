@@ -127,34 +127,104 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.setQuestionEditMode = (questionDiv) => {
-    questionDiv.classList.remove("view-mode")
-    questionDiv.classList.add("edit-mode")
-
-    const editBtn = questionDiv.querySelector(".edit-question-btn")
-    const saveBtn = questionDiv.querySelector(".save-question-btn")
-    const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
-
-    if (editBtn) editBtn.style.display = "none"
-    if (saveBtn) saveBtn.style.display = "inline-block"
-    if (cancelBtn) cancelBtn.style.display = "inline-block"
-
-    // Enable all input fields
-    const inputs = questionDiv.querySelectorAll("input, textarea, select")
-    inputs.forEach((input) => {
-      input.disabled = false
-    })
-
-    // Get the question data to populate the form
+    // Get the question data
     const partElement = questionDiv.closest(".part")
-    if (partElement) {
-      const questions = Array.from(partElement.querySelectorAll(".question"))
-      const questionIndex = questions.indexOf(questionDiv)
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionDiv)
 
-      if (questionIndex !== -1 && window.test && window.test[`part${window.currentPart}`]) {
-        const questionData = window.test[`part${window.currentPart}`][questionIndex]
+    if (questionIndex !== -1 && window.test && window.test[`part${window.currentPart}`]) {
+      const questionData = window.test[`part${window.currentPart}`][questionIndex]
 
-        // Re-render the question form with the existing data if needed
-        // This is now handled in the test-management.js file
+      // Remove view-mode class and add edit-mode class
+      questionDiv.classList.remove("view-mode")
+      questionDiv.classList.add("edit-mode")
+
+      // Show Save and Cancel buttons, hide Edit button
+      const editBtn = questionDiv.querySelector(".edit-question-btn")
+      const saveBtn = questionDiv.querySelector(".save-question-btn")
+      const cancelBtn = questionDiv.querySelector(".cancel-edit-btn")
+
+      if (editBtn) editBtn.style.display = "none"
+      if (saveBtn) saveBtn.style.display = "inline-block"
+      if (cancelBtn) cancelBtn.style.display = "inline-block"
+
+      // Enable all input fields
+      const inputs = questionDiv.querySelectorAll("input, textarea, select")
+      inputs.forEach((input) => {
+        input.disabled = false
+      })
+
+      // If we have the question data, re-render the form
+      if (questionData) {
+        // Re-render the question form with the current data
+        const questionType = questionData.type
+        let formHTML = ""
+
+        // Use the appropriate render function based on question type
+        if (typeof window.renderOneAnswerQuestion === "function" && questionType === "Một đáp án") {
+          formHTML = window.renderOneAnswerQuestion(questionData)
+        } else if (typeof window.renderMultipleAnswerQuestion === "function" && questionType === "Nhiều đáp án") {
+          formHTML = window.renderMultipleAnswerQuestion(questionData)
+        } else if (typeof window.renderMatchingQuestion === "function" && questionType === "Ghép nối") {
+          formHTML = window.renderMatchingQuestion(questionData)
+        } else if (
+          typeof window.renderPlanMapDiagramQuestion === "function" &&
+          questionType === "Ghi nhãn Bản đồ/Sơ đồ"
+        ) {
+          formHTML = window.renderPlanMapDiagramQuestion(questionData)
+        } else if (typeof window.renderNoteCompletionQuestion === "function" && questionType === "Hoàn thành ghi chú") {
+          formHTML = window.renderNoteCompletionQuestion(questionData)
+        } else if (
+          typeof window.renderFormTableCompletionQuestion === "function" &&
+          questionType === "Hoàn thành bảng/biểu mẫu"
+        ) {
+          formHTML = window.renderFormTableCompletionQuestion(questionData)
+        } else if (
+          typeof window.renderFlowChartCompletionQuestion === "function" &&
+          questionType === "Hoàn thành lưu đồ"
+        ) {
+          formHTML = window.renderFlowChartCompletionQuestion(questionData)
+        }
+
+        // If we have form HTML, replace the content
+        if (formHTML) {
+          const formContainer = questionDiv.querySelector(
+            ".t3-question-creator, .t4-container, .t1-ielts-creator, .t2-listening-exercise-app, .t6-ielts-listening-creator, .t7-ielts-flow-chart-creator",
+          )
+
+          if (formContainer) {
+            formContainer.outerHTML = formHTML
+
+            // Initialize the form based on the question type
+            if (typeof window.initializeOneAnswerForm === "function" && questionType === "Một đáp án") {
+              window.initializeOneAnswerForm(questionDiv)
+            } else if (typeof window.initializeMultipleAnswerForm === "function" && questionType === "Nhiều đáp án") {
+              window.initializeMultipleAnswerForm(questionDiv)
+            } else if (typeof window.initializeMatchingForm === "function" && questionType === "Ghép nối") {
+              window.initializeMatchingForm(questionDiv)
+            } else if (
+              typeof window.initializePlanMapDiagram === "function" &&
+              questionType === "Ghi nhãn Bản đồ/Sơ đồ"
+            ) {
+              window.initializePlanMapDiagram(questionDiv)
+            } else if (
+              typeof window.initializeNoteCompletionForm === "function" &&
+              questionType === "Hoàn thành ghi chú"
+            ) {
+              window.initializeNoteCompletionForm(questionDiv)
+            } else if (
+              typeof window.initializeFormTableCompletionForm === "function" &&
+              questionType === "Hoàn thành bảng/biểu mẫu"
+            ) {
+              window.initializeFormTableCompletionForm(questionDiv)
+            } else if (
+              typeof window.initializeFlowChartCompletionForm === "function" &&
+              questionType === "Hoàn thành lưu đồ"
+            ) {
+              window.initializeFlowChartCompletionForm(questionDiv)
+            }
+          }
+        }
       }
     }
 
@@ -183,31 +253,27 @@ document.addEventListener("DOMContentLoaded", () => {
       })
     })
 
-  window.cancelQuestionEdit = (button) => {
-    const questionDiv = button.closest(".question")
-    if (!questionDiv) return
+  window.cancelQuestionEdit =
+    window.cancelQuestionEdit ||
+    ((button) => {
+      const questionDiv = button.closest(".question")
+      if (!questionDiv) return
 
-    // Get the index of this question
-    const part = document.getElementById(`part${window.currentPart}`)
-    if (!part) return
+      // Lấy chỉ mục của câu hỏi
+      const part = document.getElementById(`part${window.currentPart}`)
+      const questions = Array.from(part.querySelectorAll(".question"))
+      const questionIndex = questions.indexOf(questionDiv)
 
-    const questions = Array.from(part.querySelectorAll(".question"))
-    const questionIndex = questions.indexOf(questionDiv)
+      if (questionIndex === -1) return
 
-    if (questionIndex === -1) return
+      // Lấy dữ liệu câu hỏi gốc
+      const originalQuestion = window.test[`part${window.currentPart}`][questionIndex]
 
-    // Rerender the question with original data
-    if (typeof window.renderQuestionsForCurrentPart === "function") {
+      // Render lại câu hỏi với dữ liệu gốc
       window.renderQuestionsForCurrentPart()
-    } else {
-      // Fallback to just switching to view mode
-      window.setQuestionViewMode(questionDiv)
-    }
 
-    if (typeof window.showNotification === "function") {
-      window.showNotification("Đã hủy chỉnh sửa", "info")
-    }
-  }
+      window.showNotification("Đã hủy chỉnh sửa và khôi phục dữ liệu gốc", "info")
+    })
 
   // Código existente...
 })
@@ -1052,7 +1118,7 @@ function createOneAnswerForm() {
 }
 
 function createMultipleAnswerForm() {
-  // Não gọi window.createMultipleAnswerForm ở đây để tránh đệ quy
+  // Không gọi window.createMultipleAnswerForm ở đây để tránh đệ quy
   return `
   <div class="multiple-answer-form">
     <label for="question">Câu hỏi:</label>
