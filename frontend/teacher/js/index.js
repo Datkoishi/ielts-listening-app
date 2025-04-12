@@ -136,7 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const questions = Array.from(partElement.querySelectorAll(".question"))
       const questionIndex = questions.indexOf(questionDiv)
 
-      if (questionIndex !== -1 && window.test && window.test[`part${window.currentPart}`]) {
+      if (questionIndex !== -1 && window.test[`part${window.currentPart}`]) {
         const questionData = window.test[`part${window.currentPart}`][questionIndex]
         const questionType = questionData.type
 
@@ -159,166 +159,29 @@ document.addEventListener("DOMContentLoaded", () => {
         <button class="delete-question" onclick="deleteQuestion(this)"><i class="fas fa-trash"></i></button>
       `
 
-        // Lấy form gốc từ form-handlers.js
+        // Thêm form phù hợp dựa trên loại câu hỏi
         let formHTML = ""
         switch (questionType) {
           case "Một đáp án":
-            formHTML = `
-            <div class="t3-question-creator">
-              <form class="t3-one-answer-form">
-                <div class="t3-form-group">
-                  <label for="t3-questionText">Nội dung câu hỏi:</label>
-                  <input type="text" id="t3-questionText" name="questionText" required>
-                </div>
-                <div class="t3-form-group">
-                  <label for="t3-options">Lựa chọn (mỗi lựa chọn một dòng):</label>
-                  <textarea id="t3-options" name="options" rows="4" required></textarea>
-                </div>
-                <div class="t3-form-group">
-                  <label for="t3-correctAnswer">Đáp án đúng:</label>
-                  <input type="text" id="t3-correctAnswer" name="correctAnswer" required>
-                </div>
-              </form>
-            </div>
-          `
+            formHTML = createOneAnswerForm()
             break
           case "Nhiều đáp án":
-            formHTML = `
-            <div class="t4-container">
-              <form id="t4-questionForm">
-                <div class="t4-form-group">
-                  <label for="t4-questionText">Nội dung câu hỏi:</label>
-                  <input type="text" id="t4-questionText" name="questionText" required>
-                </div>
-                <div class="t4-form-group">
-                  <label for="t4-options">Lựa chọn (mỗi lựa chọn một dòng):</label>
-                  <textarea id="t4-options" name="options" rows="4" required></textarea>
-                </div>
-                <div class="t4-form-group">
-                  <label for="t4-correctAnswers">Đáp án đúng (các số cách nhau bằng dấu phẩy):</label>
-                  <input type="text" id="t4-correctAnswers" name="correctAnswers" required>
-                </div>
-              </form>
-            </div>
-          `
+            formHTML = createMultipleAnswerForm()
             break
           case "Ghép nối":
-            formHTML = `
-            <div class="t3-question-creator">
-              <form id="t3-questionForm">
-                <div class="t3-form-group">
-                  <label for="t3-questionTitle">Tiêu đề câu hỏi:</label>
-                  <input type="text" id="t3-questionTitle" name="questionTitle" required>
-                </div>
-                <div class="t3-form-group">
-                  <label for="t3-people">Người (mỗi người một dòng):</label>
-                  <textarea id="t3-people" name="people" required></textarea>
-                </div>
-                <div class="t3-form-group">
-                  <label for="t3-responsibilities">Trách nhiệm (mỗi trách nhiệm một dòng):</label>
-                  <textarea id="t3-responsibilities" name="responsibilities" required></textarea>
-                </div>
-                <div class="t3-form-group">
-                  <label for="t3-correctAnswers">Đáp án đúng (mỗi đáp án một dòng, theo thứ tự người):</label>
-                  <textarea id="t3-correctAnswers" name="correctAnswers" required></textarea>
-                </div>
-              </form>
-            </div>
-          `
+            formHTML = createMatchingForm()
             break
           case "Ghi nhãn Bản đồ/Sơ đồ":
-            formHTML = `
-            <div class="t1-ielts-creator">
-              <form id="questionForm">
-                <div class="t1-form-group">
-                  <label for="questionType">Loại câu hỏi:</label>
-                  <select id="questionType" required>
-                    <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
-                    <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
-                  </select>
-                </div>
-                <div class="t1-form-group">
-                  <label for="instructions">Hướng dẫn:</label>
-                  <textarea id="instructions" rows="3" required></textarea>
-                </div>
-                <div class="t1-form-group">
-                  <label for="imageFile">Hình ảnh:</label>
-                  <input type="file" id="imageFile" name="imageFile" accept="image/*">
-                </div>
-                <div id="answerInputs">
-                  <!-- Answer inputs will be added here dynamically -->
-                </div>
-                <button type="button" onclick="addAnswerInput()">Thêm nhãn</button>
-              </form>
-            </div>
-          `
+            formHTML = createPlanMapDiagramForm()
             break
           case "Hoàn thành ghi chú":
-            formHTML = `
-            <div class="t2-listening-exercise-app">
-              <div class="t2-listening-exercise-container">
-                <div class="t2-listening-exercise-form-container">
-                  <form id="t2ListeningExerciseForm">
-                    <div class="t2-listening-exercise-form-group">
-                      <label for="t2ListeningExerciseInstructions">Hướng dẫn:</label>
-                      <input type="text" id="t2ListeningExerciseInstructions" name="instructions">
-                    </div>
-                    <div class="t2-listening-exercise-form-group">
-                      <label for="t2ListeningExerciseTopic">Chủ đề:</label>
-                      <input type="text" id="t2ListeningExerciseTopic" name="topic">
-                    </div>
-                    <div id="t2ListeningExerciseQuestionContainer">
-                      <!-- Questions will be added here dynamically -->
-                    </div>
-                  </form>
-                </div>
-              </div>
-            </div>
-          `
+            formHTML = createNoteCompletionForm()
             break
           case "Hoàn thành bảng/biểu mẫu":
-            formHTML = `
-            <div class="t6-ielts-listening-creator">
-              <div id="tableSection" class="t6-question-container">
-                <textarea id="tableInstruction" rows="2"></textarea>
-                <table id="fareTable">
-                  <tr>
-                    <th>Phương tiện</th>
-                    <th>Giá tiền mặt</th>
-                    <th>Giá thẻ</th>
-                    <th>Đáp án đúng</th>
-                    <th>Thao tác</th>
-                  </tr>
-                  <!-- Table rows will be added here dynamically -->
-                </table>
-              </div>
-            </div>
-          `
+            formHTML = createFormTableCompletionForm()
             break
           case "Hoàn thành lưu đồ":
-            formHTML = `
-            <div class="t7-ielts-flow-chart-creator">
-              <form id="teacherForm">
-                <label for="title">Tiêu đề:</label>
-                <input type="text" id="title" name="title" required>
-
-                <label for="instructions">Hướng dẫn:</label>
-                <textarea id="instructions" name="instructions" required></textarea>
-
-                <div id="questionForms">
-                  <div class="t7-question-form">
-                    <h3>Câu hỏi 1</h3>
-                    <label for="flowItems1">Các mục lưu đồ (mỗi mục một dòng, sử dụng ___ cho khoảng trống):</label>
-                    <textarea id="flowItems1" name="flowItems1" required></textarea>
-                    <label for="options1">Lựa chọn (mỗi lựa chọn một dòng):</label>
-                    <textarea id="options1" name="options1" required></textarea>
-                    <label for="correctAnswers1">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
-                    <input type="text" id="correctAnswers1" name="correctAnswers1" required>
-                  </div>
-                </div>
-              </form>
-            </div>
-          `
+            formHTML = createFlowChartCompletionForm()
             break
           default:
             formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
@@ -394,236 +257,481 @@ document.addEventListener("DOMContentLoaded", () => {
 
       switch (questionType) {
         case "Một đáp án":
-          const oneAnswerForm = questionDiv.querySelector(".t3-one-answer-form")
+          const oneAnswerForm = questionDiv.querySelector(".one-answer-form")
           if (oneAnswerForm) {
-            const questionText = oneAnswerForm.querySelector("#t3-questionText")
-            const options = oneAnswerForm.querySelector("#t3-options")
-            const correctAnswer = oneAnswerForm.querySelector("#t3-correctAnswer")
-
-            if (questionText) questionText.value = questionData.content[0] || ""
-            if (options) options.value = questionData.content.slice(1).join("\n") || ""
-            if (correctAnswer) correctAnswer.value = questionData.correctAnswers || ""
-
+            const questionInput = oneAnswerForm.querySelector("#question")
+            const optionsList = oneAnswerForm.querySelector("#options-list")
+            
+            if (questionInput) {
+              questionInput.value = questionData.content[0] || ""
+            }
+            
+            if (optionsList) {
+              // Xóa các tùy chọn mặc định
+              optionsList.innerHTML = ""
+              
+              // Thêm các tùy chọn từ dữ liệu câu hỏi
+              questionData.content.slice(1).forEach((option, index) => {
+                const optionItem = document.createElement("div")
+                optionItem.className = "option-item"
+                const isCorrect = option === questionData.correctAnswers
+                
+                optionItem.innerHTML = `
+                  <input type="text" name="option" value="${option}" required>
+                  <input type="radio" name="correctAnswer" value="${index}" ${isCorrect ? 'checked' : ''}>
+                  <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+                `
+                optionsList.appendChild(optionItem)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = optionItem.querySelector(".remove-option-btn")
+                removeBtn.addEventListener("click", () => {
+                  optionItem.remove()
+                })
+              })
+            }
+            
             console.log("Đã điền dữ liệu vào form Một đáp án")
           } else {
             console.warn("Không tìm thấy form Một đáp án")
           }
-          break
+          break;
+          
         case "Nhiều đáp án":
-          const multipleAnswerForm = questionDiv.querySelector("#t4-questionForm")
+          const multipleAnswerForm = questionDiv.querySelector(".multiple-answer-form")
           if (multipleAnswerForm) {
-            const questionText = multipleAnswerForm.querySelector("#t4-questionText")
-            const options = multipleAnswerForm.querySelector("#t4-options")
-            const correctAnswers = multipleAnswerForm.querySelector("#t4-correctAnswers")
-
-            if (questionText) questionText.value = questionData.content[0] || ""
-            if (options) options.value = questionData.content.slice(1).join("\n") || ""
-            if (correctAnswers)
-              correctAnswers.value = Array.isArray(questionData.correctAnswers)
-                ? questionData.correctAnswers.join(", ")
-                : questionData.correctAnswers || ""
-
+            const questionInput = multipleAnswerForm.querySelector("#question")
+            const optionsList = multipleAnswerForm.querySelector("#options-list")
+            
+            if (questionInput) {
+              questionInput.value = questionData.content[0] || ""
+            }
+            
+            if (optionsList) {
+              // Xóa các tùy chọn mặc định
+              optionsList.innerHTML = ""
+              
+              // Thêm các tùy chọn từ dữ liệu câu hỏi
+              questionData.content.slice(1).forEach((option, index) => {
+                const optionItem = document.createElement("div")
+                optionItem.className = "option-item"
+                const isCorrect = Array.isArray(questionData.correctAnswers) && 
+                                  questionData.correctAnswers.includes(option)
+                
+                optionItem.innerHTML = `
+                  <input type="text" name="option" value="${option}" required>
+                  <input type="checkbox" name="correctAnswer" value="${index}" ${isCorrect ? 'checked' : ''}>
+                  <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
+                `
+                optionsList.appendChild(optionItem)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = optionItem.querySelector(".remove-option-btn")
+                removeBtn.addEventListener("click", () => {
+                  optionItem.remove()
+                })
+              })
+            }
+            
             console.log("Đã điền dữ liệu vào form Nhiều đáp án")
           } else {
             console.warn("Không tìm thấy form Nhiều đáp án")
           }
-          break
+          break;
+          
         case "Ghép nối":
-          const matchingForm = questionDiv.querySelector("#t3-questionForm")
+          const matchingForm = questionDiv.querySelector(".matching-form")
           if (matchingForm) {
-            const title = matchingForm.querySelector("#t3-questionTitle")
-            const people = matchingForm.querySelector("#t3-people")
-            const responsibilities = matchingForm.querySelector("#t3-responsibilities")
-            const correctAnswers = matchingForm.querySelector("#t3-correctAnswers")
-
-            const midPoint = Math.ceil(questionData.content.length / 2)
-
-            if (title) title.value = questionData.content[0] || ""
-            if (people) people.value = questionData.content.slice(1, midPoint).join("\n") || ""
-            if (responsibilities) responsibilities.value = questionData.content.slice(midPoint).join("\n") || ""
-            if (correctAnswers)
-              correctAnswers.value = Array.isArray(questionData.correctAnswers)
-                ? questionData.correctAnswers.join("\n")
-                : questionData.correctAnswers || ""
-
+            const titleInput = matchingForm.querySelector("#title")
+            const itemsList = matchingForm.querySelector("#items-list")
+            const matchesList = matchingForm.querySelector("#matches-list")
+            
+            if (titleInput) {
+              titleInput.value = questionData.content[0] || ""
+            }
+            
+            if (itemsList && matchesList) {
+              // Xóa các mục mặc định
+              itemsList.innerHTML = ""
+              matchesList.innerHTML = ""
+              
+              const midPoint = Math.ceil((questionData.content.length - 1) / 2)
+              
+              // Thêm các mục từ dữ liệu câu hỏi
+              questionData.content.slice(1, midPoint + 1).forEach((item) => {
+                const itemRow = document.createElement("div")
+                itemRow.className = "item-row"
+                itemRow.innerHTML = `
+                  <input type="text" name="item" value="${item}" required>
+                  <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
+                `
+                itemsList.appendChild(itemRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = itemRow.querySelector(".remove-item-btn")
+                removeBtn.addEventListener("click", () => {
+                  itemRow.remove()
+                  updateMatchingAnswers(matchingForm)
+                })
+              })
+              
+              // Thêm các ghép nối từ dữ liệu câu hỏi
+              questionData.content.slice(midPoint + 1).forEach((match) => {
+                const matchRow = document.createElement("div")
+                matchRow.className = "match-row"
+                matchRow.innerHTML = `
+                  <input type="text" name="match" value="${match}" required>
+                  <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
+                `
+                matchesList.appendChild(matchRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = matchRow.querySelector(".remove-match-btn")
+                removeBtn.addEventListener("click", () => {
+                  matchRow.remove()
+                  updateMatchingAnswers(matchingForm)
+                })
+              })
+              
+              // Cập nhật danh sách đáp án
+              setTimeout(() => {
+                if (typeof updateMatchingAnswers === "function") {
+                  updateMatchingAnswers(matchingForm)
+                  
+                  // Đặt các đáp án đúng
+                  const answerSelects = matchingForm.querySelectorAll('select[name="matchingAnswer"]')
+                  if (answerSelects.length === questionData.correctAnswers.length) {
+                    answerSelects.forEach((select, index) => {
+                      const correctAnswer = questionData.correctAnswers[index]
+                      Array.from(select.options).forEach(option => {
+                        if (option.value === correctAnswer) {
+                          option.selected = true
+                        }
+                      })
+                    })
+                  }
+                }
+              }, 200)
+            }
+            
             console.log("Đã điền dữ liệu vào form Ghép nối")
           } else {
             console.warn("Không tìm thấy form Ghép nối")
           }
-          break
+          break;
+          
         case "Ghi nhãn Bản đồ/Sơ đồ":
-          const mapForm = questionDiv.querySelector("#questionForm")
+          const mapForm = questionDiv.querySelector(".plan-map-diagram-form")
           if (mapForm) {
-            const type = mapForm.querySelector("#questionType")
-            const instructions = mapForm.querySelector("#instructions")
-
-            if (type) type.value = questionData.content[0] || "map"
-            if (instructions) instructions.value = questionData.content[1] || ""
-
-            // Thêm hình ảnh nếu có
-            const imageContainer = document.createElement("div")
-            imageContainer.className = "t1-form-group"
-            imageContainer.innerHTML = `
-            <label for="imageFile">Hình ảnh đã tải lên:</label>
-            <img src="${questionData.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
-          `
-            mapForm.appendChild(imageContainer)
-
-            // Thêm các nhãn và đáp án
-            const answerInputs = mapForm.querySelector("#answerInputs") || document.createElement("div")
-            answerInputs.id = "answerInputs"
-            answerInputs.innerHTML = ""
-
-            for (let i = 0; i < questionData.content.slice(3).length; i++) {
-              const label = questionData.content[i + 3]
-              const answer = questionData.correctAnswers[i] || ""
-
-              const answerGroup = document.createElement("div")
-              answerGroup.className = "t1-form-group"
-              answerGroup.innerHTML = `
-              <label for="answer${i}">Nhãn ${i + 1}:</label>
-              <input type="text" id="answer${i}" value="${label}" required>
-              <label for="correctAnswer${i}">Đáp án đúng cho nhãn ${i + 1}:</label>
-              ${
-                questionData.content[0] === "map"
-                  ? `<select id="correctAnswer${i}" required>
-                    ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                      .map(
-                        (letter) =>
-                          `<option value="${letter}" ${answer === letter ? "selected" : ""}>${letter}</option>`,
-                      )
-                      .join("")}
-                  </select>`
-                  : `<input type="text" id="correctAnswer${i}" value="${answer}" required>`
+            const typeSelect = mapForm.querySelector("#type")
+            const instructionsInput = mapForm.querySelector("#instructions")
+            const imagePreview = mapForm.querySelector("#imagePreview")
+            const labelsContainer = mapForm.querySelector("#labels-container")
+            
+            if (typeSelect) {
+              typeSelect.value = questionData.content[0] || "map"
+              // Cập nhật giao diện dựa trên loại đã chọn
+              if (typeof updatePlanMapDiagramForm === "function") {
+                updatePlanMapDiagramForm(typeSelect)
               }
-            `
-              answerInputs.appendChild(answerGroup)
             }
-
-            if (!mapForm.querySelector("#answerInputs")) {
-              mapForm.appendChild(answerInputs)
+            
+            if (instructionsInput) {
+              instructionsInput.value = questionData.content[1] || ""
             }
-
-            console.log("Đã điền dữ liệu vào form Ghi nhãn Bản đồ/Sơ đồ")
-          } else {
-            console.warn("Không tìm thấy form Ghi nhãn Bản đồ/Sơ đồ")
+            
+            if (imagePreview && questionData.content[2]) {
+              imagePreview.innerHTML = `<img src="${questionData.content[2]}" alt="Preview" style="max-width: 200px; max-height: 200px;">`
+            }
+            
+            if (labelsContainer) {
+              // Xóa các nhãn mặc định
+              const existingLabels = labelsContainer.querySelectorAll(".label-row")
+              existingLabels.forEach(label => {
+                if (label !== existingLabels[0]) { // Giữ lại hàng đầu tiên
+                  label.remove()
+                }
+              })
+              
+              // Cập nhật hàng đầu tiên nếu có
+              const firstLabelRow = labelsContainer.querySelector(".label-row")
+              if (firstLabelRow && questionData.content.length > 3) {
+                const labelInput = firstLabelRow.querySelector('input[name="label"]')
+                if (labelInput) {
+                  labelInput.value = questionData.content[3] || ""
+                }
+                
+                const type = questionData.content[0]
+                if (type === "map") {
+                  const answerSelect = firstLabelRow.querySelector('select[name="answer"]')
+                  if (answerSelect && questionData.correctAnswers.length > 0) {
+                    answerSelect.value = questionData.correctAnswers[0] || ""
+                  }
+                } else {
+                  const answerInput = firstLabelRow.querySelector('input[name="shipAnswer"]')
+                  if (answerInput && questionData.correctAnswers.length > 0) {
+                    answerInput.value = questionData.correctAnswers[0] || ""
+                  }
+                }
+              }
+              
+              // Thêm các nhãn bổ sung
+              for (let i = 4; i < questionData.content.length; i++) {
+                const label = questionData.content[i]
+                const answer = questionData.correctAnswers[i - 3] || ""
+                const type = questionData.content[0]
+                
+                const addLabelBtn = mapForm.querySelector(".add-label-btn")
+                if (addLabelBtn) {
+                  // Kích hoạt nút thêm nhãn để tạo hàng mới
+                  addLabelBtn.click()
+                  
+                  // Cập nhật giá trị cho hàng vừa thêm
+                  const labelRows = labelsContainer.querySelectorAll(".label-row")
+                  const newRow = labelRows[labelRows.length - 1]
+                  
+                  if (newRow) {
+                    const labelInput = newRow.querySelector('input[name="label"]')
+                    if (labelInput) {
+                      labelInput.value = label
+                    }
+                    
+                    if (type === "map") {
+                      const answerSelect = newRow.querySelector('select[name="answer"]')
+                      if (answerSelect) {
+                        answerSelect.value = answer
+                      }
+                    } else {
+                      const answerInput = newRow.querySelector('input[name="shipAnswer"]')
+                      if (answerInput) {
+                        answerInput.value = answer
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
-          break
+          
+          console.log("Đã điền dữ liệu vào form Ghi nhãn Bản đồ/Sơ đồ")
+        } else 
+          console.warn("Không tìm thấy form Ghi nhãn Bản đồ/Sơ đồ")
+        break;
+          
         case "Hoàn thành ghi chú":
-          const noteForm = questionDiv.querySelector("#t2ListeningExerciseForm")
+          const noteForm = questionDiv.querySelector(".note-completion-form")
           if (noteForm) {
-            const instructions = noteForm.querySelector("#t2ListeningExerciseInstructions")
-            const topic = noteForm.querySelector("#t2ListeningExerciseTopic")
-
-            if (instructions) instructions.value = questionData.content[0] || ""
-            if (topic) topic.value = questionData.content[1] || ""
-
-            // Thêm các ghi chú và đáp án
-            const questionContainer =
-              noteForm.querySelector("#t2ListeningExerciseQuestionContainer") || document.createElement("div")
-            questionContainer.id = "t2ListeningExerciseQuestionContainer"
-            questionContainer.innerHTML = ""
-
-            for (let i = 0; i < questionData.content.slice(2).length; i++) {
-              const note = questionData.content[i + 2]
-              const answer = questionData.correctAnswers[i] || ""
-
-              const noteGroup = document.createElement("div")
-              noteGroup.className = "t2-listening-exercise-form-group"
-              noteGroup.innerHTML = `
-              <label for="t2ListeningExerciseQuestion${i + 1}">Câu hỏi ${i + 1}:</label>
-              <div class="t2-listening-exercise-answer-fields">
-                <textarea id="t2ListeningExerciseQuestion${i + 1}" name="question${i + 1}">${note}</textarea>
-              </div>
-              <div class="t2-listening-exercise-correct-answers" id="t2ListeningExerciseCorrectAnswers${i + 1}">
-                <span class="t2-listening-exercise-correct-answer-label">Đáp án đúng:</span>
-                <input type="text" class="t2-listening-exercise-correct-answer-input" value="${answer}">
-              </div>
-            `
-              questionContainer.appendChild(noteGroup)
+            const instructionsInput = noteForm.querySelector("#instructions")
+            const topicInput = noteForm.querySelector("#topic")
+            const notesContainer = noteForm.querySelector("#notes-container")
+            const noteAnswersList = noteForm.querySelector("#note-answers-list")
+            
+            if (instructionsInput) {
+              instructionsInput.value = questionData.content[0] || ""
             }
-
-            if (!noteForm.querySelector("#t2ListeningExerciseQuestionContainer")) {
-              noteForm.appendChild(questionContainer)
+            
+            if (topicInput) {
+              topicInput.value = questionData.content[1] || ""
             }
-
+            
+            if (notesContainer) {
+              // Xóa các ghi chú mặc định
+              notesContainer.innerHTML = ""
+              
+              // Thêm các ghi chú từ dữ liệu câu hỏi\
+              questionData.content.slice(2).forEach((note, index) => {
+                const noteRow = document.createElement("div")
+                noteRow.className = "note-row"
+                noteRow.innerHTML = `
+                  <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+                  <textarea name="note" required>${note}</textarea>
+                  <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
+                `
+                notesContainer.appendChild(noteRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = noteRow.querySelector(".remove-note-btn")
+                removeBtn.addEventListener("click", () => {
+                  noteRow.remove()
+                  updateNoteAnswers(noteForm)
+                })
+              })
+            }
+            
+            if (noteAnswersList) {
+              // Xóa các đáp án mặc định
+              noteAnswersList.innerHTML = ""
+              
+              // Thêm các đáp án từ dữ liệu câu hỏi
+              questionData.correctAnswers.forEach((answer, index) => {
+                const answerRow = document.createElement("div")
+                answerRow.className = "answer-row"
+                answerRow.innerHTML = `
+                  <span class="answer-label">Đáp án ${index + 1}:</span>
+                  <input type="text" name="noteAnswer" value="${answer}" required>
+                  <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
+                `
+                noteAnswersList.appendChild(answerRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = answerRow.querySelector(".remove-answer-btn")
+                removeBtn.addEventListener("click", () => {
+                  answerRow.remove()
+                })
+              })
+            }
+            
             console.log("Đã điền dữ liệu vào form Hoàn thành ghi chú")
           } else {
             console.warn("Không tìm thấy form Hoàn thành ghi chú")
           }
-          break
+          break;
+          
         case "Hoàn thành bảng/biểu mẫu":
-          const tableSection = questionDiv.querySelector("#tableSection")
-          if (tableSection) {
-            const instruction = tableSection.querySelector("#tableInstruction")
-            const table = tableSection.querySelector("#fareTable")
-
-            if (instruction) instruction.value = questionData.content[0] || ""
-
-            // Thêm các hàng vào bảng
-            const tbody = table.querySelector("tbody") || table
-            tbody.innerHTML = `
-            <tr>
-              <th>Phương tiện</th>
-              <th>Giá tiền mặt</th>
-              <th>Giá thẻ</th>
-              <th>Đáp án đúng</th>
-              <th>Thao tác</th>
-            </tr>
-          `
-
-            const rowCount = Math.floor((questionData.content.length - 1) / 3)
-            for (let i = 0; i < rowCount; i++) {
-              const startIdx = 1 + i * 3
-              const row = document.createElement("tr")
-              row.innerHTML = `
-              <td><input type="text" value="${questionData.content[startIdx] || ""}"></td>
-              <td><input type="text" value="${questionData.content[startIdx + 1] || ""}"></td>
-              <td><input type="text" value="${questionData.content[startIdx + 2] || ""}"></td>
-              <td><input type="text" class="t6-correct-answer-input" value="${questionData.correctAnswers[i] || ""}"></td>
-              <td><button class="t6-delete-btn">Xóa</button></td>
-            `
-              tbody.appendChild(row)
+          const tableForm = questionDiv.querySelector(".form-table-completion-form")
+          if (tableForm) {
+            const instructionsInput = tableForm.querySelector("#instructions")
+            const formTable = tableForm.querySelector("#formTable tbody")
+            
+            if (instructionsInput) {
+              instructionsInput.value = questionData.content[0] || ""
             }
-
+            
+            if (formTable) {
+              // Xóa các hàng mặc định
+              while (formTable.children.length > 1) { // Giữ lại hàng tiêu đề
+                formTable.removeChild(formTable.lastChild)
+              }
+              
+              // Thêm các hàng từ dữ liệu câu hỏi
+              const rowCount = Math.floor((questionData.content.length - 1) / 3)
+              for (let i = 0; i < rowCount; i++) {
+                const startIdx = 1 + i * 3
+                const row = document.createElement("tr")
+                row.innerHTML = `
+                  <td><input type="text" name="cell" value="${questionData.content[startIdx] || ""}" required></td>
+                  <td><input type="text" name="cell" value="${questionData.content[startIdx + 1] || ""}" required></td>
+                  <td><input type="text" name="cell" value="${questionData.content[startIdx + 2] || ""}" required></td>
+                  <td><input type="text" name="tableAnswer" value="${questionData.correctAnswers[i] || ""}" required></td>
+                  <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
+                `
+                formTable.appendChild(row)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = row.querySelector(".remove-row-btn")
+                removeBtn.addEventListener("click", () => {
+                  row.remove()
+                })
+              }
+            }
+            
             console.log("Đã điền dữ liệu vào form Hoàn thành bảng/biểu mẫu")
           } else {
             console.warn("Không tìm thấy form Hoàn thành bảng/biểu mẫu")
           }
-          break
+          break;
+          
         case "Hoàn thành lưu đồ":
-          const flowForm = questionDiv.querySelector("#teacherForm")
+          const flowForm = questionDiv.querySelector(".flow-chart-completion-form")
           if (flowForm) {
-            const title = flowForm.querySelector("#title")
-            const instructions = flowForm.querySelector("#instructions")
-            const flowItems = flowForm.querySelector("#flowItems1")
-            const options = flowForm.querySelector("#options1")
-            const correctAnswers = flowForm.querySelector("#correctAnswers1")
-
-            if (title) title.value = questionData.content[0] || ""
-            if (instructions) instructions.value = questionData.content[1] || ""
-
-            const flowItemCount = Math.floor((questionData.content.length - 2) / 2)
-
-            if (flowItems) flowItems.value = questionData.content.slice(2, 2 + flowItemCount).join("\n") || ""
-            if (options) options.value = questionData.content.slice(2 + flowItemCount).join("\n") || ""
-            if (correctAnswers)
-              correctAnswers.value = Array.isArray(questionData.correctAnswers)
-                ? questionData.correctAnswers.join(", ")
-                : questionData.correctAnswers || ""
-
+            const titleInput = flowForm.querySelector("#title")
+            const instructionsInput = flowForm.querySelector("#instructions")
+            const flowItemsList = flowForm.querySelector("#flow-items-list")
+            const flowOptionsList = flowForm.querySelector("#flow-options-list")
+            const flowAnswersList = flowForm.querySelector("#flow-answers-list")
+            
+            if (titleInput) {
+              titleInput.value = questionData.content[0] || ""
+            }
+            
+            if (instructionsInput) {
+              instructionsInput.value = questionData.content[1] || ""
+            }
+            
+            if (flowItemsList) {
+              // Xóa các mục mặc định
+              flowItemsList.innerHTML = ""
+              
+              const flowItemCount = Math.floor((questionData.content.length - 2) / 2)
+              
+              // Thêm các mục từ dữ liệu câu hỏi
+              questionData.content.slice(2, 2 + flowItemCount).forEach((item) => {
+                const itemRow = document.createElement("div")
+                itemRow.className = "flow-item-row"
+                itemRow.innerHTML = `
+                  <input type="text" name="flowItem" value="${item}" required>
+                  <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
+                `
+                flowItemsList.appendChild(itemRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = itemRow.querySelector(".remove-flow-item-btn")
+                removeBtn.addEventListener("click", () => {
+                  itemRow.remove()
+                  updateFlowAnswers(flowForm)
+                })
+              })
+            }
+            
+            if (flowOptionsList) {
+              // Xóa các tùy chọn mặc định
+              flowOptionsList.innerHTML = ""
+              
+              const flowItemCount = Math.floor((questionData.content.length - 2) / 2)
+              
+              // Thêm các tùy chọn từ dữ liệu câu hỏi
+              questionData.content.slice(2 + flowItemCount).forEach((option) => {
+                const optionRow = document.createElement("div")
+                optionRow.className = "flow-option-row"
+                optionRow.innerHTML = `
+                  <input type="text" name="flowOption" value="${option}" required>
+                  <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
+                `
+                flowOptionsList.appendChild(optionRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = optionRow.querySelector(".remove-flow-option-btn")
+                removeBtn.addEventListener("click", () => {
+                  optionRow.remove()
+                })
+              })
+            }
+            
+            if (flowAnswersList) {
+              // Xóa các đáp án mặc định
+              flowAnswersList.innerHTML = ""
+              
+              // Thêm các đáp án từ dữ liệu câu hỏi
+              questionData.correctAnswers.forEach((answer, index) => {
+                const answerRow = document.createElement("div")
+                answerRow.className = "flow-answer-row"
+                answerRow.innerHTML = `
+                  <span class="answer-label">Đáp án ${index + 1}:</span>
+                  <input type="text" name="flowAnswer" value="${answer}" required>
+                  <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
+                `
+                flowAnswersList.appendChild(answerRow)
+                
+                // Khởi tạo nút xóa
+                const removeBtn = answerRow.querySelector(".remove-flow-answer-btn")
+                removeBtn.addEventListener("click", () => {
+                  answerRow.remove()
+                })
+              })
+            }
+            
             console.log("Đã điền dữ liệu vào form Hoàn thành lưu đồ")
           } else {
             console.warn("Không tìm thấy form Hoàn thành lưu đồ")
           }
-          break
+          break;
+          
         default:
           console.warn("Không hỗ trợ loại câu hỏi:", questionType)
       }
-    } catch (error) {
+    } catch (error) 
       console.error("Lỗi khi điền dữ liệu vào form:", error)
       window.showNotification("Đã xảy ra lỗi khi điền dữ liệu vào form: " + error.message, "error")
-    }
   }
 
   // Thêm hàm mới để khởi tạo các chức năng của form
@@ -696,11 +804,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Código existente...
+// Código existente...
 })
 
 // Add these fallback functions to ensure edit functions are globally available
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () =>
+{
   // Ensure edit functions are available globally
   window.toggleQuestionEdit =
     window.toggleQuestionEdit ||
@@ -785,14 +894,8 @@ document.addEventListener("DOMContentLoaded", () => {
         window.showNotification("Đã hủy chỉnh sửa", "info")
       }
     })
-})
-
-// Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
-document.addEventListener("DOMContentLoaded", () => {
-        window.showNotification("Đã hủy chỉnh sửa", "info")
-      }
-})
-})
+}
+)
 
 // Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
 document.addEventListener("DOMContentLoaded", () =>
@@ -841,7 +944,6 @@ document.addEventListener("DOMContentLoaded", () =>
             icon = "fa-map-marker-alt"
             break
           case "Hoàn thành ghi chú":
-            \
             icon = "fa-sticky-note"
             break
           case "Hoàn thành bảng/biểu mẫu":
@@ -2808,4 +2910,105 @@ window.getIconForType = (type) => {
     "Hoàn thành lưu đồ": '<i class="fas fa-project-diagram"></i>',
   }
   return icons[type] || '<i class="fas fa-question"></i>'
+}
+
+// Thêm hàm trợ giúp để cập nhật đáp án ghép nối
+function updateMatchingAnswers(matchingForm) {
+  const itemsList = matchingForm.querySelector("#items-list")
+  const matchesList = matchingForm.querySelector("#matches-list")
+  const matchingAnswersList = matchingForm.querySelector("#matching-answers-list")
+  const itemsTitle = matchingForm.querySelector("#itemsTitle")
+
+  if (itemsList && matchesList && matchingAnswersList) {
+    matchingAnswersList.innerHTML = ""
+    const itemCount = itemsList.children.length
+    const matchOptions = Array.from(matchesList.querySelectorAll('input[name="match"]')).map((input) => input.value)
+    const currentItemsTitle = itemsTitle ? itemsTitle.value || "Danh sách câu hỏi" : "Danh sách câu hỏi"
+
+    for (let i = 0; i < itemCount; i++) {
+      const answerRow = document.createElement("div")
+      answerRow.className = "answer-row"
+
+      // Lấy nội dung câu hỏi để hiển thị
+      const itemText = itemsList.children[i].querySelector('input[name="item"]').value || `Câu hỏi ${i + 1}`
+
+      // Tạo dropdown để chọn từ khóa nối
+      answerRow.innerHTML = `
+        <span class="item-label">${itemText}:</span>
+        <select name="matchingAnswer" required>
+          <option value="">-- Chọn từ khóa nối --</option>
+          ${matchOptions.map((match, idx) => `<option value="${match}">${match}</option>`).join("")}
+        </select>
+        <button type="button" class="preview-match-btn" title="Xem trước"><i class="fas fa-eye"></i></button>
+      `
+      matchingAnswersList.appendChild(answerRow)
+
+      // Thêm sự kiện xem trước
+      const previewBtn = answerRow.querySelector(".preview-match-btn")
+      previewBtn.addEventListener("click", () => {
+        const selectedMatch = answerRow.querySelector("select").value
+        if (selectedMatch) {
+          window.showNotification(`Ghép nối: "${itemText}" → "${selectedMatch}"`, "info")
+        } else {
+          window.showNotification("Vui lòng chọn từ khóa nối trước", "warning")
+        }
+      })
+    }
+  }
+}
+
+// Thêm hàm trợ giúp để cập nhật đáp án ghi chú
+function updateNoteAnswers(noteForm) {
+  const notesContainer = noteForm.querySelector("#notes-container")
+  const noteAnswersList = noteForm.querySelector("#note-answers-list")
+
+  if (notesContainer && noteAnswersList) {
+    noteAnswersList.innerHTML = ""
+    const noteCount = notesContainer.children.length
+
+    for (let i = 0; i < noteCount; i++) {
+      const answerRow = document.createElement("div")
+      answerRow.className = "answer-row"
+      answerRow.innerHTML = `
+        <span class="answer-label">Đáp án ${i + 1}:</span>
+        <input type="text" name="noteAnswer" required>
+        <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
+      `
+      noteAnswersList.appendChild(answerRow)
+
+      // Khởi tạo nút xóa cho đáp án
+      const removeButton = answerRow.querySelector(".remove-answer-btn")
+      removeButton.addEventListener("click", () => {
+        answerRow.remove()
+      })
+    }
+  }
+}
+
+// Thêm hàm trợ giúp để cập nhật đáp án lưu đồ
+function updateFlowAnswers(flowForm) {
+  const flowItemsList = flowForm.querySelector("#flow-items-list")
+  const flowAnswersList = flowForm.querySelector("#flow-answers-list")
+
+  if (flowItemsList && flowAnswersList) {
+    flowAnswersList.innerHTML = ""
+    const itemCount = flowItemsList.children.length
+
+    for (let i = 0; i < itemCount; i++) {
+      const answerRow = document.createElement("div")
+      answerRow.className = "flow-answer-row"
+      answerRow.innerHTML = `
+        <span class="answer-label">Đáp án ${i + 1}:</span>
+        <input type="text" name="flowAnswer" required>
+        <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
+      `
+      flowAnswersList.appendChild(answerRow)
+
+      // Khởi tạo nút xóa cho đáp án
+      const removeButton = answerRow.querySelector(".remove-flow-answer-btn")
+      removeButton.addEventListener("click", () => {
+        answerRow.remove()
+      })
+    }
+  }
 }
