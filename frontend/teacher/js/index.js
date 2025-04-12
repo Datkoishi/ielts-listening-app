@@ -129,6 +129,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Cập nhật hàm setQuestionEditMode để hiển thị form giống như khi tạo câu hỏi mới
   window.setQuestionEditMode = (questionDiv) => {
     try {
+      console.log("Đang chuyển sang chế độ chỉnh sửa...")
+
       // Lấy dữ liệu câu hỏi
       const partElement = questionDiv.closest(".part")
       const questions = Array.from(partElement.querySelectorAll(".question"))
@@ -137,6 +139,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (questionIndex !== -1 && window.test && window.test[`part${window.currentPart}`]) {
         const questionData = window.test[`part${window.currentPart}`][questionIndex]
         const questionType = questionData.type
+
+        console.log("Dữ liệu câu hỏi cần chỉnh sửa:", questionData)
 
         // Lưu lại nội dung cũ để có thể khôi phục khi hủy
         questionDiv.setAttribute("data-original-content", questionDiv.innerHTML)
@@ -155,278 +159,166 @@ document.addEventListener("DOMContentLoaded", () => {
         <button class="delete-question" onclick="deleteQuestion(this)"><i class="fas fa-trash"></i></button>
       `
 
-        // Gọi lại chính xác cùng một đoạn code từ addQuestionDirectly để tạo form
+        // Lấy form gốc từ form-handlers.js
         let formHTML = ""
         switch (questionType) {
           case "Một đáp án":
             formHTML = `
-    <div class="one-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" required>
-      <div class="options-container">
-        <label>Lựa chọn:</label>
-        <div id="options-list">
-          <div class="option-item">
-            <input type="text" name="option" required placeholder="Lựa chọn 1">
-            <input type="radio" name="correctAnswer" value="0" checked>
-            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="option-item">
-            <input type="text" name="option" required placeholder="Lựa chọn 2">
-            <input type="radio" name="correctAnswer" value="1">
-            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-          </div>
-        </div>
-        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
+            <div class="t3-question-creator">
+              <form class="t3-one-answer-form">
+                <div class="t3-form-group">
+                  <label for="t3-questionText">Nội dung câu hỏi:</label>
+                  <input type="text" id="t3-questionText" name="questionText" required>
+                </div>
+                <div class="t3-form-group">
+                  <label for="t3-options">Lựa chọn (mỗi lựa chọn một dòng):</label>
+                  <textarea id="t3-options" name="options" rows="4" required></textarea>
+                </div>
+                <div class="t3-form-group">
+                  <label for="t3-correctAnswer">Đáp án đúng:</label>
+                  <input type="text" id="t3-correctAnswer" name="correctAnswer" required>
+                </div>
+              </form>
+            </div>
+          `
             break
           case "Nhiều đáp án":
             formHTML = `
-    <div class="multiple-answer-form">
-      <label for="question">Câu hỏi:</label>
-      <input type="text" id="question" name="question" required>
-      <div class="options-container">
-        <label>Lựa chọn:</label>
-        <div id="options-list">
-          <div class="option-item">
-            <input type="text" name="option" required placeholder="Lựa chọn 1">
-            <input type="checkbox" name="correctAnswer" value="0">
-            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="option-item">
-            <input type="text" name="option" required placeholder="Lựa chọn 2">
-            <input type="checkbox" name="correctAnswer" value="1">
-            <button type="button" class="remove-option-btn"><i class="fas fa-times"></i></button>
-          </div>
-        </div>
-        <button type="button" class="add-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-    </div>
-  `
+            <div class="t4-container">
+              <form id="t4-questionForm">
+                <div class="t4-form-group">
+                  <label for="t4-questionText">Nội dung câu hỏi:</label>
+                  <input type="text" id="t4-questionText" name="questionText" required>
+                </div>
+                <div class="t4-form-group">
+                  <label for="t4-options">Lựa chọn (mỗi lựa chọn một dòng):</label>
+                  <textarea id="t4-options" name="options" rows="4" required></textarea>
+                </div>
+                <div class="t4-form-group">
+                  <label for="t4-correctAnswers">Đáp án đúng (các số cách nhau bằng dấu phẩy):</label>
+                  <input type="text" id="t4-correctAnswers" name="correctAnswers" required>
+                </div>
+              </form>
+            </div>
+          `
             break
           case "Ghép nối":
             formHTML = `
-<div class="matching-form">
-  <div class="form-group">
-    <label for="title">Tiêu đề bài ghép nối:</label>
-    <input type="text" id="title" name="title" required placeholder="Ví dụ: Ghép nối người với công việc">
-  </div>
-  
-  <div class="matching-container">
-    <div class="matching-items">
-      <div class="section-title-container">
-        <input type="text" class="section-title-input" id="itemsTitle" name="itemsTitle" value="Danh sách câu hỏi" placeholder="Đặt tên cho danh sách câu hỏi">
-        <i class="fas fa-question section-icon"></i>
-      </div>
-      <div id="items-list">
-        <div class="item-row">
-          <input type="text" name="item" required placeholder="Câu hỏi 1">
-          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="item-row">
-          <input type="text" name="item" required placeholder="Câu hỏi 2">
-          <button type="button" class="remove-item-btn"><i class="fas fa-times"></i></button>
-        </div>
-      </div>
-      <button type="button" class="add-item-btn"><i class="fas fa-plus"></i> Thêm câu hỏi</button>
-    </div>
-    
-    <div class="matching-matches">
-      <div class="section-title-container">
-        <input type="text" class="section-title-input" id="matchesTitle" name="matchesTitle" value="Danh sách từ khóa nối" placeholder="Đặt tên cho danh sách từ khóa">
-        <i class="fas fa-link section-icon"></i>
-      </div>
-      <div id="matches-list">
-        <div class="match-row">
-          <input type="text" name="match" required placeholder="Từ khóa nối 1">
-          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-        </div>
-        <div class="match-row">
-          <input type="text" name="match" required placeholder="Từ khóa nối 2">
-          <button type="button" class="remove-match-btn"><i class="fas fa-times"></i></button>
-        </div>
-      </div>
-      <button type="button" class="add-match-btn"><i class="fas fa-plus"></i> Thêm từ khóa nối</button>
-    </div>
-  </div>
-  
-  <div class="matching-answers">
-    <h4><i class="fas fa-exchange-alt"></i> Thiết lập ghép nối</h4>
-    <p class="matching-help">Chọn từ khóa nối tương ứng với mỗi câu hỏi:</p>
-    <div id="matching-answers-list">
-      <!-- Sẽ được điền động bằng JavaScript -->
-    </div>
-  </div>
-  
-  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-</div>
-`
+            <div class="t3-question-creator">
+              <form id="t3-questionForm">
+                <div class="t3-form-group">
+                  <label for="t3-questionTitle">Tiêu đề câu hỏi:</label>
+                  <input type="text" id="t3-questionTitle" name="questionTitle" required>
+                </div>
+                <div class="t3-form-group">
+                  <label for="t3-people">Người (mỗi người một dòng):</label>
+                  <textarea id="t3-people" name="people" required></textarea>
+                </div>
+                <div class="t3-form-group">
+                  <label for="t3-responsibilities">Trách nhiệm (mỗi trách nhiệm một dòng):</label>
+                  <textarea id="t3-responsibilities" name="responsibilities" required></textarea>
+                </div>
+                <div class="t3-form-group">
+                  <label for="t3-correctAnswers">Đáp án đúng (mỗi đáp án một dòng, theo thứ tự người):</label>
+                  <textarea id="t3-correctAnswers" name="correctAnswers" required></textarea>
+                </div>
+              </form>
+            </div>
+          `
             break
           case "Ghi nhãn Bản đồ/Sơ đồ":
             formHTML = `
-<div class="plan-map-diagram-form">
-  <div class="form-group">
-    <label for="type">Loại câu hỏi:</label>
-    <select id="type" name="type" required onchange="updatePlanMapDiagramForm(this)">
-      <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
-      <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
-    </select>
-    <p class="form-help-text" id="typeHelpText">
-      <i class="fas fa-info-circle"></i> 
-      <span>Ghi nhãn Bản đồ: Người dùng chọn đáp án từ các lựa chọn có sẵn (A-H)</span>
-    </p>
-  </div>
-  
-  <div class="form-group">
-    <label for="instructions">Hướng dẫn:</label>
-    <textarea id="instructions" name="instructions" rows="3" required placeholder="Nhập hướng dẫn cho câu hỏi"></textarea>
-  </div>
-  
-  <div class="form-group">
-    <label for="image">Hình ảnh:</label>
-    <input type="file" id="image" name="image" accept="image/*" required>
-    <div id="imagePreview" class="image-preview"></div>
-  </div>
-  
-  <div id="labels-container">
-    <h4><i class="fas fa-tags"></i> Danh sách nhãn và đáp án</h4>
-    <div class="label-row">
-      <div class="label-input-group">
-        <label for="label1">Nhãn 1:</label>
-        <input type="text" id="label1" name="label" required placeholder="Nhập nhãn">
-      </div>
-      <div class="answer-input-group map-answer-group">
-        <label for="answer1">Đáp án:</label>
-        <select id="answer1" name="answer" required>
-          <option value="">-- Chọn --</option>
-          <option value="A">A</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="D">D</option>
-          <option value="E">E</option>
-          <option value="F">F</option>
-          <option value="G">G</option>
-          <option value="H">H</option>
-        </select>
-      </div>
-      <div class="answer-input-group ship-answer-group" style="display: none;">
-        <label for="shipAnswer1">Đáp án:</label>
-        <input type="text" id="shipAnswer1" name="shipAnswer" required placeholder="Nhập đáp án">
-      </div>
-      <button type="button" class="remove-label-btn"><i class="fas fa-times"></i></button>
-    </div>
-  </div>
-  
-  <button type="button" class="add-label-btn"><i class="fas fa-plus"></i> Thêm nhãn</button>
-  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-</div>
-`
+            <div class="t1-ielts-creator">
+              <form id="questionForm">
+                <div class="t1-form-group">
+                  <label for="questionType">Loại câu hỏi:</label>
+                  <select id="questionType" required>
+                    <option value="map">Ghi nhãn Bản đồ (Chọn từ A-H)</option>
+                    <option value="ship">Sơ đồ Tàu (Nhập đáp án)</option>
+                  </select>
+                </div>
+                <div class="t1-form-group">
+                  <label for="instructions">Hướng dẫn:</label>
+                  <textarea id="instructions" rows="3" required></textarea>
+                </div>
+                <div class="t1-form-group">
+                  <label for="imageFile">Hình ảnh:</label>
+                  <input type="file" id="imageFile" name="imageFile" accept="image/*">
+                </div>
+                <div id="answerInputs">
+                  <!-- Answer inputs will be added here dynamically -->
+                </div>
+                <button type="button" onclick="addAnswerInput()">Thêm nhãn</button>
+              </form>
+            </div>
+          `
             break
           case "Hoàn thành ghi chú":
             formHTML = `
-<div class="note-completion-form">
-  <label for="instructions">Hướng dẫn:</label>
-  <input type="text" id="instructions" name="instructions" value="Hoàn thành ghi chú. Viết MỘT TỪ VÀ/HOẶC MỘT SỐ vào mỗi khoảng trống." required>
-  <label for="topic">Chủ đề:</label>
-  <input type="text" id="topic" name="topic" required>
-  <div id="notes-container">
-    <div class="note-row">
-      <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-      <textarea name="note" required></textarea>
-      <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
-    </div>
-  </div>
-  <button type="button" class="add-note-btn"><i class="fas fa-plus"></i> Thêm ghi chú</button>
-  <div id="answers-container">
-    <label>Đáp án đúng (theo thứ tự [ANSWER]):</label>
-    <div id="note-answers-list">
-      <div class="answer-row">
-        <span class="answer-label">Đáp án 1:</span>
-        <input type="text" name="noteAnswer" required>
-        <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
-      </div>
-    </div>
-    <button type="button" class="add-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
-  </div>
-  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-</div>
-`
+            <div class="t2-listening-exercise-app">
+              <div class="t2-listening-exercise-container">
+                <div class="t2-listening-exercise-form-container">
+                  <form id="t2ListeningExerciseForm">
+                    <div class="t2-listening-exercise-form-group">
+                      <label for="t2ListeningExerciseInstructions">Hướng dẫn:</label>
+                      <input type="text" id="t2ListeningExerciseInstructions" name="instructions">
+                    </div>
+                    <div class="t2-listening-exercise-form-group">
+                      <label for="t2ListeningExerciseTopic">Chủ đề:</label>
+                      <input type="text" id="t2ListeningExerciseTopic" name="topic">
+                    </div>
+                    <div id="t2ListeningExerciseQuestionContainer">
+                      <!-- Questions will be added here dynamically -->
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          `
             break
           case "Hoàn thành bảng/biểu mẫu":
             formHTML = `
-<div class="form-table-completion-form">
-  <label for="instructions">Hướng dẫn:</label>
-  <input type="text" id="instructions" name="instructions" value="Hoàn thành bảng. Viết KHÔNG QUÁ MỘT TỪ VÀ/HOẶC MỘT SỐ cho mỗi khoảng trống." required>
-  <table id="formTable">
-    <thead>
-      <tr>
-        <th>Cột 1</th>
-        <th>Cột 2</th>
-        <th>Cột 3</th>
-        <th>Đáp án</th>
-        <th>Thao tác</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td><input type="text" name="cell" required></td>
-        <td><input type="text" name="cell" required></td>
-        <td><input type="text" name="cell" required></td>
-        <td><input type="text" name="tableAnswer" required></td>
-        <td><button type="button" class="remove-row-btn"><i class="fas fa-times"></i></button></td>
-      </tr>
-    </tbody>
-  </table>
-  <button type="button" class="add-row-btn"><i class="fas fa-plus"></i> Thêm hàng</button>
-  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-</div>
-`
+            <div class="t6-ielts-listening-creator">
+              <div id="tableSection" class="t6-question-container">
+                <textarea id="tableInstruction" rows="2"></textarea>
+                <table id="fareTable">
+                  <tr>
+                    <th>Phương tiện</th>
+                    <th>Giá tiền mặt</th>
+                    <th>Giá thẻ</th>
+                    <th>Đáp án đúng</th>
+                    <th>Thao tác</th>
+                  </tr>
+                  <!-- Table rows will be added here dynamically -->
+                </table>
+              </div>
+            </div>
+          `
             break
           case "Hoàn thành lưu đồ":
             formHTML = `
-<div class="flow-chart-completion-form">
-  <label for="title">Tiêu đề:</label>
-  <input type="text" id="title" name="title" required>
-  <label for="instructions">Hướng dẫn:</label>
-  <input type="text" id="instructions" name="instructions" required>
-  <div id="flow-items-container">
-    <label>Mục (sử dụng ___ cho chỗ trống):</label>
-    <div id="flow-items-list">
-      <div class="flow-item-row">
-        <input type="text" name="flowItem" required>
-        <button type="button" class="remove-flow-item-btn"><i class="fas fa-times"></i></button>
-      </div>
-    </div>
-    <button type="button" class="add-flow-item-btn"><i class="fas fa-plus"></i> Thêm mục</button>
-  </div>
-  <div id="flow-options-container">
-    <label>Lựa chọn:</label>
-    <div id="flow-options-list">
-      <div class="flow-option-row">
-        <input type="text" name="flowOption" required>
-        <button type="button" class="remove-flow-option-btn"><i class="fas fa-times"></i></button>
-      </div>
-    </div>
-    <button type="button" class="add-flow-option-btn"><i class="fas fa-plus"></i> Thêm lựa chọn</button>
-  </div>
-  <div id="flow-answers-container">
-    <label>Đáp án đúng (theo thứ tự khoảng trống):</label>
-    <div id="flow-answers-list">
-      <div class="flow-answer-row">
-        <span class="answer-label">Đáp án 1:</span>
-        <input type="text" name="flowAnswer" required>
-        <button type="button" class="remove-flow-answer-btn"><i class="fas fa-times"></i></button>
-      </div>
-    </div>
-    <button type="button" class="add-flow-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
-  </div>
-  <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
-</div>
-`
+            <div class="t7-ielts-flow-chart-creator">
+              <form id="teacherForm">
+                <label for="title">Tiêu đề:</label>
+                <input type="text" id="title" name="title" required>
+
+                <label for="instructions">Hướng dẫn:</label>
+                <textarea id="instructions" name="instructions" required></textarea>
+
+                <div id="questionForms">
+                  <div class="t7-question-form">
+                    <h3>Câu hỏi 1</h3>
+                    <label for="flowItems1">Các mục lưu đồ (mỗi mục một dòng, sử dụng ___ cho khoảng trống):</label>
+                    <textarea id="flowItems1" name="flowItems1" required></textarea>
+                    <label for="options1">Lựa chọn (mỗi lựa chọn một dòng):</label>
+                    <textarea id="options1" name="options1" required></textarea>
+                    <label for="correctAnswers1">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
+                    <input type="text" id="correctAnswers1" name="correctAnswers1" required>
+                  </div>
+                </div>
+              </form>
+            </div>
+          `
             break
           default:
             formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
@@ -459,38 +351,14 @@ document.addEventListener("DOMContentLoaded", () => {
         setTimeout(() => {
           fillFormWithQuestionData(questionDiv, questionData)
 
-          // Khởi tạo các chức năng của form - sử dụng cùng logic như trong addQuestionDirectly
-          try {
-            switch (questionType) {
-              case "Một đáp án":
-                initializeOneAnswerForm(questionDiv)
-                break
-              case "Nhiều đáp án":
-                initializeMultipleAnswerForm(questionDiv)
-                break
-              case "Ghép nối":
-                initializeMatchingForm(questionDiv)
-                break
-              case "Ghi nhãn Bản đồ/Sơ đồ":
-                initializePlanMapDiagram(questionDiv)
-                break
-              case "Hoàn thành ghi chú":
-                initializeNoteCompletionForm(questionDiv)
-                break
-              case "Hoàn thành bảng/biểu mẫu":
-                initializeFormTableCompletionForm(questionDiv)
-                break
-              case "Hoàn thành lưu đồ":
-                initializeFlowChartCompletionForm(questionDiv)
-                break
-            }
-          } catch (error) {
-            console.error("Lỗi khi khởi tạo form:", error)
-          }
+          // Khởi tạo các chức năng của form
+          initializeFormFunctions(questionDiv, questionType)
 
           // Hiển thị thông báo
           window.showNotification("Đã chuyển sang chế độ chỉnh sửa. Form đã được điền sẵn dữ liệu hiện có.", "info")
         }, 100) // Đợi một chút để đảm bảo DOM đã được cập nhật
+      } else {
+        window.showNotification("Không tìm thấy dữ liệu câu hỏi để chỉnh sửa", "error")
       }
     } catch (error) {
       console.error("Lỗi khi chuyển sang chế độ chỉnh sửa:", error)
@@ -596,9 +464,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const imageContainer = document.createElement("div")
             imageContainer.className = "t1-form-group"
             imageContainer.innerHTML = `
-              <label for="imageFile">Hình ảnh đã tải lên:</label>
-              <img src="${questionData.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
-            `
+            <label for="imageFile">Hình ảnh đã tải lên:</label>
+            <img src="${questionData.content[2]}" alt="Hình ảnh đã tải lên" style="max-width: 200px;">
+          `
             mapForm.appendChild(imageContainer)
 
             // Thêm các nhãn và đáp án
@@ -613,22 +481,22 @@ document.addEventListener("DOMContentLoaded", () => {
               const answerGroup = document.createElement("div")
               answerGroup.className = "t1-form-group"
               answerGroup.innerHTML = `
-                <label for="answer${i}">Nhãn ${i + 1}:</label>
-                <input type="text" id="answer${i}" value="${label}" required>
-                <label for="correctAnswer${i}">Đáp án đúng cho nhãn ${i + 1}:</label>
-                ${
-                  questionData.content[0] === "map"
-                    ? `<select id="correctAnswer${i}" required>
-                      ${["A", "B", "C", "D", "E", "F", "G", "H"]
-                        .map(
-                          (letter) =>
-                            `<option value="${letter}" ${answer === letter ? "selected" : ""}>${letter}</option>`,
-                        )
-                        .join("")}
-                    </select>`
-                    : `<input type="text" id="correctAnswer${i}" value="${answer}" required>`
-                }
-              `
+              <label for="answer${i}">Nhãn ${i + 1}:</label>
+              <input type="text" id="answer${i}" value="${label}" required>
+              <label for="correctAnswer${i}">Đáp án đúng cho nhãn ${i + 1}:</label>
+              ${
+                questionData.content[0] === "map"
+                  ? `<select id="correctAnswer${i}" required>
+                    ${["A", "B", "C", "D", "E", "F", "G", "H"]
+                      .map(
+                        (letter) =>
+                          `<option value="${letter}" ${answer === letter ? "selected" : ""}>${letter}</option>`,
+                      )
+                      .join("")}
+                  </select>`
+                  : `<input type="text" id="correctAnswer${i}" value="${answer}" required>`
+              }
+            `
               answerInputs.appendChild(answerGroup)
             }
 
@@ -663,15 +531,15 @@ document.addEventListener("DOMContentLoaded", () => {
               const noteGroup = document.createElement("div")
               noteGroup.className = "t2-listening-exercise-form-group"
               noteGroup.innerHTML = `
-                <label for="t2ListeningExerciseQuestion${i + 1}">Câu hỏi ${i + 1}:</label>
-                <div class="t2-listening-exercise-answer-fields">
-                  <textarea id="t2ListeningExerciseQuestion${i + 1}" name="question${i + 1}">${note}</textarea>
-                </div>
-                <div class="t2-listening-exercise-correct-answers" id="t2ListeningExerciseCorrectAnswers${i + 1}">
-                  <span class="t2-listening-exercise-correct-answer-label">Đáp án đúng:</span>
-                  <input type="text" class="t2-listening-exercise-correct-answer-input" value="${answer}">
-                </div>
-              `
+              <label for="t2ListeningExerciseQuestion${i + 1}">Câu hỏi ${i + 1}:</label>
+              <div class="t2-listening-exercise-answer-fields">
+                <textarea id="t2ListeningExerciseQuestion${i + 1}" name="question${i + 1}">${note}</textarea>
+              </div>
+              <div class="t2-listening-exercise-correct-answers" id="t2ListeningExerciseCorrectAnswers${i + 1}">
+                <span class="t2-listening-exercise-correct-answer-label">Đáp án đúng:</span>
+                <input type="text" class="t2-listening-exercise-correct-answer-input" value="${answer}">
+              </div>
+            `
               questionContainer.appendChild(noteGroup)
             }
 
@@ -695,26 +563,26 @@ document.addEventListener("DOMContentLoaded", () => {
             // Thêm các hàng vào bảng
             const tbody = table.querySelector("tbody") || table
             tbody.innerHTML = `
-              <tr>
-                <th>Phương tiện</th>
-                <th>Giá tiền mặt</th>
-                <th>Giá thẻ</th>
-                <th>Đáp án đúng</th>
-                <th>Thao tác</th>
-              </tr>
-            `
+            <tr>
+              <th>Phương tiện</th>
+              <th>Giá tiền mặt</th>
+              <th>Giá thẻ</th>
+              <th>Đáp án đúng</th>
+              <th>Thao tác</th>
+            </tr>
+          `
 
             const rowCount = Math.floor((questionData.content.length - 1) / 3)
             for (let i = 0; i < rowCount; i++) {
               const startIdx = 1 + i * 3
               const row = document.createElement("tr")
               row.innerHTML = `
-                <td><input type="text" value="${questionData.content[startIdx] || ""}"></td>
-                <td><input type="text" value="${questionData.content[startIdx + 1] || ""}"></td>
-                <td><input type="text" value="${questionData.content[startIdx + 2] || ""}"></td>
-                <td><input type="text" class="t6-correct-answer-input" value="${questionData.correctAnswers[i] || ""}"></td>
-                <td><button class="t6-delete-btn">Xóa</button></td>
-              `
+              <td><input type="text" value="${questionData.content[startIdx] || ""}"></td>
+              <td><input type="text" value="${questionData.content[startIdx + 1] || ""}"></td>
+              <td><input type="text" value="${questionData.content[startIdx + 2] || ""}"></td>
+              <td><input type="text" class="t6-correct-answer-input" value="${questionData.correctAnswers[i] || ""}"></td>
+              <td><button class="t6-delete-btn">Xóa</button></td>
+            `
               tbody.appendChild(row)
             }
 
@@ -921,6 +789,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
 document.addEventListener("DOMContentLoaded", () => {
+        window.showNotification("Đã hủy chỉnh sửa", "info")
+      }
+})
+})
+
+// Đảm bảo tất cả các hàm cần thiết được định nghĩa trong phạm vi toàn cục
+document.addEventListener("DOMContentLoaded", () =>
+{
   console.log("DOM đã được tải")
 
   // Định nghĩa các hàm toàn cục trước
@@ -965,6 +841,7 @@ document.addEventListener("DOMContentLoaded", () => {
             icon = "fa-map-marker-alt"
             break
           case "Hoàn thành ghi chú":
+            \
             icon = "fa-sticky-note"
             break
           case "Hoàn thành bảng/biểu mẫu":
@@ -1496,10 +1373,12 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     })
   }
-})
+}
+)
 
 // Hàm toàn cục để xử lý việc tạo câu hỏi
-window.addQuestion = (questionType) => {
+window.addQuestion = (questionType) =>
+{
   console.log("Đã gọi addQuestion toàn cục với loại:", questionType)
 
   if (typeof window.addQuestionDirectly === "function") {
