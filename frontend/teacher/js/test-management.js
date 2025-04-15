@@ -10,7 +10,7 @@ let test = {
 let totalQuestions = 0
 // Use window.currentPart instead of local currentPart
 // let currentPart = 1
-const MAX_QUESTIONS = 50 // Giới hạn số lượng câu hỏi tối đa là 50
+const MAX_QUESTIONS = 40 // Giới hạn số lượng câu hỏi tối đa là 50
 
 // Hàm hiển thị thông báo
 function showNotification(message, type) {
