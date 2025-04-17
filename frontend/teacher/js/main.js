@@ -1,5 +1,5 @@
 // Hằng số
-const MAX_QUESTIONS = 40
+const MAX_QUESTIONS = 50
 const PARTS = 4
 
 // Biến toàn cục
