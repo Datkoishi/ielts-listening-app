@@ -6,7 +6,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Lấy danh sách bài thi từ API
   async function fetchTests() {
     try {
-      const response = await fetch("/api/tests/public")
+      // Sửa đường dẫn API để phù hợp với cấu trúc server
+      const response = await fetch("/tests/public")
       if (!response.ok) {
         throw new Error("Không thể lấy danh sách bài thi")
       }
@@ -44,13 +45,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const date = new Date(test.created_at).toLocaleDateString("vi-VN")
       html += `
               <a href="test.html?id=${test.id}" class="list-group-item list-group-item-action">
-                  <div class="  class="list-group-item list-group-item-action">
                   <div class="d-flex w-100 justify-content-between">
                       <h5 class="mb-1">${test.title}</h5>
                       <small class="text-muted">${date}</small>
                   </div>
                   <p class="mb-1">${test.description || "Không có mô tả"}</p>
-                  <small class="text-muted">${test.vietnamese_name || ""}</small>
+                  <small class="text-muted">${test.vietnamese_name || test.vietnameseName || ""}</small>
               </a>
           `
     })

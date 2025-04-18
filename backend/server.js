@@ -13,10 +13,16 @@ app.use(express.json())
 // Phục vụ các file tĩnh từ thư mục frontend
 app.use(express.static(path.join(__dirname, "../frontend")))
 
+// Phục vụ các file tĩnh cho frontend của học sinh
+app.use(express.static(path.join(__dirname, "../frontend/student")))
+
 // Cấu hình routes API
 const testRoutes = require("./routes/testRoutes")
+const userRoutes = require("./routes/userRoutes")
 
-app.use("/api/tests", testRoutes)
+// API Routes
+app.use("/tests", testRoutes)
+app.use("/users", userRoutes)
 
 // Route mặc định trả về trang index.html chính
 app.get("/", (req, res) => {
@@ -42,4 +48,3 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Máy chủ đang chạy trên cổng ${port}`)
 })
-

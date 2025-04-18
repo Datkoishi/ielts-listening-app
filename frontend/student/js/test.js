@@ -1,571 +1,609 @@
-import * as bootstrap from "bootstrap"
-
 document.addEventListener("DOMContentLoaded", () => {
-  // Lấy ID bài thi từ URL
-  const urlParams = new URLSearchParams(window.location.search)
-  const testId = urlParams.get("id")
-
-  if (!testId) {
-    window.location.href = "index.html"
-    return
-  }
-
-  // Lấy thông tin bài thi
-  fetchTest(testId)
-
-  // Xử lý sự kiện nộp bài
-  document.getElementById("submit-test").addEventListener("click", () => {
-    submitTest(testId)
-  })
-})
-
-// Biến lưu trữ dữ liệu bài thi
-let testData = null
-const studentAnswers = {}
-
-// Lấy thông tin bài thi từ API
-async function fetchTest(testId) {
-  try {
-    const response = await fetch(`/api/tests/public/${testId}`)
-    if (!response.ok) {
-      throw new Error("Không thể lấy thông tin bài thi")
+    // Lấy ID bài thi từ URL
+    const urlParams = new URLSearchParams(window.location.search)
+    const testId = urlParams.get("id")
+  
+    if (!testId) {
+      showError("Không tìm thấy ID bài thi trong URL")
+      return
     }
-
-    testData = await response.json()
-    displayTest(testData)
-  } catch (error) {
-    console.error("Lỗi:", error)
-    document.getElementById("questions-container").innerHTML = `
-            <div class="alert alert-danger" role="alert">
-                <h4 class="alert-heading">Lỗi!</h4>
-                <p>Không thể tải thông tin bài thi. Vui lòng thử lại sau.</p>
-                <hr>
-                <p class="mb-0">Chi tiết lỗi: ${error.message}</p>
-            </div>
-        `
-  }
-}
-
-// Hiển thị thông tin bài thi
-function displayTest(test) {
-  // Cập nhật tiêu đề và mô tả
-  document.getElementById("test-title").textContent = test.title
-  document.getElementById("test-description").textContent = test.description || ""
-  document.title = `${test.title} - IELTS Listening Test`
-
-  // Hiển thị các phần và câu hỏi
-  const container = document.getElementById("questions-container")
-  container.innerHTML = ""
-
-  let totalQuestions = 0
-
-  test.parts.forEach((part) => {
-    // Tạo tiêu đề phần
-    const partElement = document.createElement("div")
-    partElement.className = "mb-4"
-    partElement.innerHTML = `
-            <h2 class="part-title">Part ${part.part_number}</h2>
-        `
-
-    // Thêm audio nếu có
-    if (part.audio_url) {
-      const audioElement = document.createElement("div")
-      audioElement.className = "card mb-4 shadow-sm"
-      audioElement.innerHTML = `
-                <div class="card-body">
-                    <audio controls class="w-100">
-                        <source src="${part.audio_url}" type="audio/mpeg">
-                        Trình duyệt của bạn không hỗ trợ phát audio.
-                    </audio>
-                </div>
-            `
-      partElement.appendChild(audioElement)
-    }
-
-    // Thêm các câu hỏi
-    part.questions.forEach((question) => {
-      totalQuestions++
-      const questionElement = createQuestionElement(question, part.part_number)
-      partElement.appendChild(questionElement)
-    })
-
-    container.appendChild(partElement)
+  
+    // Lấy thông tin bài thi
+    fetchTest(testId)
   })
-
-  // Cập nhật thông tin số câu hỏi
-  document.getElementById("total-questions").textContent = totalQuestions
-  document.getElementById("unanswered-questions").textContent = totalQuestions
-
-  // Kích hoạt nút nộp bài
-  document.getElementById("submit-test").disabled = false
-
-  // Khởi tạo sự kiện theo dõi câu trả lời
-  initializeAnswerTracking()
-}
-
-// Tạo phần tử HTML cho câu hỏi
-function createQuestionElement(question, partNumber) {
-  const questionElement = document.createElement("div")
-  questionElement.className = "card question-card"
-  questionElement.dataset.questionId = question.id
-
-  let questionContent = ""
-
-  // Tiêu đề câu hỏi
-  questionContent += `
-        <div class="card-header">
-            <h3 class="h6 mb-0">Question ${question.id}</h3>
-        </div>
-        <div class="card-body">
-    `
-
-  // Nội dung câu hỏi dựa vào loại
-  switch (question.question_type) {
-    case "single_choice":
-      questionContent += createSingleChoiceQuestion(question)
-      break
-    case "multiple_choice":
-      questionContent += createMultipleChoiceQuestion(question)
-      break
-    case "matching":
-      questionContent += createMatchingQuestion(question)
-      break
-    case "map_labeling":
-      questionContent += createMapLabelingQuestion(question)
-      break
-    case "note_completion":
-      questionContent += createNoteCompletionQuestion(question)
-      break
-    case "form_completion":
-      questionContent += createFormCompletionQuestion(question)
-      break
-    case "flow_chart":
-      questionContent += createFlowChartQuestion(question)
-      break
-    default:
-      questionContent += `<p>Loại câu hỏi không được hỗ trợ: ${question.question_type}</p>`
-  }
-
-  questionContent += "</div>"
-  questionElement.innerHTML = questionContent
-
-  return questionElement
-}
-
-// Tạo câu hỏi một đáp án
-function createSingleChoiceQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.question}</p>
-        </div>
-        <div class="options">
-    `
-
-  content.options.forEach((option, index) => {
-    html += `
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="question_${question.id}" id="question_${question.id}_option_${index}" value="${option}" data-question-id="${question.id}">
-                <label class="form-check-label" for="question_${question.id}_option_${index}">
-                    ${option}
-                </label>
-            </div>
-        `
-  })
-
-  html += "</div>"
-  return html
-}
-
-// Tạo câu hỏi nhiều đáp án
-function createMultipleChoiceQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.question}</p>
-        </div>
-        <div class="options">
-    `
-
-  content.options.forEach((option, index) => {
-    html += `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="question_${question.id}" id="question_${question.id}_option_${index}" value="${option}" data-question-id="${question.id}">
-                <label class="form-check-label" for="question_${question.id}_option_${index}">
-                    ${option}
-                </label>
-            </div>
-        `
-  })
-
-  html += "</div>"
-  return html
-}
-
-// Tạo câu hỏi ghép nối
-function createMatchingQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.title || "Ghép nối các mục sau:"}</p>
-        </div>
-        <div class="row">
-            <div class="col-md-6">
-                <ul class="list-group mb-3">
-    `
-
-  content.questions.forEach((item, index) => {
-    html += `<li class="list-group-item">${index + 1}. ${item}</li>`
-  })
-
-  html += `
-                </ul>
-            </div>
-            <div class="col-md-6">
-    `
-
-  content.questions.forEach((_, index) => {
-    html += `
-            <div class="mb-3">
-                <label for="question_${question.id}_match_${index}" class="form-label">${index + 1}.</label>
-                <select class="form-select" id="question_${question.id}_match_${index}" data-question-id="${question.id}" data-index="${index}">
-                    <option value="">-- Chọn --</option>
-        `
-
-    content.options.forEach((option, optionIndex) => {
-      html += `<option value="${option}">${option}</option>`
-    })
-
-    html += `
-                </select>
-            </div>
-        `
-  })
-
-  html += "</div></div>"
-  return html
-}
-
-// Tạo câu hỏi ghi nhãn bản đồ/sơ đồ
-function createMapLabelingQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.instructions || "Điền các nhãn vào bản đồ/sơ đồ:"}</p>
-        </div>
-        <div class="map-label-container mb-3">
-            <img src="${content.imageUrl || "/placeholder-map.jpg"}" alt="Map/Diagram" class="map-image mb-3">
-        </div>
-    `
-
-  content.labels.forEach((label, index) => {
-    html += `
-            <div class="mb-3">
-                <label for="question_${question.id}_label_${index}" class="form-label">${index + 1}. ${label.text}</label>
-                <input type="text" class="form-control" id="question_${question.id}_label_${index}" data-question-id="${question.id}" data-index="${index}">
-            </div>
-        `
-  })
-
-  return html
-}
-
-// Tạo câu hỏi hoàn thành ghi chú
-function createNoteCompletionQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.instructions || "Hoàn thành các ghi chú sau:"}</p>
-            <h4>${content.topic || "Chủ đề"}</h4>
-        </div>
-        <div class="notes-container">
-    `
-
-  content.notes.forEach((note, index) => {
-    html += `
-            <div class="mb-3">
-                <p>${note.text.replace("___", `<input type="text" class="form-control d-inline-block" style="width: 150px;" id="question_${question.id}_note_${index}" data-question-id="${question.id}" data-index="${index}">`)}</p>
-            </div>
-        `
-  })
-
-  html += "</div>"
-  return html
-}
-
-// Tạo câu hỏi hoàn thành biểu mẫu
-function createFormCompletionQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.instructions || "Hoàn thành biểu mẫu sau:"}</p>
-        </div>
-        <div class="table-responsive">
-            <table class="table table-bordered table-form">
-                <tbody>
-    `
-
-  content.rows.forEach((row, index) => {
-    html += "<tr>"
-    if (row.label) {
-      html += `<td>${row.label}</td>`
-    }
-
-    if (row.isInput) {
-      html += `<td><input type="text" class="form-control" id="question_${question.id}_form_${index}" data-question-id="${question.id}" data-index="${index}"></td>`
-    } else {
-      html += `<td>${row.value || ""}</td>`
-    }
-
-    html += "</tr>"
-  })
-
-  html += "</tbody></table></div>"
-  return html
-}
-
-// Tạo câu hỏi hoàn thành lưu đồ
-function createFlowChartQuestion(question) {
-  const { content } = question
-  let html = `
-        <div class="question-content">
-            <p>${content.title || "Hoàn thành lưu đồ sau:"}</p>
-            <p>${content.instructions || ""}</p>
-        </div>
-        <div class="flow-chart-container">
-    `
-
-  content.items.forEach((item, index) => {
-    if (item.isInput) {
-      html += `
-                <div class="card mb-2">
-                    <div class="card-body">
-                        <input type="text" class="form-control" id="question_${question.id}_flow_${index}" data-question-id="${question.id}" data-index="${index}">
-                    </div>
-                </div>
-                <div class="text-center mb-2">↓</div>
-            `
-    } else {
-      html += `
-                <div class="card mb-2">
-                    <div class="card-body">
-                        ${item.text || ""}
-                    </div>
-                </div>
-                <div class="text-center mb-2">↓</div>
-            `
-    }
-  })
-
-  // Xóa mũi tên cuối cùng
-  html = html.replace(/<div class="text-center mb-2">↓<\/div>$/, "")
-
-  html += "</div>"
-  return html
-}
-
-// Khởi tạo theo dõi câu trả lời
-function initializeAnswerTracking() {
-  // Theo dõi radio buttons (câu hỏi một đáp án)
-  document.querySelectorAll('input[type="radio"]').forEach((input) => {
-    input.addEventListener("change", function () {
-      const questionId = this.dataset.questionId
-      studentAnswers[questionId] = this.value
-      updateAnsweredCount()
-    })
-  })
-
-  // Theo dõi checkboxes (câu hỏi nhiều đáp án)
-  document.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-    input.addEventListener("change", function () {
-      const questionId = this.dataset.questionId
-      if (!studentAnswers[questionId]) {
-        studentAnswers[questionId] = []
+  
+  // Lấy thông tin bài thi từ API
+  async function fetchTest(testId) {
+    try {
+      // Sửa đường dẫn API để phù hợp với cấu trúc server
+      const response = await fetch(`/tests/public/${testId}`)
+      if (!response.ok) {
+        throw new Error("Không thể lấy thông tin bài thi")
       }
-
-      if (this.checked) {
-        if (!studentAnswers[questionId].includes(this.value)) {
-          studentAnswers[questionId].push(this.value)
+  
+      const test = await response.json()
+      displayTest(test)
+    } catch (error) {
+      console.error("Lỗi:", error)
+      showError(`Không thể tải bài thi. Chi tiết lỗi: ${error.message}`)
+    }
+  }
+  
+  // Hiển thị lỗi
+  function showError(message) {
+    document.getElementById("test-container").innerHTML = `
+          <div class="alert alert-danger" role="alert">
+              <h4 class="alert-heading">Lỗi!</h4>
+              <p>${message}</p>
+              <hr>
+              <p class="mb-0">
+                  <a href="index.html" class="btn btn-primary">Quay lại danh sách bài thi</a>
+              </p>
+          </div>
+      `
+  }
+  
+  // Hiển thị bài thi
+  function displayTest(test) {
+    document.getElementById("test-title").textContent = test.title
+    document.getElementById("test-description").textContent = test.description || "Không có mô tả"
+  
+    const container = document.getElementById("test-container")
+    container.innerHTML = ""
+  
+    // Tạo form để nộp bài
+    const form = document.createElement("form")
+    form.id = "test-form"
+    form.className = "mb-4"
+  
+    // Biến để theo dõi tổng số câu hỏi và số câu đã trả lời
+    let totalQuestions = 0
+    let answeredQuestions = 0
+  
+    // Hiển thị các phần và câu hỏi
+    test.parts.forEach((part, partIndex) => {
+      const partDiv = document.createElement("div")
+      partDiv.className = "card mb-4"
+  
+      const partHeader = document.createElement("div")
+      partHeader.className = "card-header d-flex justify-content-between align-items-center"
+      partHeader.innerHTML = `
+              <h5 class="mb-0">Phần ${part.part_number}</h5>
+              ${
+                part.audio_url
+                  ? `<audio controls>
+                      <source src="${part.audio_url}" type="audio/mpeg">
+                      Trình duyệt của bạn không hỗ trợ phát audio.
+                  </audio>`
+                  : ""
+              }
+          `
+  
+      const partBody = document.createElement("div")
+      partBody.className = "card-body"
+  
+      // Hiển thị các câu hỏi
+      part.questions.forEach((question, questionIndex) => {
+        totalQuestions++
+        const questionDiv = document.createElement("div")
+        questionDiv.className = "question-container mb-4 p-3 border rounded"
+        questionDiv.dataset.questionId = question.id
+        questionDiv.dataset.questionType = question.question_type
+  
+        // Hiển thị câu hỏi dựa trên loại
+        switch (question.question_type) {
+          case "single_choice":
+            renderSingleChoiceQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          case "multiple_choice":
+            renderMultipleChoiceQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          case "matching":
+            renderMatchingQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          case "map_labeling":
+            renderMapLabelingQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          case "note_completion":
+            renderNoteCompletionQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          case "form_completion":
+            renderFormCompletionQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          case "flow_chart":
+            renderFlowChartQuestion(questionDiv, question, partIndex, questionIndex)
+            break
+          default:
+            questionDiv.innerHTML = `<p class="text-danger">Loại câu hỏi không được hỗ trợ: ${question.question_type}</p>`
         }
-      } else {
-        studentAnswers[questionId] = studentAnswers[questionId].filter((value) => value !== this.value)
-        if (studentAnswers[questionId].length === 0) {
-          delete studentAnswers[questionId]
+  
+        partBody.appendChild(questionDiv)
+      })
+  
+      partDiv.appendChild(partHeader)
+      partDiv.appendChild(partBody)
+      form.appendChild(partDiv)
+    })
+  
+    // Thêm nút nộp bài
+    const submitButton = document.createElement("button")
+    submitButton.type = "button"
+    submitButton.className = "btn btn-primary btn-lg"
+    submitButton.textContent = "Nộp bài"
+    submitButton.addEventListener("click", () => submitTest(test.id))
+    form.appendChild(submitButton)
+  
+    // Thêm phần hiển thị số câu đã trả lời
+    const progressDiv = document.createElement("div")
+    progressDiv.className = "mt-3"
+    progressDiv.innerHTML = `
+          <div class="progress mb-2">
+              <div id="progress-bar" class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+          </div>
+          <p id="progress-text">Đã trả lời: <span id="answered-count">0</span>/${totalQuestions} câu hỏi</p>
+      `
+    form.appendChild(progressDiv)
+  
+    container.appendChild(form)
+  
+    // Thêm sự kiện để theo dõi câu trả lời
+    document.querySelectorAll("input, select").forEach((input) => {
+      input.addEventListener("change", () => {
+        updateProgress()
+      })
+    })
+  
+    // Hàm cập nhật tiến độ
+    function updateProgress() {
+      const questions = document.querySelectorAll(".question-container")
+      answeredQuestions = 0
+  
+      questions.forEach((questionDiv) => {
+        const questionType = questionDiv.dataset.questionType
+        let answered = false
+  
+        switch (questionType) {
+          case "single_choice":
+            answered = questionDiv.querySelector("input:checked") !== null
+            break
+          case "multiple_choice":
+            answered = questionDiv.querySelector("input:checked") !== null
+            break
+          case "matching":
+            const selects = questionDiv.querySelectorAll("select")
+            answered = Array.from(selects).every((select) => select.value !== "")
+            break
+          case "map_labeling":
+          case "note_completion":
+          case "form_completion":
+          case "flow_chart":
+            const inputs = questionDiv.querySelectorAll("input[type='text']")
+            answered = Array.from(inputs).every((input) => input.value.trim() !== "")
+            break
+        }
+  
+        if (answered) {
+          questionDiv.classList.add("border-success")
+          questionDiv.classList.remove("border-danger")
+          answeredQuestions++
+        } else {
+          questionDiv.classList.add("border-danger")
+          questionDiv.classList.remove("border-success")
+        }
+      })
+  
+      const percentage = Math.round((answeredQuestions / totalQuestions) * 100)
+      document.getElementById("progress-bar").style.width = `${percentage}%`
+      document.getElementById("progress-bar").textContent = `${percentage}%`
+      document.getElementById("progress-bar").setAttribute("aria-valuenow", percentage)
+      document.getElementById("answered-count").textContent = answeredQuestions
+    }
+  }
+  
+  // Hiển thị câu hỏi một đáp án
+  function renderSingleChoiceQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: ${content.question || ""}</h5>
+          <div class="options">
+              ${content.options
+                .map(
+                  (option, index) => `
+                  <div class="form-check">
+                      <input class="form-check-input" type="radio" name="question_${question.id}" id="question_${
+                        question.id
+                      }_option_${index}" value="${option}">
+                      <label class="form-check-label" for="question_${question.id}_option_${index}">
+                          ${option}
+                      </label>
+                  </div>
+              `,
+                )
+                .join("")}
+          </div>
+      `
+  }
+  
+  // Hiển thị câu hỏi nhiều đáp án
+  function renderMultipleChoiceQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: ${content.question || ""}</h5>
+          <div class="options">
+              ${content.options
+                .map(
+                  (option, index) => `
+                  <div class="form-check">
+                      <input class="form-check-input" type="checkbox" name="question_${question.id}" id="question_${
+                        question.id
+                      }_option_${index}" value="${option}">
+                      <label class="form-check-label" for="question_${question.id}_option_${index}">
+                          ${option}
+                      </label>
+                  </div>
+              `,
+                )
+                .join("")}
+          </div>
+      `
+  }
+  
+  // Hiển thị câu hỏi ghép nối
+  function renderMatchingQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: ${content.title || ""}</h5>
+          <table class="table">
+              <thead>
+                  <tr>
+                      <th>Câu hỏi</th>
+                      <th>Đáp án</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${content.questions
+                    .map(
+                      (q, index) => `
+                      <tr>
+                          <td>${q}</td>
+                          <td>
+                              <select class="form-select" name="question_${question.id}_match_${index}" data-index="${index}">
+                                  <option value="">-- Chọn đáp án --</option>
+                                  ${content.options
+                                    .map(
+                                      (option) => `
+                                      <option value="${option}">${option}</option>
+                                  `,
+                                    )
+                                    .join("")}
+                              </select>
+                          </td>
+                      </tr>
+                  `,
+                    )
+                    .join("")}
+              </tbody>
+          </table>
+      `
+  }
+  
+  // Hiển thị câu hỏi ghi nhãn bản đồ
+  function renderMapLabelingQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: ${content.type || ""}</h5>
+          <p class="mb-3">${content.instructions || ""}</p>
+          ${
+            content.imageUrl
+              ? `<div class="mb-3">
+                  <img src="${content.imageUrl}" alt="Map/Diagram" class="img-fluid border">
+              </div>`
+              : ""
+          }
+          <div class="labels">
+              ${content.labels
+                .map(
+                  (label, index) => `
+                  <div class="mb-2">
+                      <label class="form-label">${label}:</label>
+                      <input type="text" class="form-control" name="question_${question.id}_label_${index}" placeholder="Nhập đáp án">
+                  </div>
+              `,
+                )
+                .join("")}
+          </div>
+      `
+  }
+  
+  // Hiển thị câu hỏi hoàn thành ghi chú
+  function renderNoteCompletionQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: Hoàn thành ghi chú</h5>
+          <p class="mb-3">${content.instructions || ""}</p>
+          <h6 class="mb-2">${content.topic || ""}</h6>
+          <div class="notes">
+              ${content.notes
+                .map((note, index) => {
+                  // Thay thế các khoảng trống bằng input
+                  let noteHtml = note
+                  const blanks = note.match(/\[(\d+)\]/g) || []
+                  blanks.forEach((blank) => {
+                    const blankIndex = blank.match(/\[(\d+)\]/)[1]
+                    noteHtml = noteHtml.replace(
+                      blank,
+                      `<input type="text" class="form-control d-inline-block" style="width: 150px;" name="question_${question.id}_blank_${blankIndex}" placeholder="Đáp án ${blankIndex}">`,
+                    )
+                  })
+                  return `<p class="mb-2">${noteHtml}</p>`
+                })
+                .join("")}
+          </div>
+      `
+  }
+  
+  // Hiển thị câu hỏi hoàn thành biểu mẫu
+  function renderFormCompletionQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: Hoàn thành biểu mẫu</h5>
+          <p class="mb-3">${content.instructions || ""}</p>
+          <table class="table table-bordered">
+              ${content.rows
+                .map((row) => {
+                  let rowHtml = "<tr>"
+                  row.forEach((cell, cellIndex) => {
+                    if (cell.startsWith("[") && cell.endsWith("]")) {
+                      // Đây là ô cần điền
+                      const blankIndex = cell.match(/\[(\d+)\]/)[1]
+                      rowHtml += `<td><input type="text" class="form-control" name="question_${question.id}_blank_${blankIndex}" placeholder="Đáp án ${blankIndex}"></td>`
+                    } else {
+                      rowHtml += `<td>${cell}</td>`
+                    }
+                  })
+                  rowHtml += "</tr>"
+                  return rowHtml
+                })
+                .join("")}
+          </table>
+      `
+  }
+  
+  // Hiển thị câu hỏi hoàn thành lưu đồ
+  function renderFlowChartQuestion(container, question, partIndex, questionIndex) {
+    const content = question.content
+    container.innerHTML = `
+          <h5 class="mb-3">Câu hỏi ${partIndex + 1}.${questionIndex + 1}: ${content.title || ""}</h5>
+          <p class="mb-3">${content.instructions || ""}</p>
+          <div class="flow-chart">
+              ${content.items
+                .map((item, index) => {
+                  if (item.isBlank) {
+                    return `
+                          <div class="card mb-2">
+                              <div class="card-body">
+                                  <input type="text" class="form-control" name="question_${question.id}_blank_${index}" placeholder="Đáp án ${
+                                    index + 1
+                                  }">
+                              </div>
+                          </div>
+                          <div class="text-center mb-2">↓</div>
+                      `
+                  } else {
+                    return `
+                          <div class="card mb-2">
+                              <div class="card-body">
+                                  ${item.text}
+                              </div>
+                          </div>
+                          ${index < content.items.length - 1 ? '<div class="text-center mb-2">↓</div>' : ""}
+                      `
+                  }
+                })
+                .join("")}
+          </div>
+      `
+  }
+  
+  // Nộp bài thi
+  async function submitTest(testId) {
+    try {
+      // Kiểm tra xem đã trả lời hết câu hỏi chưa
+      const questions = document.querySelectorAll(".question-container")
+      const unansweredQuestions = []
+  
+      questions.forEach((questionDiv, index) => {
+        const questionType = questionDiv.dataset.questionType
+        const questionId = questionDiv.dataset.questionId
+        let answered = false
+  
+        switch (questionType) {
+          case "single_choice":
+            answered = questionDiv.querySelector("input:checked") !== null
+            break
+          case "multiple_choice":
+            answered = questionDiv.querySelector("input:checked") !== null
+            break
+          case "matching":
+            const selects = questionDiv.querySelectorAll("select")
+            answered = Array.from(selects).every((select) => select.value !== "")
+            break
+          case "map_labeling":
+          case "note_completion":
+          case "form_completion":
+          case "flow_chart":
+            const inputs = questionDiv.querySelectorAll("input[type='text']")
+            answered = Array.from(inputs).every((input) => input.value.trim() !== "")
+            break
+        }
+  
+        if (!answered) {
+          unansweredQuestions.push(index + 1)
+        }
+      })
+  
+      if (unansweredQuestions.length > 0) {
+        if (
+          !confirm(
+            `Bạn chưa trả lời ${unansweredQuestions.length} câu hỏi (câu ${unansweredQuestions.join(
+              ", ",
+            )}). Bạn có chắc chắn muốn nộp bài không?`,
+          )
+        ) {
+          return
         }
       }
-
-      updateAnsweredCount()
-    })
-  })
-
-  // Theo dõi selects (câu hỏi ghép nối)
-  document.querySelectorAll("select").forEach((select) => {
-    select.addEventListener("change", function () {
-      const questionId = this.dataset.questionId
-      const index = this.dataset.index
-
-      if (!studentAnswers[questionId]) {
-        studentAnswers[questionId] = {}
-      }
-
-      if (this.value) {
-        studentAnswers[questionId][index] = this.value
-      } else {
-        delete studentAnswers[questionId][index]
-        if (Object.keys(studentAnswers[questionId]).length === 0) {
-          delete studentAnswers[questionId]
+  
+      // Thu thập câu trả lời
+      const answers = []
+      questions.forEach((questionDiv) => {
+        const questionType = questionDiv.dataset.questionType
+        const questionId = questionDiv.dataset.questionId
+        let studentAnswer = null
+  
+        switch (questionType) {
+          case "single_choice":
+            const checkedRadio = questionDiv.querySelector("input:checked")
+            if (checkedRadio) {
+              studentAnswer = checkedRadio.value
+            }
+            break
+          case "multiple_choice":
+            const checkedBoxes = questionDiv.querySelectorAll("input:checked")
+            if (checkedBoxes.length > 0) {
+              studentAnswer = Array.from(checkedBoxes).map((checkbox) => checkbox.value)
+            }
+            break
+          case "matching":
+            const selects = questionDiv.querySelectorAll("select")
+            if (selects.length > 0) {
+              studentAnswer = Array.from(selects).map((select) => ({
+                index: select.dataset.index,
+                value: select.value,
+              }))
+            }
+            break
+          case "map_labeling":
+          case "note_completion":
+          case "form_completion":
+          case "flow_chart":
+            const inputs = questionDiv.querySelectorAll("input[type='text']")
+            if (inputs.length > 0) {
+              studentAnswer = {}
+              inputs.forEach((input) => {
+                const name = input.name
+                const match = name.match(/blank_(\d+)/)
+                if (match) {
+                  const index = match[1]
+                  studentAnswer[index] = input.value.trim()
+                }
+              })
+            }
+            break
         }
-      }
-
-      updateAnsweredCount()
-    })
-  })
-
-  // Theo dõi inputs (các loại câu hỏi khác)
-  document.querySelectorAll('input[type="text"]').forEach((input) => {
-    input.addEventListener("input", function () {
-      const questionId = this.dataset.questionId
-      const index = this.dataset.index
-
-      if (!studentAnswers[questionId]) {
-        studentAnswers[questionId] = {}
-      }
-
-      if (this.value.trim()) {
-        studentAnswers[questionId][index] = this.value.trim()
-      } else {
-        delete studentAnswers[questionId][index]
-        if (Object.keys(studentAnswers[questionId]).length === 0) {
-          delete studentAnswers[questionId]
+  
+        if (studentAnswer !== null) {
+          answers.push({
+            questionId,
+            studentAnswer,
+          })
         }
+      })
+  
+      // Gửi câu trả lời lên server
+      const response = await fetch(`/tests/public/${testId}/submit`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          answers,
+          studentName: prompt("Vui lòng nhập tên của bạn:", "Học sinh") || "Học sinh",
+        }),
+      })
+  
+      if (!response.ok) {
+        throw new Error("Không thể nộp bài")
       }
-
-      updateAnsweredCount()
-    })
-  })
-}
-
-// Cập nhật số câu hỏi đã trả lời
-function updateAnsweredCount() {
-  const answeredCount = Object.keys(studentAnswers).length
-  const totalQuestions = Number.parseInt(document.getElementById("total-questions").textContent)
-  const unansweredCount = totalQuestions - answeredCount
-
-  document.getElementById("answered-questions").textContent = answeredCount
-  document.getElementById("unanswered-questions").textContent = unansweredCount
-
-  // Cập nhật màu sắc cho các câu hỏi
-  document.querySelectorAll(".question-card").forEach((card) => {
-    const questionId = card.dataset.questionId
-    if (studentAnswers[questionId]) {
-      card.classList.add("answered")
-      card.classList.remove("unanswered")
-    } else {
-      card.classList.add("unanswered")
-      card.classList.remove("answered")
+  
+      const result = await response.json()
+      displayResult(result)
+    } catch (error) {
+      console.error("Lỗi:", error)
+      alert(`Lỗi khi nộp bài: ${error.message}`)
     }
-  })
-}
-
-// Nộp bài thi
-async function submitTest(testId) {
-  // Chuyển đổi dữ liệu câu trả lời thành mảng
-  const answers = []
-  for (const questionId in studentAnswers) {
-    answers.push({
-      questionId,
-      studentAnswer: studentAnswers[questionId],
-    })
   }
-
-  try {
-    const response = await fetch(`/api/tests/public/${testId}/submit`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ answers }),
-    })
-
-    if (!response.ok) {
-      throw new Error("Không thể nộp bài")
+  
+  // Hiển thị kết quả
+  function displayResult(result) {
+    const container = document.getElementById("test-container")
+    container.innerHTML = `
+          <div class="card mb-4">
+              <div class="card-header bg-primary text-white">
+                  <h4 class="mb-0">Kết quả bài thi</h4>
+              </div>
+              <div class="card-body">
+                  <h5 class="mb-3">Điểm số: ${result.score}/100</h5>
+                  <p>Số câu đúng: ${result.correctCount}/${result.totalQuestions}</p>
+                  
+                  <div class="progress mb-4">
+                      <div class="progress-bar" role="progressbar" style="width: ${result.score}%;" aria-valuenow="${
+                        result.score
+                      }" aria-valuemin="0" aria-valuemax="100">${result.score}%</div>
+                  </div>
+                  
+                  <h5 class="mb-3">Chi tiết kết quả:</h5>
+                  <div class="table-responsive">
+                      <table class="table table-bordered">
+                          <thead>
+                              <tr>
+                                  <th>Câu hỏi</th>
+                                  <th>Kết quả</th>
+                                  <th>Đáp án của bạn</th>
+                                  <th>Đáp án đúng</th>
+                              </tr>
+                          </thead>
+                          <tbody>
+                              ${result.results
+                                .map(
+                                  (item) => `
+                                  <tr class="${item.isCorrect ? "table-success" : "table-danger"}">
+                                      <td>${item.questionId}</td>
+                                      <td>${item.isCorrect ? "Đúng" : "Sai"}</td>
+                                      <td>${formatAnswer(item.studentAnswer)}</td>
+                                      <td>${formatAnswer(item.correctAnswer)}</td>
+                                  </tr>
+                              `,
+                                )
+                                .join("")}
+                          </tbody>
+                      </table>
+                  </div>
+                  
+                  <div class="mt-4">
+                      <a href="index.html" class="btn btn-primary">Quay lại danh sách bài thi</a>
+                  </div>
+              </div>
+          </div>
+      `
+  }
+  
+  // Định dạng câu trả lời để hiển thị
+  function formatAnswer(answer) {
+    if (answer === null || answer === undefined) {
+      return "Không có câu trả lời"
     }
-
-    const result = await response.json()
-    displayResult(result)
-  } catch (error) {
-    console.error("Lỗi:", error)
-    alert("Lỗi khi nộp bài: " + error.message)
-  }
-}
-
-// Hiển thị kết quả
-function displayResult(result) {
-  // Cập nhật thông tin điểm số
-  document.getElementById("result-score").textContent = result.score
-  document.getElementById("result-details").textContent = `Đúng ${result.correctCount}/${result.totalQuestions} câu hỏi`
-
-  // Hiển thị chi tiết kết quả
-  const detailsContainer = document.getElementById("result-details-container")
-  detailsContainer.innerHTML = ""
-
-  result.results.forEach((item) => {
-    const questionElement = document.querySelector(`.question-card[data-question-id="${item.questionId}"]`)
-    if (!questionElement) return
-
-    const questionTitle = questionElement.querySelector(".card-header h3").textContent
-    const questionContent = questionElement.querySelector(".question-content").innerHTML
-
-    let answerHtml = ""
-    if (item.isCorrect) {
-      answerHtml = `
-                <div class="alert alert-success">
-                    <strong>Đúng!</strong> Câu trả lời của bạn chính xác.
-                </div>
-            `
-    } else {
-      answerHtml = `
-                <div class="alert alert-danger">
-                    <strong>Sai!</strong> Câu trả lời đúng: ${formatCorrectAnswer(item.correctAnswer)}
-                </div>
-            `
+  
+    if (Array.isArray(answer)) {
+      return answer.join(", ")
     }
-
-    const resultElement = document.createElement("div")
-    resultElement.className = "result-question"
-    resultElement.innerHTML = `
-            <h4>${questionTitle}</h4>
-            ${questionContent}
-            <p><strong>Câu trả lời của bạn:</strong> ${formatStudentAnswer(item.studentAnswer)}</p>
-            ${answerHtml}
-        `
-
-    detailsContainer.appendChild(resultElement)
-  })
-
-  // Hiển thị modal kết quả
-  const resultModal = new bootstrap.Modal(document.getElementById("result-modal"))
-  resultModal.show()
-}
-
-// Định dạng câu trả lời của học sinh
-function formatStudentAnswer(answer) {
-  if (Array.isArray(answer)) {
-    return answer.join(", ")
-  } else if (typeof answer === "object") {
-    return Object.values(answer).join(", ")
-  } else {
-    return answer
+  
+    if (typeof answer === "object") {
+      return Object.entries(answer)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ")
+    }
+  
+    return answer.toString()
   }
-}
-
-// Định dạng đáp án đúng
-function formatCorrectAnswer(answer) {
-  if (Array.isArray(answer)) {
-    return answer.join(", ")
-  } else if (typeof answer === "object") {
-    return Object.values(answer).join(", ")
-  } else {
-    return answer
-  }
-}
+  
