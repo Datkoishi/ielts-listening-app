@@ -1,50 +1,40 @@
 const express = require("express")
 const cors = require("cors")
 const path = require("path")
-require("dotenv").config()
+const testRoutes = require("./routes/testRoutes")
+const userRoutes = require("./routes/userRoutes")
 
 const app = express()
-const port = process.env.PORT || 3000
+const PORT = process.env.PORT || 3000
 
 // Middleware
 app.use(cors())
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 
-// Phục vụ các file tĩnh từ thư mục frontend
-app.use(express.static(path.join(__dirname, "../frontend")))
+// Serve static files
+app.use(express.static(path.join(__dirname, "../frontend/teacher")))
+app.use("/student", express.static(path.join(__dirname, "../frontend/student")))
 
-// Phục vụ các file tĩnh cho frontend của học sinh
-app.use(express.static(path.join(__dirname, "../frontend/student")))
+// API routes
+app.use("/api/tests", testRoutes)
+app.use("/api/users", userRoutes)
 
-// Cấu hình routes API
-const testRoutes = require("./routes/testRoutes")
-const userRoutes = require("./routes/userRoutes")
-
-// API Routes
-app.use("/tests", testRoutes)
-app.use("/users", userRoutes)
-
-// Route mặc định trả về trang index.html chính
+// Serve teacher frontend
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/index.html"))
-})
-
-// Route cho học sinh
-app.get("/student/*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/student/index.html"))
-})
-
-// Route cho giáo viên
-app.get("/teacher/*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/teacher/index.html"))
 })
 
-// Xử lý các route không tồn tại
-app.use((req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "../frontend/index.html"))
+// Serve student frontend
+app.get("/student", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/student/index.html"))
 })
 
-// Khởi động máy chủ
-app.listen(port, () => {
-  console.log(`Máy chủ đang chạy trên cổng ${port}`)
+app.get("/student/test", (req, res) => {
+  res.sendFile(path.join(__dirname, "../frontend/student/test.html"))
+})
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`)
 })

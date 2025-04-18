@@ -539,7 +539,7 @@ function initializePlanMapDiagram(container) {
         inputs[0].id = `answer${i}`
 
         labels[1].setAttribute("for", `correctAnswer${i}`)
-        labels[1].textContent = `Đáp án đúng cho nhãn ${i + 1}:`
+        labels[1].textContent = `Đ��p án đúng cho nhãn ${i + 1}:`
         inputs[1].id = `correctAnswer${i}`
 
         button.setAttribute("onclick", `removeAnswerInput(${i})`)
@@ -702,4 +702,3 @@ window.renumberQuestions = renumberQuestions
 function showNotification(message, type) {
   alert(message)
 }
-

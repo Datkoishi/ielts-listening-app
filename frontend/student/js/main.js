@@ -1,60 +1,67 @@
 document.addEventListener("DOMContentLoaded", () => {
-    // Lấy danh sách bài thi
     fetchTests()
   })
   
-  // Lấy danh sách bài thi từ API
   async function fetchTests() {
     try {
-      // Sửa đường dẫn API để phù hợp với cấu trúc server
-      const response = await fetch("/tests/public")
+      const response = await fetch("/api/tests/public")
       if (!response.ok) {
-        throw new Error("Không thể lấy danh sách bài thi")
+        throw new Error(`HTTP error! status: ${response.status}`)
       }
-  
       const tests = await response.json()
       displayTests(tests)
     } catch (error) {
-      console.error("Lỗi:", error)
-      document.getElementById("tests-container").innerHTML = `
-              <div class="alert alert-danger" role="alert">
-                  <h4 class="alert-heading">Lỗi!</h4>
-                  <p>Không thể tải danh sách bài thi. Vui lòng thử lại sau.</p>
-                  <hr>
-                  <p class="mb-0">Chi tiết lỗi: ${error.message}</p>
-              </div>
-          `
+      console.error("Lỗi khi lấy danh sách bài thi:", error)
+      displayError("Không thể lấy danh sách bài thi")
     }
   }
   
-  // Hiển thị danh sách bài thi
   function displayTests(tests) {
-    const container = document.getElementById("tests-container")
+    const testListContainer = document.getElementById("test-list")
+    testListContainer.innerHTML = ""
   
-    if (tests.length === 0) {
-      container.innerHTML = `
-              <div class="alert alert-info" role="alert">
-                  Hiện tại chưa có bài thi nào.
-              </div>
-          `
+    if (!tests || tests.length === 0) {
+      testListContainer.innerHTML = `
+        <div class="alert alert-info">
+          Không có bài thi nào. Vui lòng quay lại sau.
+        </div>
+      `
       return
     }
   
-    let html = ""
-    tests.forEach((test) => {
-      const date = new Date(test.created_at).toLocaleDateString("vi-VN")
-      html += `
-              <a href="test.html?id=${test.id}" class="list-group-item list-group-item-action">
-                  <div class="d-flex w-100 justify-content-between">
-                      <h5 class="mb-1">${test.title}</h5>
-                      <small class="text-muted">${date}</small>
-                  </div>
-                  <p class="mb-1">${test.description || "Không có mô tả"}</p>
-                  <small class="text-muted">${test.vietnamese_name || test.vietnameseName || ""}</small>
-              </a>
-          `
-    })
+    const testCards = tests.map(
+      (test) => `
+      <div class="col-md-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body">
+            <h5 class="card-title">${test.title}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">${test.vietnamese_name || test.vietnameseName || ""}</h6>
+            <p class="card-text">${test.description || "Không có mô tả"}</p>
+            <a href="test.html?id=${test.id}" class="btn btn-primary">Làm bài</a>
+          </div>
+          <div class="card-footer text-muted">
+            Ngày tạo: ${new Date(test.created_at).toLocaleDateString("vi-VN")}
+          </div>
+        </div>
+      </div>
+    `,
+    )
   
-    container.innerHTML = html
+    testListContainer.innerHTML = `
+      <div class="row">
+        ${testCards.join("")}
+      </div>
+    `
+  }
+  
+  function displayError(message) {
+    const testListContainer = document.getElementById("test-list")
+    testListContainer.innerHTML = `
+      <div class="alert alert-danger">
+        <h4>Lỗi!</h4>
+        <p>${message}</p>
+        <p>Chi tiết lỗi: Không thể lấy danh sách bài thi</p>
+      </div>
+    `
   }
   

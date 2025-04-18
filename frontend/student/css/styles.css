@@ -1,35 +1,77 @@
+/* General Styles */
 body {
   background-color: #f8f9fa;
 }
 
-.question-container {
+.question-card {
   transition: all 0.3s ease;
+  border-left: 5px solid #ffc107;
 }
 
-.question-container.border-success {
-  background-color: rgba(25, 135, 84, 0.05);
+.question-card[data-answered="true"] {
+  border-left: 5px solid #28a745;
 }
 
-.question-container.border-danger {
-  background-color: rgba(220, 53, 69, 0.05);
+.question-text {
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+/* Audio Player */
+.audio-player {
+  margin: 1rem 0;
 }
 
 audio {
+  width: 100%;
+}
+
+/* Matching Questions */
+.matching-container {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+
+/* Plan/Map/Diagram Questions */
+.map-image-container {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.map-image-container img {
   max-width: 100%;
+  max-height: 400px;
+  border: 1px solid #dee2e6;
 }
 
-.flow-chart .card {
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
+/* Note Completion */
+.notes-container {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: 0.25rem;
 }
 
+/* Flow Chart */
+.flow-arrow {
+  font-size: 1.5rem;
+  color: #6c757d;
+}
+
+/* Results */
+.results-container {
+  margin-top: 2rem;
+}
+
+/* Progress Bar */
+.test-progress {
+  margin-bottom: 2rem;
+}
+
+/* Responsive Adjustments */
 @media (max-width: 768px) {
-  h1 {
-    font-size: 1.8rem;
-  }
-
-  h5 {
-    font-size: 1.1rem;
+  .container {
+    padding-left: 10px;
+    padding-right: 10px;
   }
 }
