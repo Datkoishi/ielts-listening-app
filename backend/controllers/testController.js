@@ -1,6 +1,166 @@
 const Test = require("../models/Test")
 const { query } = require("../config/database")
 
+// Lấy tất cả bài kiểm tra công khai (không cần xác thực)
+exports.getPublicTests = async (req, res) => {
+  try {
+    const tests = await query(`
+      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+      FROM tests t
+      ORDER BY t.created_at DESC
+    `)
+    res.json(tests)
+  } catch (error) {
+    console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
+  }
+}
+
+// Lấy bài kiểm tra theo ID công khai (không cần xác thực)
+exports.getPublicTestById = async (req, res) => {
+  try {
+    const test = await query(
+      `
+      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+      FROM tests t
+      WHERE t.id = ?
+    `,
+      [req.params.id],
+    )
+
+    if (!test || test.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
+    }
+
+    // Lấy các phần và câu hỏi
+    const parts = await query(
+      `
+      SELECT id, part_number, audio_url
+      FROM parts
+      WHERE test_id = ?
+      ORDER BY part_number
+    `,
+      [req.params.id],
+    )
+
+    const partsWithQuestions = await Promise.all(
+      parts.map(async (part) => {
+        const questions = await query(
+          `
+        SELECT id, question_type, content
+        FROM questions
+        WHERE part_id = ?
+        ORDER BY id
+      `,
+          [part.id],
+        )
+
+        // Chuyển đổi content từ JSON string sang object
+        const processedQuestions = questions.map((q) => ({
+          ...q,
+          content: JSON.parse(q.content),
+        }))
+
+        return { ...part, questions: processedQuestions }
+      }),
+    )
+
+    // Map vietnamese_name to vietnameseName for frontend consistency
+    const testData = {
+      ...test[0],
+      vietnameseName: test[0].vietnamese_name,
+      parts: partsWithQuestions,
+    }
+    delete testData.vietnamese_name
+
+    res.json(testData)
+  } catch (error) {
+    console.error("Lỗi lấy bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
+  }
+}
+
+// Nộp bài làm công khai (không cần xác thực)
+exports.submitPublicAnswers = async (req, res) => {
+  try {
+    const { testId } = req.params
+    const { answers, studentName = "Anonymous" } = req.body
+
+    // Kiểm tra bài kiểm tra tồn tại
+    const test = await query("SELECT id FROM tests WHERE id = ?", [testId])
+    if (!test || test.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
+    }
+
+    // Lấy tất cả câu hỏi của bài kiểm tra
+    const questions = await query(
+      `
+      SELECT q.*, p.part_number
+      FROM questions q
+      JOIN parts p ON q.part_id = p.id
+      WHERE p.test_id = ?
+      ORDER BY p.part_number, q.id
+    `,
+      [testId],
+    )
+
+    // Kiểm tra và lưu câu trả lời
+    const results = []
+    let correctCount = 0
+
+    for (const answer of answers) {
+      const { questionId, studentAnswer } = answer
+
+      // Tìm câu hỏi tương ứng
+      const question = questions.find((q) => q.id === Number.parseInt(questionId))
+      if (!question) continue
+
+      // Lấy đáp án đúng
+      const correctAnswers = JSON.parse(question.correct_answers)
+
+      // Kiểm tra câu trả lời
+      let isCorrect = false
+      if (Array.isArray(correctAnswers)) {
+        // Nếu có nhiều đáp án đúng
+        if (Array.isArray(studentAnswer)) {
+          isCorrect =
+            studentAnswer.length === correctAnswers.length && studentAnswer.every((a) => correctAnswers.includes(a))
+        } else {
+          isCorrect = correctAnswers.includes(studentAnswer)
+        }
+      } else {
+        // Nếu chỉ có một đáp án đúng
+        isCorrect = studentAnswer === correctAnswers
+      }
+
+      // Lưu kết quả vào mảng (không lưu vào database)
+      results.push({
+        questionId,
+        isCorrect,
+        correctAnswer: correctAnswers,
+        studentAnswer,
+      })
+
+      if (isCorrect) correctCount++
+    }
+
+    // Tính điểm
+    const totalQuestions = questions.length
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
+
+    res.json({
+      message: "Nộp bài thành công",
+      score,
+      correctCount,
+      totalQuestions,
+      results,
+    })
+  } catch (error) {
+    console.error("Lỗi khi nộp bài:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
+  }
+}
+
 // Update the getAllTests function to include the vietnameseName field
 exports.getAllTests = async (req, res) => {
   try {
@@ -260,4 +420,3 @@ exports.submitAnswers = async (req, res) => {
     res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }
-

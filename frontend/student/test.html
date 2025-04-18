@@ -1,24 +1,112 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IELTS Listening Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <header>
-        <h1 id="test-title">IELTS Listening Test</h1>
-    </header>
-    <main>
-        <div id="audio-player" class="audio-player">
-            <!-- Audio player will be added here -->
+    <div class="container py-4">
+        <header class="mb-4">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="index.html">Trang chủ</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Bài thi</li>
+                </ol>
+            </nav>
+            <h1 id="test-title" class="display-5 mb-0">Đang tải bài thi...</h1>
+            <p id="test-description" class="lead text-muted"></p>
+        </header>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Phần audio -->
+                <div class="card mb-4 shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h2 class="h5 mb-0">Audio</h2>
+                    </div>
+                    <div class="card-body">
+                        <div id="audio-container" class="text-center">
+                            <p class="text-muted">Audio sẽ được hiển thị ở đây khi có sẵn.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phần câu hỏi -->
+                <div id="questions-container">
+                    <!-- Các phần và câu hỏi sẽ được thêm vào đây -->
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Đang tải...</span>
+                        </div>
+                        <p class="mt-2">Đang tải nội dung bài thi...</p>
+                    </div>
+                </div>
+
+                <!-- Nút nộp bài -->
+                <div class="d-grid gap-2 mt-4 mb-5">
+                    <button id="submit-test" class="btn btn-primary btn-lg" disabled>Nộp bài</button>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <!-- Thông tin bài thi -->
+                <div class="card mb-4 shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-secondary text-white">
+                        <h2 class="h5 mb-0">Thông tin bài thi</h2>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Tổng số câu hỏi
+                                <span id="total-questions" class="badge bg-primary rounded-pill">0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Đã trả lời
+                                <span id="answered-questions" class="badge bg-success rounded-pill">0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                Chưa trả lời
+                                <span id="unanswered-questions" class="badge bg-danger rounded-pill">0</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="question-container" class="question-container">
-            <!-- Questions will be populated here -->
+    </div>
+
+    <!-- Modal kết quả -->
+    <div class="modal fade" id="result-modal" tabindex="-1" aria-labelledby="result-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="result-modal-label">Kết quả bài thi</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <h2 class="display-6">Điểm số của bạn</h2>
+                        <div class="display-1 fw-bold text-primary" id="result-score">0</div>
+                        <p class="lead" id="result-details">Đúng 0/0 câu hỏi</p>
+                    </div>
+                    
+                    <h3 class="h5 mb-3">Chi tiết kết quả</h3>
+                    <div id="result-details-container">
+                        <!-- Chi tiết kết quả sẽ được thêm vào đây -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <a href="index.html" class="btn btn-primary">Quay lại danh sách bài thi</a>
+                </div>
+            </div>
         </div>
-        <button id="submit-test" class="submit-button">Submit Test</button>
-    </main>
-    <script src="js/test-script.js"></script>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/test.js"></script>
 </body>
 </html>

@@ -2,23 +2,21 @@ const express = require("express")
 const router = express.Router()
 const testController = require("../controllers/testController")
 
-// Lấy tất cả bài kiểm tra
+// Lấy tất cả bài kiểm tra (không cần xác thực)
+router.get("/public", testController.getPublicTests)
+
+// Lấy bài kiểm tra theo ID (không cần xác thực)
+router.get("/public/:id", testController.getPublicTestById)
+
+// Nộp bài làm (không cần xác thực)
+router.post("/public/:testId/submit", testController.submitPublicAnswers)
+
+// Các route cần xác thực
 router.get("/", testController.getAllTests)
-
-// Lấy bài kiểm tra theo ID
 router.get("/:id", testController.getTestById)
-
-// Tạo bài kiểm tra mới
 router.post("/", testController.createTest)
-
-// Cập nhật bài kiểm tra
 router.put("/:id", testController.updateTest)
-
-// Xóa bài kiểm tra
 router.delete("/:id", testController.deleteTest)
-
-// Nhận câu trả lời từ học sinh
 router.post("/:testId/submit", testController.submitAnswers)
 
 module.exports = router
-
