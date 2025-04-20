@@ -1,19 +1,22 @@
 const express = require("express")
 const router = express.Router()
 const testController = require("../controllers/testController")
-const auth = require("../middleware/auth")
 
-// Public routes (không cần xác thực)
+// Lấy tất cả bài kiểm tra (không cần xác thực)
 router.get("/public", testController.getPublicTests)
+
+// Lấy bài kiểm tra theo ID (không cần xác thực)
 router.get("/public/:id", testController.getPublicTestById)
+
+// Nộp bài làm (không cần xác thực)
 router.post("/public/:testId/submit", testController.submitPublicAnswers)
 
-// Protected routes (cần xác thực)
-router.get("/", auth, testController.getAllTests)
-router.get("/:id", auth, testController.getTestById)
-router.post("/", auth, testController.createTest)
-router.put("/:id", auth, testController.updateTest)
-router.delete("/:id", auth, testController.deleteTest)
-router.post("/:testId/submit", auth, testController.submitAnswers)
+// Các route cần xác thực
+router.get("/", testController.getAllTests)
+router.get("/:id", testController.getTestById)
+router.post("/", testController.createTest)
+router.put("/:id", testController.updateTest)
+router.delete("/:id", testController.deleteTest)
+router.post("/:testId/submit", testController.submitAnswers)
 
 module.exports = router

@@ -4,21 +4,24 @@ const { query } = require("../config/database")
 // Lấy tất cả bài kiểm tra công khai (không cần xác thực)
 exports.getPublicTests = async (req, res) => {
   try {
+    console.log("Đang lấy danh sách bài kiểm tra công khai...")
     const tests = await query(`
       SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
       FROM tests t
       ORDER BY t.created_at DESC
     `)
+    console.log("Kết quả truy vấn:", tests)
     res.json(tests)
   } catch (error) {
     console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
 // Lấy bài kiểm tra theo ID công khai (không cần xác thực)
 exports.getPublicTestById = async (req, res) => {
   try {
+    console.log(`Đang lấy bài kiểm tra ID: ${req.params.id}`)
     const test = await query(
       `
       SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
@@ -29,6 +32,7 @@ exports.getPublicTestById = async (req, res) => {
     )
 
     if (!test || test.length === 0) {
+      console.log(`Không tìm thấy bài kiểm tra ID: ${req.params.id}`)
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
@@ -43,6 +47,8 @@ exports.getPublicTestById = async (req, res) => {
       [req.params.id],
     )
 
+    console.log(`Tìm thấy ${parts.length} phần cho bài kiểm tra ID: ${req.params.id}`)
+
     const partsWithQuestions = await Promise.all(
       parts.map(async (part) => {
         const questions = await query(
@@ -55,11 +61,24 @@ exports.getPublicTestById = async (req, res) => {
           [part.id],
         )
 
+        console.log(`Tìm thấy ${questions.length} câu hỏi cho phần ID: ${part.id}`)
+
         // Chuyển đổi content từ JSON string sang object
-        const processedQuestions = questions.map((q) => ({
-          ...q,
-          content: JSON.parse(q.content),
-        }))
+        const processedQuestions = questions.map((q) => {
+          try {
+            return {
+              ...q,
+              content: JSON.parse(q.content),
+            }
+          } catch (error) {
+            console.error(`Lỗi parse JSON cho câu hỏi ID: ${q.id}`, error)
+            return {
+              ...q,
+              content: {},
+              parseError: true,
+            }
+          }
+        })
 
         return { ...part, questions: processedQuestions }
       }),
@@ -76,7 +95,7 @@ exports.getPublicTestById = async (req, res) => {
     res.json(testData)
   } catch (error) {
     console.error("Lỗi lấy bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
@@ -85,6 +104,9 @@ exports.submitPublicAnswers = async (req, res) => {
   try {
     const { testId } = req.params
     const { answers, studentName = "Anonymous" } = req.body
+
+    console.log(`Đang xử lý bài nộp cho bài kiểm tra ID: ${testId}`)
+    console.log(`Số câu trả lời: ${answers.length}`)
 
     // Kiểm tra bài kiểm tra tồn tại
     const test = await query("SELECT id FROM tests WHERE id = ?", [testId])
@@ -104,6 +126,8 @@ exports.submitPublicAnswers = async (req, res) => {
       [testId],
     )
 
+    console.log(`Tìm thấy ${questions.length} câu hỏi cho bài kiểm tra ID: ${testId}`)
+
     // Kiểm tra và lưu câu trả lời
     const results = []
     let correctCount = 0
@@ -113,10 +137,19 @@ exports.submitPublicAnswers = async (req, res) => {
 
       // Tìm câu hỏi tương ứng
       const question = questions.find((q) => q.id === Number.parseInt(questionId))
-      if (!question) continue
+      if (!question) {
+        console.log(`Không tìm thấy câu hỏi ID: ${questionId}`)
+        continue
+      }
 
       // Lấy đáp án đúng
-      const correctAnswers = JSON.parse(question.correct_answers)
+      let correctAnswers
+      try {
+        correctAnswers = JSON.parse(question.correct_answers)
+      } catch (error) {
+        console.error(`Lỗi parse JSON đáp án đúng cho câu hỏi ID: ${questionId}`, error)
+        continue
+      }
 
       // Kiểm tra câu trả lời
       let isCorrect = false
@@ -148,6 +181,8 @@ exports.submitPublicAnswers = async (req, res) => {
     const totalQuestions = questions.length
     const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
 
+    console.log(`Kết quả: ${correctCount}/${totalQuestions} câu đúng, điểm: ${score}`)
+
     res.json({
       message: "Nộp bài thành công",
       score,
@@ -157,7 +192,7 @@ exports.submitPublicAnswers = async (req, res) => {
     })
   } catch (error) {
     console.error("Lỗi khi nộp bài:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
@@ -240,6 +275,17 @@ exports.createTest = async (req, res) => {
   const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
 
   try {
+    console.log("Đang tạo bài kiểm tra mới...")
+    console.log("Dữ liệu nhận được:", {
+      title,
+      vietnameseName,
+      description,
+      part1: part1 ? `${part1.length} câu hỏi` : "không có",
+      part2: part2 ? `${part2.length} câu hỏi` : "không có",
+      part3: part3 ? `${part3.length} câu hỏi` : "không có",
+      part4: part4 ? `${part4.length} câu hỏi` : "không có",
+    })
+
     await query("START TRANSACTION")
 
     // Tạo bài kiểm tra
@@ -250,6 +296,7 @@ exports.createTest = async (req, res) => {
     ])
 
     const testId = result.insertId
+    console.log(`Đã tạo bài kiểm tra mới với ID: ${testId}`)
 
     // Tạo các phần và câu hỏi
     for (let i = 1; i <= 4; i++) {
@@ -258,24 +305,37 @@ exports.createTest = async (req, res) => {
         const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
 
         const partId = partResult.insertId
+        console.log(`Đã tạo phần ${i} với ID: ${partId}`)
 
         for (const question of partData) {
-          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
-            partId,
-            question.type,
-            JSON.stringify(question.content),
-            JSON.stringify(question.correctAnswers),
-          ])
+          try {
+            const contentStr = JSON.stringify(question.content)
+            const correctAnswersStr = JSON.stringify(question.correctAnswers)
+
+            console.log(`Đang thêm câu hỏi loại: ${question.type}`)
+            console.log(`Content: ${contentStr.substring(0, 100)}...`)
+            console.log(`Correct answers: ${correctAnswersStr}`)
+
+            await query(
+              "INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)",
+              [partId, question.type, contentStr, correctAnswersStr],
+            )
+          } catch (error) {
+            console.error("Lỗi khi thêm câu hỏi:", error)
+            throw error
+          }
         }
+        console.log(`Đã thêm ${partData.length} câu hỏi vào phần ${i}`)
       }
     }
 
     await query("COMMIT")
+    console.log("Đã tạo bài kiểm tra thành công!")
     res.status(201).json({ message: "Tạo bài kiểm tra thành công", testId })
   } catch (error) {
     await query("ROLLBACK")
     console.error("Lỗi tạo bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 

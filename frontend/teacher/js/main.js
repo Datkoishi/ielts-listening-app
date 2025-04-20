@@ -1,5 +1,5 @@
 // Hằng số
-const MAX_QUESTIONS = 50
+const MAX_QUESTIONS = 40
 const PARTS = 4
 
 // Biến toàn cục
@@ -465,4 +465,3 @@ function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
 }
-

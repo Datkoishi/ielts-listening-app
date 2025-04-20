@@ -13,4 +13,3 @@ router.post("/login", userController.login)
 router.get("/me", auth, userController.getCurrentUser)
 
 module.exports = router
-

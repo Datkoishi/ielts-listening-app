@@ -19,9 +19,10 @@ exports.connectDB = async () => {
     const connection = await pool.getConnection()
     console.log("Đã kết nối thành công đến cơ sở dữ liệu MySQL")
     connection.release()
+    return true
   } catch (error) {
     console.error("Kết nối cơ sở dữ liệu thất bại:", error.message)
-    process.exit(1)
+    throw error
   }
 }
 
@@ -36,5 +37,8 @@ exports.query = async (sql, params) => {
   }
 }
 
-module.exports = pool
-
+module.exports = {
+  connectDB: exports.connectDB,
+  query: exports.query,
+  pool,
+}
