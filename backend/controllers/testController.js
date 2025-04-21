@@ -1,15 +1,46 @@
 const Test = require("../models/Test")
 const { query } = require("../config/database")
 
+// Kiểm tra xem cột vietnamese_name có tồn tại không
+async function checkVietnameseNameColumn() {
+  try {
+    const columns = await query('SHOW COLUMNS FROM tests LIKE "vietnamese_name"')
+    return columns.length > 0
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra cột vietnamese_name:", error.message)
+    return false
+  }
+}
+
 // Lấy tất cả bài kiểm tra công khai (không cần xác thực)
 exports.getPublicTests = async (req, res) => {
   try {
     console.log("Đang lấy danh sách bài kiểm tra công khai...")
-    const tests = await query(`
-      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
-      FROM tests t
-      ORDER BY t.created_at DESC
-    `)
+
+    // Kiểm tra xem cột vietnamese_name có tồn tại không
+    const hasVietnameseName = await checkVietnameseNameColumn()
+
+    let tests
+    if (hasVietnameseName) {
+      tests = await query(`
+        SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+        FROM tests t
+        ORDER BY t.created_at DESC
+      `)
+    } else {
+      tests = await query(`
+        SELECT t.id, t.title, t.description, t.created_at
+        FROM tests t
+        ORDER BY t.created_at DESC
+      `)
+
+      // Thêm trường vietnamese_name rỗng cho mỗi bài kiểm tra
+      tests = tests.map((test) => ({
+        ...test,
+        vietnamese_name: "",
+      }))
+    }
+
     console.log("Kết quả truy vấn:", tests)
     res.json(tests)
   } catch (error) {
@@ -22,14 +53,35 @@ exports.getPublicTests = async (req, res) => {
 exports.getPublicTestById = async (req, res) => {
   try {
     console.log(`Đang lấy bài kiểm tra ID: ${req.params.id}`)
-    const test = await query(
-      `
-      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
-      FROM tests t
-      WHERE t.id = ?
-    `,
-      [req.params.id],
-    )
+
+    // Kiểm tra xem cột vietnamese_name có tồn tại không
+    const hasVietnameseName = await checkVietnameseNameColumn()
+
+    let test
+    if (hasVietnameseName) {
+      test = await query(
+        `
+        SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+        FROM tests t
+        WHERE t.id = ?
+      `,
+        [req.params.id],
+      )
+    } else {
+      test = await query(
+        `
+        SELECT t.id, t.title, t.description, t.created_at
+        FROM tests t
+        WHERE t.id = ?
+      `,
+        [req.params.id],
+      )
+
+      // Thêm trường vietnamese_name rỗng
+      if (test && test.length > 0) {
+        test[0].vietnamese_name = ""
+      }
+    }
 
     if (!test || test.length === 0) {
       console.log(`Không tìm thấy bài kiểm tra ID: ${req.params.id}`)
@@ -87,7 +139,7 @@ exports.getPublicTestById = async (req, res) => {
     // Map vietnamese_name to vietnameseName for frontend consistency
     const testData = {
       ...test[0],
-      vietnameseName: test[0].vietnamese_name,
+      vietnameseName: test[0].vietnamese_name || "",
       parts: partsWithQuestions,
     }
     delete testData.vietnamese_name
@@ -196,33 +248,71 @@ exports.submitPublicAnswers = async (req, res) => {
   }
 }
 
-// Update the getAllTests function to include the vietnameseName field
+// Update the getAllTests function to handle the vietnamese_name field
 exports.getAllTests = async (req, res) => {
   try {
-    const tests = await query(`
-      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
-      FROM tests t
-      ORDER BY t.created_at DESC
-    `)
+    // Kiểm tra xem cột vietnamese_name có tồn tại không
+    const hasVietnameseName = await checkVietnameseNameColumn()
+
+    let tests
+    if (hasVietnameseName) {
+      tests = await query(`
+        SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+        FROM tests t
+        ORDER BY t.created_at DESC
+      `)
+    } else {
+      tests = await query(`
+        SELECT t.id, t.title, t.description, t.created_at
+        FROM tests t
+        ORDER BY t.created_at DESC
+      `)
+
+      // Thêm trường vietnamese_name rỗng cho mỗi bài kiểm tra
+      tests = tests.map((test) => ({
+        ...test,
+        vietnamese_name: "",
+      }))
+    }
+
     res.json(tests)
   } catch (error) {
     console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
 // Lấy bài kiểm tra theo ID
-// Update the getTestById function to include the vietnameseName field
 exports.getTestById = async (req, res) => {
   try {
-    const test = await query(
-      `
-      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
-      FROM tests t
-      WHERE t.id = ?
-    `,
-      [req.params.id],
-    )
+    // Kiểm tra xem cột vietnamese_name có tồn tại không
+    const hasVietnameseName = await checkVietnameseNameColumn()
+
+    let test
+    if (hasVietnameseName) {
+      test = await query(
+        `
+        SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+        FROM tests t
+        WHERE t.id = ?
+      `,
+        [req.params.id],
+      )
+    } else {
+      test = await query(
+        `
+        SELECT t.id, t.title, t.description, t.created_at
+        FROM tests t
+        WHERE t.id = ?
+      `,
+        [req.params.id],
+      )
+
+      // Thêm trường vietnamese_name rỗng
+      if (test && test.length > 0) {
+        test[0].vietnamese_name = ""
+      }
+    }
 
     if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
@@ -258,7 +348,7 @@ exports.getTestById = async (req, res) => {
     // Map vietnamese_name to vietnameseName for frontend consistency
     const testData = {
       ...test[0],
-      vietnameseName: test[0].vietnamese_name,
+      vietnameseName: test[0].vietnamese_name || "",
       parts: partsWithQuestions,
     }
     delete testData.vietnamese_name
@@ -266,7 +356,7 @@ exports.getTestById = async (req, res) => {
     res.json(testData)
   } catch (error) {
     console.error("Lỗi lấy bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
@@ -288,14 +378,24 @@ exports.createTest = async (req, res) => {
 
     await query("START TRANSACTION")
 
-    // Tạo bài kiểm tra
-    const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
-      title,
-      vietnameseName,
-      description,
-    ])
+    // Kiểm tra xem cột vietnamese_name có tồn tại không
+    const hasVietnameseName = await checkVietnameseNameColumn()
 
-    const testId = result.insertId
+    let testId
+    if (hasVietnameseName) {
+      // Tạo bài kiểm tra với vietnamese_name
+      const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
+        title,
+        vietnameseName,
+        description,
+      ])
+      testId = result.insertId
+    } else {
+      // Tạo bài kiểm tra không có vietnamese_name
+      const result = await query("INSERT INTO tests (title, description) VALUES (?, ?)", [title, description])
+      testId = result.insertId
+    }
+
     console.log(`Đã tạo bài kiểm tra mới với ID: ${testId}`)
 
     // Tạo các phần và câu hỏi
@@ -347,13 +447,21 @@ exports.updateTest = async (req, res) => {
   try {
     await query("START TRANSACTION")
 
-    // Cập nhật bài kiểm tra
-    await query("UPDATE tests SET title = ?, vietnamese_name = ?, description = ? WHERE id = ?", [
-      title,
-      vietnameseName,
-      description,
-      id,
-    ])
+    // Kiểm tra xem cột vietnamese_name có tồn tại không
+    const hasVietnameseName = await checkVietnameseNameColumn()
+
+    if (hasVietnameseName) {
+      // Cập nhật bài kiểm tra với vietnamese_name
+      await query("UPDATE tests SET title = ?, vietnamese_name = ?, description = ? WHERE id = ?", [
+        title,
+        vietnameseName,
+        description,
+        id,
+      ])
+    } else {
+      // Cập nhật bài kiểm tra không có vietnamese_name
+      await query("UPDATE tests SET title = ?, description = ? WHERE id = ?", [title, description, id])
+    }
 
     // Xóa các phần và câu hỏi hiện có
     await query("DELETE FROM parts WHERE test_id = ?", [id])
@@ -382,7 +490,7 @@ exports.updateTest = async (req, res) => {
   } catch (error) {
     await query("ROLLBACK")
     console.error("Lỗi cập nhật bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
@@ -393,7 +501,7 @@ exports.deleteTest = async (req, res) => {
     res.json({ message: "Xóa bài kiểm tra thành công" })
   } catch (error) {
     console.error("Lỗi xóa bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
 
@@ -477,6 +585,6 @@ exports.submitAnswers = async (req, res) => {
     })
   } catch (error) {
     console.error("Lỗi khi nộp bài:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }
