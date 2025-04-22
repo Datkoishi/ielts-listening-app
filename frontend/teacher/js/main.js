@@ -122,7 +122,7 @@ function startTestCreation() {
 // window.startTestCreation = startTestCreation; // COMMENTING OUT
 window.previousPart = previousPart
 window.nextPart = nextPart
-window.saveTest = saveTest
+// window.saveTest = saveTest
 // window.renderTestCreation = renderTestCreation; // COMMENTING OUT
 
 // Hiển thị giao diện tạo bài kiểm tra - COMMENTING OUT THIS FUNCTION AS WE'LL USE THE ONE FROM test-management.js
@@ -401,12 +401,104 @@ function previewQuestion() {
 }
 
 // Dummy functions to resolve undefined variable errors. Replace with actual implementations.
+// function saveTest() {
+//   console.warn("saveTest function is a placeholder.")
+//   // Cập nhật tiêu đề, tên tiếng Việt và mô tả từ form
+//   test.title = document.getElementById("testTitle").value
+//   test.vietnameseName = document.getElementById("testVietnameseName").value
+//   test.description = document.getElementById("testDescription").value
+// }
+
+// Hàm lưu bài kiểm tra
 function saveTest() {
-  console.warn("saveTest function is a placeholder.")
-  // Cập nhật tiêu đề, tên tiếng Việt và mô tả từ form
-  test.title = document.getElementById("testTitle").value
-  test.vietnameseName = document.getElementById("testVietnameseName").value
-  test.description = document.getElementById("testDescription").value
+  try {
+    console.log("Bắt đầu lưu bài kiểm tra...")
+
+    // Cập nhật tiêu đề và mô tả từ form
+    test.title = document.getElementById("testTitle").value
+    test.vietnameseName = document.getElementById("testVietnameseName").value
+    test.description = document.getElementById("testDescription").value
+
+    // Xác thực metadata bài kiểm tra trước
+    if (!validateTestMetadata()) {
+      return
+    }
+
+    // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
+    let hasQuestions = false
+    for (let i = 1; i <= 4; i++) {
+      if (test[`part${i}`] && test[`part${i}`].length > 0) {
+        hasQuestions = true
+        break
+      }
+    }
+
+    if (!hasQuestions) {
+      showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
+      return
+    }
+
+    // Xác thực câu hỏi phần
+    if (!validatePartQuestions()) {
+      return
+    }
+
+    // Chuẩn bị dữ liệu để gửi lên server
+    const testData = {
+      title: test.title,
+      vietnameseName: test.vietnameseName || test.title,
+      description: test.description || "",
+      parts: [],
+    }
+
+    // Thêm dữ liệu từng phần
+    for (let i = 1; i <= 4; i++) {
+      if (test[`part${i}`] && test[`part${i}`].length > 0) {
+        const partData = {
+          part_number: i,
+          questions: test[`part${i}`].map((question) => ({
+            question_type: question.type,
+            content: JSON.stringify(question.content),
+            correct_answers: JSON.stringify(question.correctAnswers),
+          })),
+        }
+        testData.parts.push(partData)
+      }
+    }
+
+    console.log("Dữ liệu bài kiểm tra sẽ gửi:", testData)
+
+    // Gửi dữ liệu lên server
+    fetch("/api/tests", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      body: JSON.stringify(testData),
+    })
+      .then((response) => {
+        if (!response.ok) {
+          return response.json().then((data) => {
+            throw new Error(data.message || "Lỗi khi lưu bài kiểm tra")
+          })
+        }
+        return response.json()
+      })
+      .then((data) => {
+        console.log("Bài kiểm tra đã lưu vào server:", data)
+        showNotification(`Bài kiểm tra "${test.vietnameseName || test.title}" đã lưu thành công!`, "success")
+      })
+      .catch((error) => {
+        console.error("Lỗi khi lưu bài kiểm tra vào server:", error)
+        showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
+      })
+
+    console.log("Bài kiểm tra đã lưu:", test)
+  } catch (error) {
+    console.error("Lỗi khi lưu bài kiểm tra:", error)
+    showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
+  }
 }
 
 function previewEntireTest() {
@@ -464,4 +556,14 @@ window.previewQuestion = previewQuestion
 function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
+}
+
+function validateTestMetadata() {
+  console.warn("validateTestMetadata function is a placeholder.")
+  return true
+}
+
+function validatePartQuestions() {
+  console.warn("validatePartQuestions function is a placeholder.")
+  return true
 }
