@@ -19,6 +19,8 @@ async function fetchTests() {
     document.getElementById("tests-container").innerHTML = `
             <div class="alert alert-danger" role="alert">
                 <h4 class="alert-heading">Lỗi!</h4>
+                <p>Không thể  role="alert">
+                <h4 class="alert-heading">Lỗi!</h4>
                 <p>Không thể tải danh sách bài thi. Vui lòng thử lại sau.</p>
                 <hr>
                 <p class="mb-0">Chi tiết lỗi: ${error.message}</p>
@@ -44,6 +46,7 @@ function displayTests(tests) {
   tests.forEach((test) => {
     const date = new Date(test.created_at).toLocaleDateString("vi-VN")
     const vietnameseName = test.vietnamese_name || test.vietnameseName || ""
+    const description = test.description || "Không có mô tả"
 
     html += `
             <a href="test.html?id=${test.id}" class="list-group-item list-group-item-action">
@@ -51,7 +54,7 @@ function displayTests(tests) {
                     <h5 class="mb-1">${test.title}</h5>
                     <small class="text-muted">${date}</small>
                 </div>
-                <p class="mb-1">${test.description || "Không có mô tả"}</p>
+                <p class="mb-1">${description}</p>
                 <small class="text-muted">${vietnameseName}</small>
             </a>
         `
