@@ -1,72 +1,66 @@
 const { pool } = require("../config/database")
 
-async function checkTableStructure() {
+async function checkTestData() {
   try {
-    console.log("Đang kiểm tra cấu trúc bảng tests...")
+    console.log("Đang kiểm tra dữ liệu bài kiểm tra trong database...")
 
-    // Lấy thông tin về cấu trúc bảng tests
-    const [columns] = await pool.execute("SHOW COLUMNS FROM tests")
+    // Kiểm tra bảng tests
+    const [tests] = await pool.execute("SELECT * FROM tests")
+    console.log(`Tìm thấy ${tests.length} bài kiểm tra trong database`)
 
-    console.log("Cấu trúc bảng tests:")
-    columns.forEach((column) => {
-      console.log(
-        `- ${column.Field}: ${column.Type} ${column.Null === "NO" ? "NOT NULL" : ""} ${column.Key === "PRI" ? "PRIMARY KEY" : ""}`,
-      )
-    })
+    if (tests.length > 0) {
+      console.log("\nThông tin bài kiểm tra đầu tiên:")
+      console.log(tests[0])
 
-    // Kiểm tra các cột cần thiết
-    const requiredColumns = ["vietnamese_name", "description"]
-    const missingColumns = []
+      // Kiểm tra các phần của bài kiểm tra đầu tiên
+      const [parts] = await pool.execute("SELECT * FROM parts WHERE test_id = ?", [tests[0].id])
+      console.log(`\nTìm thấy ${parts.length} phần trong bài kiểm tra ID: ${tests[0].id}`)
 
-    for (const col of requiredColumns) {
-      const hasColumn = columns.some((column) => column.Field === col)
-      if (!hasColumn) {
-        missingColumns.push(col)
+      if (parts.length > 0) {
+        console.log("\nThông tin phần đầu tiên:")
+        console.log(parts[0])
+
+        // Kiểm tra các câu hỏi của phần đầu tiên
+        const [questions] = await pool.execute("SELECT * FROM questions WHERE part_id = ?", [parts[0].id])
+        console.log(`\nTìm thấy ${questions.length} câu hỏi trong phần ID: ${parts[0].id}`)
+
+        if (questions.length > 0) {
+          console.log("\nThông tin câu hỏi đầu tiên:")
+          console.log(questions[0])
+
+          // Kiểm tra nội dung và đáp án của câu hỏi
+          try {
+            const content = JSON.parse(questions[0].content)
+            console.log("\nNội dung câu hỏi (đã parse):")
+            console.log(content)
+
+            const correctAnswers = JSON.parse(questions[0].correct_answers)
+            console.log("\nĐáp án đúng (đã parse):")
+            console.log(correctAnswers)
+          } catch (error) {
+            console.error("Lỗi khi parse JSON:", error.message)
+          }
+        }
       }
     }
 
-    if (missingColumns.length > 0) {
-      console.log("\nCác cột sau KHÔNG tồn tại trong bảng tests:")
-      missingColumns.forEach((col) => console.log(`- ${col}`))
-      console.log("Cần thêm các cột này vào bảng.")
-    } else {
-      console.log("\nTất cả các cột cần thiết đều đã tồn tại trong bảng tests.")
-    }
+    // Kiểm tra số lượng câu hỏi theo loại
+    const [questionTypes] = await pool.execute(`
+      SELECT question_type, COUNT(*) as count
+      FROM questions
+      GROUP BY question_type
+    `)
 
-    // Kiểm tra bảng parts
-    console.log("\nĐang kiểm tra cấu trúc bảng parts...")
-    const [partColumns] = await pool.execute("SHOW COLUMNS FROM parts")
-    console.log("Cấu trúc bảng parts:")
-    partColumns.forEach((column) => {
-      console.log(
-        `- ${column.Field}: ${column.Type} ${column.Null === "NO" ? "NOT NULL" : ""} ${column.Key === "PRI" ? "PRIMARY KEY" : ""}`,
-      )
+    console.log("\nSố lượng câu hỏi theo loại:")
+    questionTypes.forEach((type) => {
+      console.log(`- ${type.question_type}: ${type.count} câu hỏi`)
     })
-
-    // Kiểm tra bảng questions
-    console.log("\nĐang kiểm tra cấu trúc bảng questions...")
-    const [questionColumns] = await pool.execute("SHOW COLUMNS FROM questions")
-    console.log("Cấu trúc bảng questions:")
-    questionColumns.forEach((column) => {
-      console.log(
-        `- ${column.Field}: ${column.Type} ${column.Null === "NO" ? "NOT NULL" : ""} ${column.Key === "PRI" ? "PRIMARY KEY" : ""}`,
-      )
-    })
-
-    // Kiểm tra dữ liệu trong bảng tests
-    console.log("\nĐang kiểm tra dữ liệu trong bảng tests...")
-    const [tests] = await pool.execute("SELECT * FROM tests LIMIT 5")
-    console.log(`Số lượng bài kiểm tra: ${tests.length}`)
-    if (tests.length > 0) {
-      console.log("Dữ liệu mẫu:")
-      console.log(tests[0])
-    }
   } catch (error) {
-    console.error("Lỗi khi kiểm tra cấu trúc bảng:", error.message)
+    console.error("Lỗi khi kiểm tra dữ liệu:", error.message)
   } finally {
     pool.end()
     process.exit()
   }
 }
 
-checkTableStructure()
+checkTestData()
