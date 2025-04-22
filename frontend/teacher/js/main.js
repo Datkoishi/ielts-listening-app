@@ -533,6 +533,422 @@ function displayExistingQuestions(part) {
   console.warn("displayExistingQuestions function is a placeholder.")
 }
 
+// Hàm kiểm tra tính hợp lệ của metadata bài kiểm tra
+function validateTestMetadata() {
+  // Kiểm tra tiêu đề bài kiểm tra
+  if (!test.title || test.title.trim() === "") {
+    showNotification("Vui lòng nhập tiêu đề bài kiểm tra (Tiếng Anh)", "error")
+    document.getElementById("testTitle").focus()
+    return false
+  }
+
+  // Kiểm tra độ dài tiêu đề
+  if (test.title.length > 200) {
+    showNotification("Tiêu đề bài kiểm tra quá dài (tối đa 200 ký tự)", "error")
+    document.getElementById("testTitle").focus()
+    return false
+  }
+
+  // Kiểm tra tên tiếng Việt (không bắt buộc)
+  if (test.vietnameseName && test.vietnameseName.length > 200) {
+    showNotification("Tên tiếng Việt quá dài (tối đa 200 ký tự)", "error")
+    document.getElementById("testVietnameseName").focus()
+    return false
+  }
+
+  // Kiểm tra mô tả (không bắt buộc)
+  if (test.description && test.description.length > 1000) {
+    showNotification("Mô tả quá dài (tối đa 1000 ký tự)", "error")
+    document.getElementById("testDescription").focus()
+    return false
+  }
+
+  // Kiểm tra xem có file âm thanh không
+  if (!audioFile) {
+    // Hiển thị cảnh báo nhưng không ngăn người dùng lưu
+    showNotification("Cảnh báo: Bài kiểm tra chưa có file âm thanh", "info")
+  }
+
+  return true
+}
+
+// Hàm kiểm tra tính hợp lệ của câu hỏi trong các phần
+function validatePartQuestions() {
+  // Kiểm tra tổng số câu hỏi
+  let totalQuestionCount = 0
+  for (let i = 1; i <= 4; i++) {
+    if (test[`part${i}`]) {
+      totalQuestionCount += test[`part${i}`].length
+    }
+  }
+
+  if (totalQuestionCount === 0) {
+    showNotification("Vui lòng thêm ít nhất một câu hỏi vào bài kiểm tra", "error")
+    return false
+  }
+
+  if (totalQuestionCount > MAX_QUESTIONS) {
+    showNotification(`Số lượng câu hỏi vượt quá giới hạn (tối đa ${MAX_QUESTIONS} câu)`, "error")
+    return false
+  }
+
+  // Kiểm tra từng phần
+  for (let i = 1; i <= 4; i++) {
+    if (test[`part${i}`] && test[`part${i}`].length > 0) {
+      // Kiểm tra từng câu hỏi trong phần
+      for (let j = 0; j < test[`part${i}`].length; j++) {
+        const question = test[`part${i}`][j]
+
+        // Kiểm tra loại câu hỏi
+        if (!question.type) {
+          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có loại câu hỏi`, "error")
+          return false
+        }
+
+        // Kiểm tra nội dung câu hỏi
+        if (!question.content) {
+          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có nội dung`, "error")
+          return false
+        }
+
+        // Kiểm tra đáp án đúng
+        if (!question.correctAnswers) {
+          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có đáp án đúng`, "error")
+          return false
+        }
+
+        // Kiểm tra cụ thể cho từng loại câu hỏi
+        switch (question.type) {
+          case "multiple_choice":
+            if (!validateMultipleChoiceQuestion(question, i, j)) return false
+            break
+          case "multiple_answers":
+            if (!validateMultipleAnswersQuestion(question, i, j)) return false
+            break
+          case "matching":
+            if (!validateMatchingQuestion(question, i, j)) return false
+            break
+          case "map_labeling":
+            if (!validateMapLabelingQuestion(question, i, j)) return false
+            break
+          case "note_completion":
+            if (!validateNoteCompletionQuestion(question, i, j)) return false
+            break
+          case "form_completion":
+            if (!validateFormCompletionQuestion(question, i, j)) return false
+            break
+          case "flow_chart":
+            if (!validateFlowChartQuestion(question, i, j)) return false
+            break
+          default:
+            showNotification(`Loại câu hỏi không hợp lệ: ${question.type}`, "error")
+            return false
+        }
+      }
+    }
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi trắc nghiệm
+function validateMultipleChoiceQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra câu hỏi
+  if (!content.question || content.question.trim() === "") {
+    showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} không có nội dung câu hỏi`, "error")
+    return false
+  }
+
+  // Kiểm tra các lựa chọn
+  if (!content.choices || !Array.isArray(content.choices) || content.choices.length < 2) {
+    showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} cần ít nhất 2 lựa chọn`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án đúng
+  const correctAnswer = question.correctAnswers
+  if (correctAnswer === undefined || correctAnswer < 0 || correctAnswer >= content.choices.length) {
+    showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} có đáp án không hợp lệ`, "error")
+    return false
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi nhiều đáp án
+function validateMultipleAnswersQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra câu hỏi
+  if (!content.question || content.question.trim() === "") {
+    showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} không có nội dung câu hỏi`, "error")
+    return false
+  }
+
+  // Kiểm tra các lựa chọn
+  if (!content.choices || !Array.isArray(content.choices) || content.choices.length < 2) {
+    showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} cần ít nhất 2 lựa chọn`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án đúng
+  const correctAnswers = question.correctAnswers
+  if (!Array.isArray(correctAnswers) || correctAnswers.length === 0) {
+    showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} cần ít nhất 1 đáp án đúng`, "error")
+    return false
+  }
+
+  // Kiểm tra tính hợp lệ của các đáp án
+  for (const answer of correctAnswers) {
+    if (answer < 0 || answer >= content.choices.length) {
+      showNotification(`Câu hỏi #${questionIndex + 1} trong Phần ${partIndex} có đáp án không hợp lệ`, "error")
+      return false
+    }
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi ghép đôi
+function validateMatchingQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra tiêu đề
+  if (!content.title || content.title.trim() === "") {
+    showNotification(`Câu hỏi ghép đôi #${questionIndex + 1} trong Phần ${partIndex} không có tiêu đề`, "error")
+    return false
+  }
+
+  // Kiểm tra danh sách câu hỏi
+  if (!content.questions || !Array.isArray(content.questions) || content.questions.length === 0) {
+    showNotification(`Câu hỏi ghép đôi #${questionIndex + 1} trong Phần ${partIndex} không có câu hỏi`, "error")
+    return false
+  }
+
+  // Kiểm tra danh sách từ khóa
+  if (!content.keywords || !Array.isArray(content.keywords) || content.keywords.length === 0) {
+    showNotification(`Câu hỏi ghép đôi #${questionIndex + 1} trong Phần ${partIndex} không có từ khóa`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án
+  const answers = question.correctAnswers
+  if (!answers || typeof answers !== "object" || Object.keys(answers).length !== content.questions.length) {
+    showNotification(`Câu hỏi ghép đôi #${questionIndex + 1} trong Phần ${partIndex} không có đủ đáp án`, "error")
+    return false
+  }
+
+  // Kiểm tra tính hợp lệ của đáp án
+  for (const [questionIdx, keywordIdx] of Object.entries(answers)) {
+    if (keywordIdx < 0 || keywordIdx >= content.keywords.length) {
+      showNotification(`Câu hỏi ghép đôi #${questionIndex + 1} trong Phần ${partIndex} có đáp án không hợp lệ`, "error")
+      return false
+    }
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi gắn nhãn bản đồ/sơ đồ
+function validateMapLabelingQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra loại bản đồ
+  if (!content.mapType || content.mapType.trim() === "") {
+    showNotification(`Câu hỏi bản đồ #${questionIndex + 1} trong Phần ${partIndex} không có loại bản đồ`, "error")
+    return false
+  }
+
+  // Kiểm tra hướng dẫn
+  if (!content.instructions || content.instructions.trim() === "") {
+    showNotification(`Câu hỏi bản đồ #${questionIndex + 1} trong Phần ${partIndex} không có hướng dẫn`, "error")
+    return false
+  }
+
+  // Kiểm tra URL hình ảnh
+  if (!content.imageUrl || content.imageUrl.trim() === "") {
+    showNotification(`Câu hỏi bản đồ #${questionIndex + 1} trong Phần ${partIndex} không có URL hình ảnh`, "error")
+    return false
+  }
+
+  // Kiểm tra danh sách nhãn
+  if (!content.labels || !Array.isArray(content.labels) || content.labels.length === 0) {
+    showNotification(`Câu hỏi bản đồ #${questionIndex + 1} trong Phần ${partIndex} không có nhãn`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án
+  const answers = question.correctAnswers
+  if (!answers || typeof answers !== "object" || Object.keys(answers).length !== content.labels.length) {
+    showNotification(`Câu hỏi bản đồ #${questionIndex + 1} trong Phần ${partIndex} không có đủ đáp án`, "error")
+    return false
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi điền vào ghi chú
+function validateNoteCompletionQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra hướng dẫn
+  if (!content.instructions || content.instructions.trim() === "") {
+    showNotification(`Câu hỏi ghi chú #${questionIndex + 1} trong Phần ${partIndex} không có hướng dẫn`, "error")
+    return false
+  }
+
+  // Kiểm tra chủ đề
+  if (!content.topic || content.topic.trim() === "") {
+    showNotification(`Câu hỏi ghi chú #${questionIndex + 1} trong Phần ${partIndex} không có chủ đề`, "error")
+    return false
+  }
+
+  // Kiểm tra danh sách ghi chú
+  if (!content.notes || !Array.isArray(content.notes) || content.notes.length === 0) {
+    showNotification(`Câu hỏi ghi chú #${questionIndex + 1} trong Phần ${partIndex} không có ghi chú`, "error")
+    return false
+  }
+
+  // Đếm số lượng ghi chú có chỗ trống
+  let blankCount = 0
+  for (const note of content.notes) {
+    if (note.hasBlank) {
+      blankCount++
+    }
+  }
+
+  if (blankCount === 0) {
+    showNotification(`Câu hỏi ghi chú #${questionIndex + 1} trong Phần ${partIndex} không có chỗ trống nào`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án
+  const answers = question.correctAnswers
+  if (!answers || typeof answers !== "object" || Object.keys(answers).length !== blankCount) {
+    showNotification(`Câu hỏi ghi chú #${questionIndex + 1} trong Phần ${partIndex} không có đủ đáp án`, "error")
+    return false
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi điền vào biểu mẫu
+function validateFormCompletionQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra hướng dẫn
+  if (!content.instructions || content.instructions.trim() === "") {
+    showNotification(`Câu hỏi biểu mẫu #${questionIndex + 1} trong Phần ${partIndex} không có hướng dẫn`, "error")
+    return false
+  }
+
+  // Kiểm tra danh sách hàng
+  if (!content.rows || !Array.isArray(content.rows) || content.rows.length === 0) {
+    showNotification(`Câu hỏi biểu mẫu #${questionIndex + 1} trong Phần ${partIndex} không có hàng nào`, "error")
+    return false
+  }
+
+  // Đếm số lượng hàng có chỗ trống
+  let blankCount = 0
+  for (const row of content.rows) {
+    if (row.hasBlank) {
+      blankCount++
+    }
+  }
+
+  if (blankCount === 0) {
+    showNotification(`Câu hỏi biểu mẫu #${questionIndex + 1} trong Phần ${partIndex} không có chỗ trống nào`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án
+  const answers = question.correctAnswers
+  if (!answers || typeof answers !== "object" || Object.keys(answers).length !== blankCount) {
+    showNotification(`Câu hỏi biểu mẫu #${questionIndex + 1} trong Phần ${partIndex} không có đủ đáp án`, "error")
+    return false
+  }
+
+  return true
+}
+
+// Hàm kiểm tra câu hỏi lưu đồ
+function validateFlowChartQuestion(question, partIndex, questionIndex) {
+  const content = question.content
+
+  // Kiểm tra tiêu đề
+  if (!content.title || content.title.trim() === "") {
+    showNotification(`Câu hỏi lưu đồ #${questionIndex + 1} trong Phần ${partIndex} không có tiêu đề`, "error")
+    return false
+  }
+
+  // Kiểm tra hướng dẫn
+  if (!content.instructions || content.instructions.trim() === "") {
+    showNotification(`Câu hỏi lưu đồ #${questionIndex + 1} trong Phần ${partIndex} không có hướng dẫn`, "error")
+    return false
+  }
+
+  // Kiểm tra danh sách mục
+  if (!content.items || !Array.isArray(content.items) || content.items.length === 0) {
+    showNotification(`Câu hỏi lưu đồ #${questionIndex + 1} trong Phần ${partIndex} không có mục nào`, "error")
+    return false
+  }
+
+  // Đếm số lượng mục có chỗ trống
+  let blankCount = 0
+  for (const item of content.items) {
+    if (item.hasBlank) {
+      blankCount++
+    }
+  }
+
+  if (blankCount === 0) {
+    showNotification(`Câu hỏi lưu đồ #${questionIndex + 1} trong Phần ${partIndex} không có chỗ trống nào`, "error")
+    return false
+  }
+
+  // Kiểm tra đáp án
+  const answers = question.correctAnswers
+  if (!answers || typeof answers !== "object" || Object.keys(answers).length !== blankCount) {
+    showNotification(`Câu hỏi lưu đồ #${questionIndex + 1} trong Phần ${partIndex} không có đủ đáp án`, "error")
+    return false
+  }
+
+  // Kiểm tra các lựa chọn cho mỗi mục có chỗ trống
+  if (!content.choices || typeof content.choices !== "object") {
+    showNotification(
+      `Câu hỏi lưu đồ #${questionIndex + 1} trong Phần ${partIndex} không có lựa chọn cho các mục`,
+      "error",
+    )
+    return false
+  }
+
+  for (const item of content.items) {
+    if (item.hasBlank) {
+      const itemId = item.id
+      if (!content.choices[itemId] || !Array.isArray(content.choices[itemId]) || content.choices[itemId].length < 2) {
+        showNotification(
+          `Mục "${item.text}" trong câu hỏi lưu đồ #${questionIndex + 1} Phần ${partIndex} cần ít nhất 2 lựa chọn`,
+          "error",
+        )
+        return false
+      }
+
+      const answerIndex = answers[itemId]
+      if (answerIndex === undefined || answerIndex < 0 || answerIndex >= content.choices[itemId].length) {
+        showNotification(
+          `Mục "${item.text}" trong câu hỏi lưu đồ #${questionIndex + 1} Phần ${partIndex} có đáp án không hợp lệ`,
+          "error",
+        )
+        return false
+      }
+    }
+  }
+
+  return true
+}
+
 // Make sure these functions are exposed to the global window object
 window.previousPart = previousPart
 window.nextPart = nextPart
@@ -551,19 +967,11 @@ window.addAnswerInput = addAnswerInput
 window.removeAnswerInput = removeAnswerInput
 window.saveQuestion = saveQuestion
 window.previewQuestion = previewQuestion
+window.validateTestMetadata = validateTestMetadata
+window.validatePartQuestions = validatePartQuestions
 
 // Declare startTestCreation
 function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
-}
-
-function validateTestMetadata() {
-  console.warn("validateTestMetadata function is a placeholder.")
-  return true
-}
-
-function validatePartQuestions() {
-  console.warn("validatePartQuestions function is a placeholder.")
-  return true
 }
