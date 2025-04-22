@@ -1,18 +1,19 @@
-const { query } = require("../config/database")
+const { pool } = require("../config/database")
 
 class Test {
   // Lấy tất cả bài kiểm tra
   static async findAll() {
-    return await query(`
+    const [rows] = await pool.execute(`
       SELECT t.id, t.title, t.description, t.created_at
       FROM tests t
       ORDER BY t.created_at DESC
     `)
+    return rows
   }
 
   // Tìm bài kiểm tra theo ID
   static async findById(id) {
-    const tests = await query(
+    const [rows] = await pool.execute(
       `
       SELECT t.id, t.title, t.description, t.created_at
       FROM tests t
@@ -20,30 +21,36 @@ class Test {
     `,
       [id],
     )
-    return tests[0]
+    return rows[0]
   }
 
   // Tạo bài kiểm tra mới
   static async create(testData) {
     const { title, description } = testData
-    const result = await query("INSERT INTO tests (title, description) VALUES (?, ?)", [title, description])
+    const [result] = await pool.execute("INSERT INTO tests (title, description) VALUES (?, ?)", [title, description])
     return result.insertId
   }
 
   // Cập nhật bài kiểm tra
   static async update(id, testData) {
     const { title, description } = testData
-    return await query("UPDATE tests SET title = ?, description = ? WHERE id = ?", [title, description, id])
+    const [result] = await pool.execute("UPDATE tests SET title = ?, description = ? WHERE id = ?", [
+      title,
+      description,
+      id,
+    ])
+    return result
   }
 
   // Xóa bài kiểm tra
   static async delete(id) {
-    return await query("DELETE FROM tests WHERE id = ?", [id])
+    const [result] = await pool.execute("DELETE FROM tests WHERE id = ?", [id])
+    return result
   }
 
   // Lấy câu hỏi theo ID bài kiểm tra
   static async getQuestionsByTestId(testId) {
-    return await query(
+    const [rows] = await pool.execute(
       `
       SELECT q.*, p.part_number
       FROM questions q
@@ -53,11 +60,12 @@ class Test {
     `,
       [testId],
     )
+    return rows
   }
 
   // Tạo phần mới cho bài kiểm tra
   static async createPart(testId, partNumber, audioUrl = null) {
-    const result = await query("INSERT INTO parts (test_id, part_number, audio_url) VALUES (?, ?, ?)", [
+    const [result] = await pool.execute("INSERT INTO parts (test_id, part_number, audio_url) VALUES (?, ?, ?)", [
       testId,
       partNumber,
       audioUrl,
@@ -68,12 +76,11 @@ class Test {
   // Tạo câu hỏi mới
   static async createQuestion(partId, questionData) {
     const { type, content, correctAnswers } = questionData
-    return await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
-      partId,
-      type,
-      JSON.stringify(content),
-      JSON.stringify(correctAnswers),
-    ])
+    const [result] = await pool.execute(
+      "INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)",
+      [partId, type, JSON.stringify(content), JSON.stringify(correctAnswers)],
+    )
+    return result
   }
 }
 

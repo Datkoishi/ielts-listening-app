@@ -1,5 +1,4 @@
-const Test = require("../models/Test")
-const { query } = require("../config/database")
+const { pool, query } = require("../config/database")
 
 // Kiểm tra xem cột có tồn tại không
 async function checkColumnExists(tableName, columnName) {
@@ -59,7 +58,7 @@ exports.getPublicTestById = async (req, res) => {
     if (hasDescription) sqlQuery += ", t.description"
     sqlQuery += ", t.created_at FROM tests t WHERE t.id = ?"
 
-    const test = await query(sqlQuery, [req.params.id])
+    const [test] = await pool.execute(sqlQuery, [req.params.id])
 
     if (!test || test.length === 0) {
       console.log(`Không tìm thấy bài kiểm tra ID: ${req.params.id}`)
@@ -71,7 +70,7 @@ exports.getPublicTestById = async (req, res) => {
     test[0].description = test[0].description || "Không có mô tả"
 
     // Lấy các phần và câu hỏi
-    const parts = await query(
+    const [parts] = await pool.execute(
       `
       SELECT id, part_number, audio_url
       FROM parts
@@ -85,7 +84,7 @@ exports.getPublicTestById = async (req, res) => {
 
     const partsWithQuestions = await Promise.all(
       parts.map(async (part) => {
-        const questions = await query(
+        const [questions] = await pool.execute(
           `
         SELECT id, question_type, content
         FROM questions
@@ -148,7 +147,7 @@ exports.getAllTests = async (req, res) => {
     if (hasDescription) sqlQuery += ", t.description"
     sqlQuery += ", t.created_at FROM tests t ORDER BY t.created_at DESC"
 
-    const tests = await query(sqlQuery)
+    const [tests] = await pool.execute(sqlQuery)
 
     // Thêm các trường thiếu vào kết quả
     const processedTests = tests.map((test) => ({
@@ -177,7 +176,7 @@ exports.getTestById = async (req, res) => {
     if (hasDescription) sqlQuery += ", t.description"
     sqlQuery += ", t.created_at FROM tests t WHERE t.id = ?"
 
-    const test = await query(sqlQuery, [req.params.id])
+    const [test] = await pool.execute(sqlQuery, [req.params.id])
 
     if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
@@ -188,7 +187,7 @@ exports.getTestById = async (req, res) => {
     test[0].description = test[0].description || "Không có mô tả"
 
     // Lấy các phần và câu hỏi
-    const parts = await query(
+    const [parts] = await pool.execute(
       `
       SELECT id, part_number, audio_url
       FROM parts
@@ -200,7 +199,7 @@ exports.getTestById = async (req, res) => {
 
     const partsWithQuestions = await Promise.all(
       parts.map(async (part) => {
-        const questions = await query(
+        const [questions] = await pool.execute(
           `
         SELECT id, question_type, content, correct_answers
         FROM questions
@@ -245,7 +244,7 @@ exports.createTest = async (req, res) => {
       part4: part4 ? `${part4.length} câu hỏi` : "không có",
     })
 
-    await query("START TRANSACTION")
+    await pool.execute("START TRANSACTION")
 
     // Kiểm tra các cột
     const hasVietnameseName = await checkColumnExists("tests", "vietnamese_name")
@@ -271,7 +270,7 @@ exports.createTest = async (req, res) => {
     insertQuery += `) VALUES (${placeholders})`
 
     // Tạo bài kiểm tra
-    const result = await query(insertQuery, values)
+    const [result] = await pool.execute(insertQuery, values)
     const testId = result.insertId
     console.log(`Đã tạo bài kiểm tra mới với ID: ${testId}`)
 
@@ -279,7 +278,7 @@ exports.createTest = async (req, res) => {
     for (let i = 1; i <= 4; i++) {
       const partData = req.body[`part${i}`]
       if (partData?.length > 0) {
-        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
+        const [partResult] = await pool.execute("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
 
         const partId = partResult.insertId
         console.log(`Đã tạo phần ${i} với ID: ${partId}`)
@@ -293,7 +292,7 @@ exports.createTest = async (req, res) => {
             console.log(`Content: ${contentStr.substring(0, 100)}...`)
             console.log(`Correct answers: ${correctAnswersStr}`)
 
-            await query(
+            await pool.execute(
               "INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)",
               [partId, question.type, contentStr, correctAnswersStr],
             )
@@ -306,11 +305,11 @@ exports.createTest = async (req, res) => {
       }
     }
 
-    await query("COMMIT")
+    await pool.execute("COMMIT")
     console.log("Đã tạo bài kiểm tra thành công!")
     res.status(201).json({ message: "Tạo bài kiểm tra thành công", testId })
   } catch (error) {
-    await query("ROLLBACK")
+    await pool.execute("ROLLBACK")
     console.error("Lỗi tạo bài kiểm tra:", error.message)
     res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
@@ -322,7 +321,7 @@ exports.updateTest = async (req, res) => {
   const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
 
   try {
-    await query("START TRANSACTION")
+    await pool.execute("START TRANSACTION")
 
     // Kiểm tra các cột
     const hasVietnameseName = await checkColumnExists("tests", "vietnamese_name")
@@ -346,34 +345,32 @@ exports.updateTest = async (req, res) => {
     values.push(id)
 
     // Cập nhật bài kiểm tra
-    await query(updateQuery, values)
+    await pool.execute(updateQuery, values)
 
     // Xóa các phần và câu hỏi hiện có
-    await query("DELETE FROM parts WHERE test_id = ?", [id])
+    await pool.execute("DELETE FROM parts WHERE test_id = ?", [id])
 
     // Tạo các phần và câu hỏi mới
     for (let i = 1; i <= 4; i++) {
       const partData = req.body[`part${i}`]
       if (partData?.length > 0) {
-        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, i])
+        const [partResult] = await pool.execute("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, i])
 
         const partId = partResult.insertId
 
         for (const question of partData) {
-          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
-            partId,
-            question.type,
-            JSON.stringify(question.content),
-            JSON.stringify(question.correctAnswers),
-          ])
+          await pool.execute(
+            "INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)",
+            [partId, question.type, JSON.stringify(question.content), JSON.stringify(question.correctAnswers)],
+          )
         }
       }
     }
 
-    await query("COMMIT")
+    await pool.execute("COMMIT")
     res.json({ message: "Cập nhật bài kiểm tra thành công" })
   } catch (error) {
-    await query("ROLLBACK")
+    await pool.execute("ROLLBACK")
     console.error("Lỗi cập nhật bài kiểm tra:", error.message)
     res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
@@ -382,7 +379,7 @@ exports.updateTest = async (req, res) => {
 // Xóa bài kiểm tra
 exports.deleteTest = async (req, res) => {
   try {
-    await query("DELETE FROM tests WHERE id = ?", [req.params.id])
+    await pool.execute("DELETE FROM tests WHERE id = ?", [req.params.id])
     res.json({ message: "Xóa bài kiểm tra thành công" })
   } catch (error) {
     console.error("Lỗi xóa bài kiểm tra:", error.message)
@@ -397,13 +394,13 @@ exports.submitAnswers = async (req, res) => {
     const { answers, studentId } = req.body
 
     // Kiểm tra bài kiểm tra tồn tại
-    const test = await query("SELECT id FROM tests WHERE id = ?", [testId])
+    const [test] = await pool.execute("SELECT id FROM tests WHERE id = ?", [testId])
     if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
     // Lấy tất cả câu hỏi của bài kiểm tra
-    const questions = await query(
+    const [questions] = await pool.execute(
       `
       SELECT q.*, p.part_number
       FROM questions q
@@ -444,7 +441,7 @@ exports.submitAnswers = async (req, res) => {
       }
 
       // Lưu kết quả
-      await query(
+      await pool.execute(
         "INSERT INTO student_answers (student_id, test_id, question_id, answer, is_correct) VALUES (?, ?, ?, ?, ?)",
         [studentId || 0, testId, questionId, JSON.stringify(studentAnswer), isCorrect],
       )
@@ -484,13 +481,13 @@ exports.submitPublicAnswers = async (req, res) => {
     console.log(`Số câu trả lời: ${answers.length}`)
 
     // Kiểm tra bài kiểm tra tồn tại
-    const test = await query("SELECT id FROM tests WHERE id = ?", [testId])
+    const [test] = await pool.execute("SELECT id FROM tests WHERE id = ?", [testId])
     if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
     // Lấy tất cả câu hỏi của bài kiểm tra
-    const questions = await query(
+    const [questions] = await pool.execute(
       `
       SELECT q.*, p.part_number
       FROM questions q

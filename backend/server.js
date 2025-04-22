@@ -3,7 +3,7 @@ const cors = require("cors")
 const path = require("path")
 const testRoutes = require("./routes/testRoutes")
 const userRoutes = require("./routes/userRoutes")
-const { connectDB } = require("./config/database")
+const { pool } = require("./config/database")
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -41,16 +41,25 @@ app.get("/api/debug", (req, res) => {
 })
 
 // Kết nối database và khởi động server
-connectDB()
-  .then(() => {
+async function connectAndStartServer() {
+  try {
+    // Kiểm tra kết nối database
+    const connection = await pool.getConnection()
+    console.log("Đã kết nối thành công đến cơ sở dữ liệu MySQL")
+    connection.release()
+
+    // Khởi động server
     app.listen(PORT, () => {
       console.log(`Server đang chạy tại http://localhost:${PORT}`)
     })
-  })
-  .catch((err) => {
+  } catch (err) {
     console.error("Không thể kết nối đến database:", err)
     process.exit(1)
-  })
+  }
+}
+
+// Khởi động server
+connectAndStartServer()
 
 // Xử lý lỗi không bắt được
 process.on("unhandledRejection", (err) => {

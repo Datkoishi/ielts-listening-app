@@ -6,26 +6,32 @@ document.addEventListener("DOMContentLoaded", () => {
 // Lấy danh sách bài thi từ API
 async function fetchTests() {
   try {
+    const testsContainer = document.getElementById("tests-container")
+    testsContainer.innerHTML = '<div class="alert alert-info">Đang tải danh sách bài thi...</div>'
+
     // Sửa đường dẫn API để phù hợp với cấu trúc server
     const response = await fetch("/api/tests/public")
+
     if (!response.ok) {
-      throw new Error(`Không thể lấy danh sách bài thi: ${response.status}`)
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(
+        `Không thể lấy danh sách bài thi: ${response.status} - ${errorData.message || response.statusText}`,
+      )
     }
 
     const tests = await response.json()
+    console.log("Dữ liệu bài thi nhận được:", tests)
     displayTests(tests)
   } catch (error) {
     console.error("Lỗi:", error)
     document.getElementById("tests-container").innerHTML = `
-            <div class="alert alert-danger" role="alert">
-                <h4 class="alert-heading">Lỗi!</h4>
-                <p>Không thể  role="alert">
-                <h4 class="alert-heading">Lỗi!</h4>
-                <p>Không thể tải danh sách bài thi. Vui lòng thử lại sau.</p>
-                <hr>
-                <p class="mb-0">Chi tiết lỗi: ${error.message}</p>
-            </div>
-        `
+      <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Lỗi!</h4>
+        <p>Không thể tải danh sách bài thi. Vui lòng thử lại sau.</p>
+        <hr>
+        <p class="mb-0">Chi tiết lỗi: ${error.message}</p>
+      </div>
+    `
   }
 }
 
