@@ -1,70 +1,62 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Lấy danh sách bài thi
   fetchTests()
 })
 
-// Lấy danh sách bài thi từ API
 async function fetchTests() {
   try {
-    const testsContainer = document.getElementById("tests-container")
-    testsContainer.innerHTML = '<div class="alert alert-info">Đang tải danh sách bài thi...</div>'
-
-    // Sửa đường dẫn API để phù hợp với cấu trúc server
-    const response = await fetch("/api/tests/public")
+    const response = await fetch("http://localhost:3000/api/tests/public")
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(
-        `Không thể lấy danh sách bài thi: ${response.status} - ${errorData.message || response.statusText}`,
-      )
+      throw new Error(`HTTP error! status: ${response.status}`)
     }
 
     const tests = await response.json()
-    console.log("Dữ liệu bài thi nhận được:", tests)
     displayTests(tests)
   } catch (error) {
     console.error("Lỗi:", error)
-    document.getElementById("tests-container").innerHTML = `
-      <div class="alert alert-danger" role="alert">
-        <h4 class="alert-heading">Lỗi!</h4>
-        <p>Không thể tải danh sách bài thi. Vui lòng thử lại sau.</p>
-        <hr>
-        <p class="mb-0">Chi tiết lỗi: ${error.message}</p>
-      </div>
-    `
+    displayError("Không thể lấy danh sách bài thi", error.message)
   }
 }
 
-// Hiển thị danh sách bài thi
 function displayTests(tests) {
-  const container = document.getElementById("tests-container")
+  const testListContainer = document.getElementById("test-list")
 
-  if (tests.length === 0) {
-    container.innerHTML = `
-            <div class="alert alert-info" role="alert">
-                Hiện tại chưa có bài thi nào.
-            </div>
-        `
+  if (!tests || tests.length === 0) {
+    testListContainer.innerHTML = `
+      <div class="alert alert-info">
+        Không có bài kiểm tra nào.
+      </div>
+    `
     return
   }
 
-  let html = ""
-  tests.forEach((test) => {
-    const date = new Date(test.created_at).toLocaleDateString("vi-VN")
-    const vietnameseName = test.vietnamese_name || test.vietnameseName || ""
-    const description = test.description || "Không có mô tả"
+  const testItems = tests
+    .map(
+      (test) => `
+    <div class="card mb-3">
+      <div class="card-body">
+        <h5 class="card-title">${test.title}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">${test.vietnamese_name || ""}</h6>
+        <p class="card-text">${test.description || "Không có mô tả"}</p>
+        <a href="test.html?id=${test.id}" class="btn btn-primary">Làm bài</a>
+      </div>
+    </div>
+  `,
+    )
+    .join("")
 
-    html += `
-            <a href="test.html?id=${test.id}" class="list-group-item list-group-item-action">
-                <div class="d-flex w-100 justify-content-between">
-                    <h5 class="mb-1">${test.title}</h5>
-                    <small class="text-muted">${date}</small>
-                </div>
-                <p class="mb-1">${description}</p>
-                <small class="text-muted">${vietnameseName}</small>
-            </a>
-        `
-  })
+  testListContainer.innerHTML = testItems
+}
 
-  container.innerHTML = html
+function displayError(title, details) {
+  const testListContainer = document.getElementById("test-list")
+
+  testListContainer.innerHTML = `
+    <div class="alert alert-danger">
+      <h4 class="alert-heading">${title}!</h4>
+      <p>Vui lòng thử lại sau.</p>
+      <hr>
+      <p class="mb-0">Chi tiết lỗi: ${details}</p>
+    </div>
+  `
 }

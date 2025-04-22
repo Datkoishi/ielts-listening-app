@@ -1,26 +1,39 @@
 const mysql = require("mysql2/promise")
-require("dotenv").config()
+const dotenv = require("dotenv")
 
-// Tạo pool kết nối
+dotenv.config()
+
 const pool = mysql.createPool({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "",
-  database: process.env.DB_NAME || "demodb",
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
 })
 
-// Hàm truy vấn tiện ích
-async function query(sql, params) {
+// Kết nối đến cơ sở dữ liệu
+exports.connectDB = async () => {
   try {
-    const [rows] = await pool.execute(sql, params || [])
-    return rows
+    const connection = await pool.getConnection()
+    console.log("Đã kết nối thành công đến cơ sở dữ liệu MySQL")
+    connection.release()
   } catch (error) {
-    console.error("Database query error:", error.message)
+    console.error("Kết nối cơ sở dữ liệu thất bại:", error.message)
+    process.exit(1)
+  }
+}
+
+// Hàm thực hiện truy vấn
+exports.query = async (sql, params) => {
+  try {
+    const [results] = await pool.execute(sql, params)
+    return results
+  } catch (error) {
+    console.error("Lỗi truy vấn:", error.message)
     throw error
   }
 }
 
-module.exports = { pool, query }
+module.exports = pool
