@@ -85,6 +85,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Thiết lập xử lý âm thanh
   setupAudioHandlers()
+
+  // Thêm nút debug
+  setTimeout(addDebugButtons, 1000)
 })
 
 // Add initialization for the window object
@@ -418,21 +421,17 @@ function saveTest() {
   try {
     console.log("Bắt đầu lưu bài kiểm tra...")
 
-    // Make sure test object is properly initialized
+    // Đảm bảo sử dụng đối tượng test từ window
+    const test = window.test
+
+    // Kiểm tra xem đối tượng test có tồn tại không
     if (!test) {
       console.error("Lỗi: Đối tượng test không tồn tại")
-      test = {
-        title: "",
-        vietnameseName: "",
-        description: "",
-        part1: [],
-        part2: [],
-        part3: [],
-        part4: [],
-      }
+      showNotification("Lỗi: Không tìm thấy dữ liệu bài kiểm tra", "error")
+      return
     }
 
-    // Ensure all part arrays exist
+    // Đảm bảo tất cả các mảng part tồn tại
     for (let i = 1; i <= 4; i++) {
       if (!test[`part${i}`]) {
         test[`part${i}`] = []
@@ -452,7 +451,10 @@ function saveTest() {
     })
 
     // Xác thực metadata bài kiểm tra trước
-    if (!validateTestMetadata()) {
+    console.log("Đang xác thực metadata bài kiểm tra...")
+    const metadataValid = validateTestMetadata()
+    console.log("Kết quả xác thực metadata:", metadataValid)
+    if (!metadataValid) {
       console.error("Lỗi: Metadata bài kiểm tra không hợp lệ")
       return
     }
@@ -463,7 +465,7 @@ function saveTest() {
     let hasQuestions = false
     const questionCounts = {}
 
-    // Debug the test object structure
+    // Debug cấu trúc đối tượng test
     console.log("Cấu trúc đối tượng test:", JSON.stringify(test, null, 2))
 
     for (let i = 1; i <= 4; i++) {
@@ -485,35 +487,6 @@ function saveTest() {
       showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
       return
     }
-
-    console.log("Metadata bài kiểm tra hợp lệ, tiếp tục kiểm tra câu hỏi...")
-
-    // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
-    // let hasQuestions = false //Fix: Remove redeclaration
-    const questionCounts2 = {}
-
-    for (let i = 1; i <= 4; i++) {
-      const partQuestions = test[`part${i}`] || []
-      questionCounts2[`part${i}`] = partQuestions.length
-
-      if (partQuestions.length > 0) {
-        hasQuestions = true
-        console.log(`Phần ${i}: Tìm thấy ${partQuestions.length} câu hỏi`)
-      } else {
-        console.log(`Phần ${i}: Không có câu hỏi`)
-      }
-    }
-
-    console.log("Tổng số câu hỏi theo phần:", questionCounts2)
-
-    if (!hasQuestions) {
-      console.error("Lỗi: Không tìm thấy câu hỏi nào trong tất cả các phần")
-      showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
-      return
-    }
-
-    // Kiểm tra cấu trúc đối tượng test
-    console.log("Cấu trúc đối tượng test:", JSON.stringify(test, null, 2))
 
     // Xác thực câu hỏi phần
     if (!validatePartQuestions()) {
@@ -630,6 +603,13 @@ function displayExistingQuestions(part) {
 
 // Hàm kiểm tra tính hợp lệ của metadata bài kiểm tra
 function validateTestMetadata() {
+  console.log("Bắt đầu xác thực metadata bài kiểm tra...")
+  console.log("Metadata hiện tại:", {
+    title: test.title,
+    vietnameseName: test.vietnameseName,
+    description: test.description,
+  })
+
   // Kiểm tra tiêu đề bài kiểm tra
   if (!test.title || test.title.trim() === "") {
     showNotification("Vui lòng nhập tiêu đề bài kiểm tra (Tiếng Anh)", "error")
@@ -643,6 +623,13 @@ function validateTestMetadata() {
     document.getElementById("testTitle").focus()
     return false
   }
+
+  // Không bắt buộc phải có tên tiếng Việt
+  // if (!test.vietnameseName || test.vietnameseName.trim() === "") {
+  //   showNotification("Vui lòng nhập tên bài kiểm tra (Tiếng Việt)", "error");
+  //   document.getElementById("testVietnameseName").focus();
+  //   return false;
+  // }
 
   // Kiểm tra tên tiếng Việt (không bắt buộc)
   if (test.vietnameseName && test.vietnameseName.length > 200) {
@@ -658,12 +645,7 @@ function validateTestMetadata() {
     return false
   }
 
-  // Kiểm tra xem có file âm thanh không
-  if (!audioFile) {
-    // Hiển thị cảnh báo nhưng không ngăn người dùng lưu
-    showNotification("Cảnh báo: Bài kiểm tra chưa có file âm thanh", "info")
-  }
-
+  console.log("Xác thực metadata bài kiểm tra thành công")
   return true
 }
 
@@ -1070,3 +1052,83 @@ function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
 }
+
+// Thêm hàm debug để kiểm tra đối tượng test
+// Thêm vào cuối file:
+
+// Hàm debug để kiểm tra đối tượng test
+function debugTestObject() {
+  console.log("=== DEBUG TEST OBJECT ===")
+  console.log("window.test:", window.test)
+  console.log("test (local variable):", test)
+  console.log("Title:", test.title)
+  console.log("Vietnamese Name:", test.vietnameseName)
+  console.log("Description:", test.description)
+
+  // Kiểm tra từng phần
+  for (let i = 1; i <= 4; i++) {
+    console.log(`Part ${i} questions:`, test[`part${i}`]?.length || 0)
+  }
+
+  // Kiểm tra DOM elements
+  console.log("testTitle element:", document.getElementById("testTitle")?.value)
+  console.log("testVietnameseName element:", document.getElementById("testVietnameseName")?.value)
+  console.log("testDescription element:", document.getElementById("testDescription")?.value)
+
+  showNotification("Đã in thông tin debug vào console", "info")
+}
+
+// Thêm nút debug vào giao diện
+function addDebugButtons() {
+  const testCreationPage = document.getElementById("testCreationPage")
+  if (!testCreationPage) return
+
+  // Nút debug đối tượng test
+  const debugButton = document.createElement("button")
+  debugButton.id = "debugObjectBtn"
+  debugButton.className = "action-button"
+  debugButton.style.backgroundColor = "#ff9800"
+  debugButton.innerHTML = '<i class="fas fa-bug"></i> Debug Test Object'
+  debugButton.addEventListener("click", debugTestObject)
+  testCreationPage.appendChild(debugButton)
+
+  // Nút đồng bộ metadata
+  const syncButton = document.createElement("button")
+  syncButton.id = "syncMetadataBtn"
+  syncButton.className = "action-button"
+  syncButton.style.backgroundColor = "#2196F3"
+  syncButton.innerHTML = '<i class="fas fa-sync"></i> Đồng bộ Metadata'
+  syncButton.addEventListener("click", syncTestMetadata)
+  testCreationPage.appendChild(syncButton)
+}
+
+// Hàm đồng bộ metadata từ form vào đối tượng test
+function syncTestMetadata() {
+  try {
+    const titleElement = document.getElementById("testTitle")
+    const vietnameseNameElement = document.getElementById("testVietnameseName")
+    const descriptionElement = document.getElementById("testDescription")
+
+    if (titleElement) window.test.title = titleElement.value
+    if (vietnameseNameElement) window.test.vietnameseName = vietnameseNameElement.value
+    if (descriptionElement) window.test.description = descriptionElement.value
+
+    // Đồng bộ biến test cục bộ với window.test
+    test = window.test
+
+    console.log("Đã đồng bộ metadata:", {
+      title: test.title,
+      vietnameseName: test.vietnameseName,
+      description: test.description,
+    })
+
+    showNotification("Đã đồng bộ metadata thành công", "success")
+  } catch (error) {
+    console.error("Lỗi khi đồng bộ metadata:", error)
+    showNotification("Lỗi khi đồng bộ metadata: " + error.message, "error")
+  }
+}
+
+// Đảm bảo các hàm được xuất ra toàn cục
+window.debugTestObject = debugTestObject
+window.syncTestMetadata = syncTestMetadata
