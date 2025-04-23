@@ -768,13 +768,52 @@ function validatePartQuestions() {
 
   // Tối thiểu 2 câu hỏi mỗi phần được khuyến nghị nhưng không bắt buộc
   const warnings = []
+  let hasAnyQuestions = false
+
   for (let i = 1; i <= 4; i++) {
     const partQuestions = test[`part${i}`]?.length || 0
     if (partQuestions === 0) {
       warnings.push(`Phần ${i} không có câu hỏi nào`)
     } else if (partQuestions < 2) {
       warnings.push(`Phần ${i} chỉ có ${partQuestions} câu hỏi (khuyến nghị ít nhất 2 câu)`)
+      hasAnyQuestions = true
+    } else {
+      hasAnyQuestions = true
     }
+
+    // Kiểm tra từng câu hỏi trong phần
+    if (test[`part${i}`] && test[`part${i}`].length > 0) {
+      for (let j = 0; j < test[`part${i}`].length; j++) {
+        const question = test[`part${i}`][j]
+
+        // Kiểm tra loại câu hỏi
+        if (!question.type) {
+          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có loại câu hỏi`, "error")
+          return false
+        }
+
+        // Kiểm tra nội dung câu hỏi
+        if (!question.content || !Array.isArray(question.content) || question.content.length === 0) {
+          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có nội dung hoặc nội dung không hợp lệ`, "error")
+          return false
+        }
+
+        // Kiểm tra đáp án đúng
+        if (
+          question.correctAnswers === undefined ||
+          question.correctAnswers === null ||
+          (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0)
+        ) {
+          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có đáp án đúng`, "error")
+          return false
+        }
+      }
+    }
+  }
+
+  if (!hasAnyQuestions) {
+    showNotification("Không tìm thấy câu hỏi nào trong tất cả các phần. Vui lòng thêm ít nhất một câu hỏi.", "error")
+    return false
   }
 
   if (warnings.length > 0) {
