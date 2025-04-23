@@ -10,15 +10,19 @@ let audioFile = null
 let audioDuration = 0
 
 // Thêm metadata cho đối tượng bài kiểm tra
-const test = {
-  title: "",
-  vietnameseName: "",
-  description: "",
-  part1: [],
-  part2: [],
-  part3: [],
-  part4: [],
+// Make sure we're using the same test object across files
+if (!window.test) {
+  window.test = {
+    title: "",
+    vietnameseName: "",
+    description: "",
+    part1: [],
+    part2: [],
+    part3: [],
+    part4: [],
+  }
 }
+let test = window.test
 
 // Khởi tạo sự kiện khi trang được tải
 document.addEventListener("DOMContentLoaded", () => {
@@ -414,34 +418,110 @@ function saveTest() {
   try {
     console.log("Bắt đầu lưu bài kiểm tra...")
 
-    // Cập nhật tiêu đề và mô tả từ form
-    test.title = document.getElementById("testTitle").value
-    test.vietnameseName = document.getElementById("testVietnameseName").value
-    test.description = document.getElementById("testDescription").value
-
-    // Xác thực metadata bài kiểm tra trước
-    if (!validateTestMetadata()) {
-      return
-    }
-
-    // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
-    let hasQuestions = false
-    for (let i = 1; i <= 4; i++) {
-      if (test[`part${i}`] && test[`part${i}`].length > 0) {
-        hasQuestions = true
-        break
+    // Make sure test object is properly initialized
+    if (!test) {
+      console.error("Lỗi: Đối tượng test không tồn tại")
+      test = {
+        title: "",
+        vietnameseName: "",
+        description: "",
+        part1: [],
+        part2: [],
+        part3: [],
+        part4: [],
       }
     }
 
+    // Ensure all part arrays exist
+    for (let i = 1; i <= 4; i++) {
+      if (!test[`part${i}`]) {
+        test[`part${i}`] = []
+        console.log(`Khởi tạo mảng trống cho part${i}`)
+      }
+    }
+
+    // Cập nhật tiêu đề và mô tả từ form
+    test.title = document.getElementById("testTitle")?.value || ""
+    test.vietnameseName = document.getElementById("testVietnameseName")?.value || ""
+    test.description = document.getElementById("testDescription")?.value || ""
+
+    console.log("Đã lấy metadata từ form:", {
+      title: test.title,
+      vietnameseName: test.vietnameseName,
+      description: test.description,
+    })
+
+    // Xác thực metadata bài kiểm tra trước
+    if (!validateTestMetadata()) {
+      console.error("Lỗi: Metadata bài kiểm tra không hợp lệ")
+      return
+    }
+
+    console.log("Metadata bài kiểm tra hợp lệ, tiếp tục kiểm tra câu hỏi...")
+
+    // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
+    let hasQuestions = false
+    const questionCounts = {}
+
+    // Debug the test object structure
+    console.log("Cấu trúc đối tượng test:", JSON.stringify(test, null, 2))
+
+    for (let i = 1; i <= 4; i++) {
+      const partQuestions = test[`part${i}`] || []
+      questionCounts[`part${i}`] = partQuestions.length
+
+      if (partQuestions.length > 0) {
+        hasQuestions = true
+        console.log(`Phần ${i}: Tìm thấy ${partQuestions.length} câu hỏi`)
+      } else {
+        console.log(`Phần ${i}: Không có câu hỏi`)
+      }
+    }
+
+    console.log("Tổng số câu hỏi theo phần:", questionCounts)
+
     if (!hasQuestions) {
+      console.error("Lỗi: Không tìm thấy câu hỏi nào trong tất cả các phần")
       showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
       return
     }
 
-    // Xác thực câu hỏi phần
-    if (!validatePartQuestions()) {
+    console.log("Metadata bài kiểm tra hợp lệ, tiếp tục kiểm tra câu hỏi...")
+
+    // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
+    // let hasQuestions = false //Fix: Remove redeclaration
+    const questionCounts2 = {}
+
+    for (let i = 1; i <= 4; i++) {
+      const partQuestions = test[`part${i}`] || []
+      questionCounts2[`part${i}`] = partQuestions.length
+
+      if (partQuestions.length > 0) {
+        hasQuestions = true
+        console.log(`Phần ${i}: Tìm thấy ${partQuestions.length} câu hỏi`)
+      } else {
+        console.log(`Phần ${i}: Không có câu hỏi`)
+      }
+    }
+
+    console.log("Tổng số câu hỏi theo phần:", questionCounts2)
+
+    if (!hasQuestions) {
+      console.error("Lỗi: Không tìm thấy câu hỏi nào trong tất cả các phần")
+      showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
       return
     }
+
+    // Kiểm tra cấu trúc đối tượng test
+    console.log("Cấu trúc đối tượng test:", JSON.stringify(test, null, 2))
+
+    // Xác thực câu hỏi phần
+    if (!validatePartQuestions()) {
+      console.error("Lỗi: Câu hỏi không hợp lệ")
+      return
+    }
+
+    console.log("Tất cả câu hỏi đều hợp lệ, chuẩn bị dữ liệu để gửi lên server...")
 
     // Chuẩn bị dữ liệu để gửi lên server
     const testData = {
@@ -463,40 +543,55 @@ function saveTest() {
           })),
         }
         testData.parts.push(partData)
+        console.log(`Đã thêm dữ liệu Phần ${i} với ${partData.questions.length} câu hỏi`)
       }
     }
 
-    console.log("Dữ liệu bài kiểm tra sẽ gửi:", testData)
+    console.log("Dữ liệu bài kiểm tra sẽ gửi:", JSON.stringify(testData, null, 2))
+
+    // Kiểm tra token xác thực
+    const token = localStorage.getItem("token")
+    if (!token) {
+      console.error("Lỗi: Không tìm thấy token xác thực")
+      showNotification("Bạn chưa đăng nhập hoặc phiên làm việc đã hết hạn. Vui lòng đăng nhập lại.", "error")
+      return
+    }
+
+    console.log("Đã tìm thấy token xác thực, bắt đầu gửi dữ liệu lên server...")
 
     // Gửi dữ liệu lên server
     fetch("/api/tests", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(testData),
     })
       .then((response) => {
+        console.log("Nhận phản hồi từ server:", {
+          status: response.status,
+          statusText: response.statusText,
+        })
+
         if (!response.ok) {
           return response.json().then((data) => {
+            console.error("Server trả về lỗi:", data)
             throw new Error(data.message || "Lỗi khi lưu bài kiểm tra")
           })
         }
         return response.json()
       })
       .then((data) => {
-        console.log("Bài kiểm tra đã lưu vào server:", data)
+        console.log("Bài kiểm tra đã lưu vào server thành công:", data)
         showNotification(`Bài kiểm tra "${test.vietnameseName || test.title}" đã lưu thành công!`, "success")
       })
       .catch((error) => {
         console.error("Lỗi khi lưu bài kiểm tra vào server:", error)
         showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
       })
-
-    console.log("Bài kiểm tra đã lưu:", test)
   } catch (error) {
-    console.error("Lỗi khi lưu bài kiểm tra:", error)
+    console.error("Lỗi ngoại lệ khi lưu bài kiểm tra:", error)
     showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
   }
 }

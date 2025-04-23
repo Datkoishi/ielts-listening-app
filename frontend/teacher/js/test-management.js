@@ -630,36 +630,61 @@ function nextPart() {
 // Lưu bài kiểm tra
 function saveTest() {
   try {
-    console.log("Bắt đầu lưu bài kiểm tra...")
+    console.log("Bắt đầu lưu bài kiểm tra từ test-management.js...")
 
     // Cập nhật tiêu đề và mô tả từ form
     test.title = document.getElementById("testTitle").value
     test.vietnameseName = document.getElementById("testVietnameseName").value
     test.description = document.getElementById("testDescription").value
 
+    console.log("Đã lấy metadata từ form:", {
+      title: test.title,
+      vietnameseName: test.vietnameseName,
+      description: test.description,
+    })
+
     // Xác thực metadata bài kiểm tra trước
     if (!validateTestMetadata()) {
+      console.error("Lỗi: Metadata bài kiểm tra không hợp lệ")
       return
     }
 
+    console.log("Metadata bài kiểm tra hợp lệ, tiếp tục kiểm tra câu hỏi...")
+
     // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
     let hasQuestions = false
+    const questionCounts = {}
+
     for (let i = 1; i <= 4; i++) {
-      if (test[`part${i}`] && test[`part${i}`].length > 0) {
+      const partQuestions = test[`part${i}`] || []
+      questionCounts[`part${i}`] = partQuestions.length
+
+      if (partQuestions.length > 0) {
         hasQuestions = true
-        break
+        console.log(`Phần ${i}: Tìm thấy ${partQuestions.length} câu hỏi`)
+      } else {
+        console.log(`Phần ${i}: Không có câu hỏi`)
       }
     }
 
+    console.log("Tổng số câu hỏi theo phần:", questionCounts)
+
     if (!hasQuestions) {
+      console.error("Lỗi: Không tìm thấy câu hỏi nào trong tất cả các phần")
       showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
       return
     }
 
+    // Kiểm tra cấu trúc đối tượng test
+    console.log("Cấu trúc đối tượng test:", JSON.stringify(test, null, 2))
+
     // Xác thực câu hỏi phần
     if (!validatePartQuestions()) {
+      console.error("Lỗi: Câu hỏi không hợp lệ")
       return
     }
+
+    console.log("Tất cả câu hỏi đều hợp lệ, chuẩn bị dữ liệu để gửi lên server...")
 
     // Lưu vào server
     saveTestToServer(test)
@@ -674,60 +699,124 @@ function saveTest() {
 
     console.log("Bài kiểm tra đã lưu:", test)
   } catch (error) {
-    console.error("Lỗi khi lưu bài kiểm tra:", error)
+    console.error("Lỗi ngoại lệ khi lưu bài kiểm tra:", error)
     showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
   }
 }
 
 // Xác thực metadata bài kiểm tra
 function validateTestMetadata() {
+  console.log("Bắt đầu xác thực metadata bài kiểm tra...")
+
   if (!test.title) {
+    console.error("Lỗi: Tiêu đề bài kiểm tra không được để trống")
     showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
     return false
   }
+
+  console.log("Xác thực metadata bài kiểm tra thành công")
   return true
 }
 
 // Xác thực câu hỏi phần
 function validatePartQuestions() {
+  console.log("Bắt đầu xác thực câu hỏi trong các phần...")
+
   // Tối thiểu 2 câu hỏi mỗi phần được khuyến nghị nhưng không bắt buộc
   const warnings = []
   for (let i = 1; i <= 4; i++) {
     const partQuestions = test[`part${i}`]?.length || 0
     if (partQuestions === 0) {
       warnings.push(`Phần ${i} không có câu hỏi nào`)
+    } else if (partQuestions < 2) {
+      warnings.push(`Phần ${i} chỉ có ${partQuestions} câu hỏi (khuyến nghị ít nhất 2 câu)`)
     }
   }
 
   if (warnings.length > 0) {
+    console.warn("Cảnh báo khi xác thực câu hỏi:", warnings)
     return confirm(`Cảnh báo:
 ${warnings.join("\n")}
 
 Bạn có muốn tiếp tục lưu không?`)
   }
 
+  console.log("Xác thực câu hỏi trong các phần thành công")
   return true
 }
 
 // Lưu bài kiểm tra vào server
 async function saveTestToServer(testData) {
   try {
+    console.log("Bắt đầu gửi dữ liệu bài kiểm tra lên server...")
+
+    // Chuẩn bị dữ liệu để gửi lên server
+    const dataToSend = {
+      title: testData.title,
+      vietnameseName: testData.vietnameseName || testData.title,
+      description: testData.description || "",
+      parts: [],
+    }
+
+    // Thêm dữ liệu từng phần
+    for (let i = 1; i <= 4; i++) {
+      if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
+        const partData = {
+          part_number: i,
+          questions: testData[`part${i}`].map((question) => ({
+            question_type: question.type,
+            content: JSON.stringify(question.content),
+            correct_answers: JSON.stringify(question.correctAnswers),
+          })),
+        }
+        dataToSend.parts.push(partData)
+        console.log(`Đã thêm dữ liệu Phần ${i} với ${partData.questions.length} câu hỏi`)
+      }
+    }
+
+    console.log("Dữ liệu bài kiểm tra sẽ gửi:", JSON.stringify(dataToSend, null, 2))
+
+    // Kiểm tra token xác thực
+    const token = localStorage.getItem("token")
+    if (!token) {
+      console.warn("Cảnh báo: Không tìm thấy token xác thực, tiếp tục gửi yêu cầu không có token")
+    } else {
+      console.log("Đã tìm thấy token xác thực")
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    console.log("Headers yêu cầu:", headers)
+    console.log("Bắt đầu gửi yêu cầu POST đến /api/tests")
+
     const response = await fetch("/api/tests", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(testData),
+      headers: headers,
+      body: JSON.stringify(dataToSend),
+    })
+
+    console.log("Nhận phản hồi từ server:", {
+      status: response.status,
+      statusText: response.statusText,
     })
 
     if (!response.ok) {
       const errorData = await response.json()
+      console.error("Server trả về lỗi:", errorData)
       throw new Error(errorData.message || "Lưu bài kiểm tra thất bại")
     }
 
-    return await response.json()
+    const responseData = await response.json()
+    console.log("Phản hồi thành công từ server:", responseData)
+    return responseData
   } catch (error) {
-    console.error("Lỗi khi lưu bài kiểm tra:", error)
+    console.error("Lỗi ngoại lệ khi lưu bài kiểm tra lên server:", error)
     throw error
   }
 }
@@ -2364,7 +2453,7 @@ function cancelQuestionEdit(button) {
   }
 }
 
-// Cập nhật hàm saveQuestionChanges để hiển thị thông báo chi tiết hơn
+// Cập nhật hàm saveQuestionChanges
 function saveQuestionChanges(button) {
   try {
     // Tìm phần tử câu hỏi chứa nút được nhấn
@@ -2721,57 +2810,57 @@ function initializeFormTableCompletionForm(questionDiv) {}
 function initializeFlowChartCompletionForm(questionDiv) {}
 
 // Declare setQuestionViewMode
-function setQuestionViewMode(questionDiv) {
-  // Re-render the question content in view mode
-  const partElement = questionDiv.closest(".part")
-  const questions = Array.from(partElement.querySelectorAll(".question"))
-  const questionIndex = questions.indexOf(questionDiv)
+// function setQuestionViewMode(questionDiv) {
+//   // Re-render the question content in view mode
+//   const partElement = questionDiv.closest(".part")
+//   const questions = Array.from(partElement.querySelectorAll(".question"))
+//   const questionIndex = questions.indexOf(questionDiv)
 
-  if (questionIndex !== -1) {
-    const questionData = test[`part${window.currentPart}`][questionIndex]
+//   if (questionIndex !== -1) {
+//     const questionData = test[`part${window.currentPart}`][questionIndex]
 
-    // Clear the current content
-    questionDiv.innerHTML = ""
+//     // Clear the current content
+//     questionDiv.innerHTML = ""
 
-    // Add question header
-    const questionNumber = questionIndex + 1
-    questionDiv.innerHTML = `
-      <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-      <h3>${getIconForType(questionData.type)} ${questionData.type}</h3>
-      <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
-      ${renderQuestionContent(questionData)}
-    `
+//     // Add question header
+//     const questionNumber = questionIndex + 1
+//     questionDiv.innerHTML = `
+//       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+//       <h3>${getIconForType(questionData.type)} ${questionData.type}</h3>
+//       <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
+//       ${renderQuestionContent(questionData)}
+//     `
 
-    // Disable input fields in view mode
-    const inputs = questionDiv.querySelectorAll("input, textarea, select")
-    inputs.forEach((input) => {
-      input.disabled = true
-    })
+//     // Disable input fields in view mode
+//     const inputs = questionDiv.querySelectorAll("input, textarea, select")
+//     inputs.forEach((input) => {
+//       input.disabled = true
+//     })
 
-    // Add action buttons for editing
-    const questionContent = questionDiv.querySelector(".question-content") || questionDiv
-    const actionDiv = document.createElement("div")
-    actionDiv.className = "question-actions"
-    actionDiv.innerHTML = `
-      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
-        <i class="fas fa-edit"></i> Chỉnh sửa
-      </button>
-      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
-        <i class="fas fa-save"></i> Lưu thay đổi
-      </button>
-      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
-        <i class="fas fa-times"></i> Hủy
-      </button>
-    `
-    questionContent.appendChild(actionDiv)
+//     // Add action buttons for editing
+//     const questionContent = questionDiv.querySelector(".question-content") || questionDiv
+//     const actionDiv = document.createElement("div")
+//     actionDiv.className = "question-actions"
+//     actionDiv.innerHTML = `
+//       <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+//         <i class="fas fa-edit"></i> Chỉnh sửa
+//       </button>
+//       <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+//         <i class="fas fa-save"></i> Lưu thay đổi
+//       </button>
+//       <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+//         <i class="fas fa-times"></i> Hủy
+//       </button>
+//     `
+//     questionContent.appendChild(actionDiv)
 
-    // Switch to view mode
-    questionDiv.classList.remove("edit-mode")
-    questionDiv.classList.add("view-mode")
+//     // Switch to view mode
+//     questionDiv.classList.remove("edit-mode")
+//     questionDiv.classList.add("view-mode")
 
-    showNotification("Đã chuyển sang chế độ xem", "info")
-  }
-}
+//     showNotification("Đã chuyển sang chế độ xem", "info")
+//   }
+// }
 
 // Functions to save question data
 function saveOneAnswerQuestion(questionDiv) {
