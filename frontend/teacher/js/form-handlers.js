@@ -753,6 +753,99 @@ function saveFlowChartCompletionQuestion(questionDiv) {
 }
 
 /**
+ * Kiểm tra tính hợp lệ của câu hỏi
+ * @param {Object} question - Dữ liệu câu hỏi
+ * @returns {Object} Kết quả kiểm tra {isValid, errors}
+ */
+function validateQuestion(question) {
+  const errors = []
+
+  // Kiểm tra loại câu hỏi
+  if (!question.type) {
+    errors.push("Loại câu hỏi không được để trống")
+    return { isValid: false, errors }
+  }
+
+  // Kiểm tra nội dung
+  if (!question.content || !Array.isArray(question.content) || question.content.length === 0) {
+    errors.push("Nội dung câu hỏi không được để trống")
+    return { isValid: false, errors }
+  }
+
+  // Kiểm tra đáp án
+  if (
+    !question.correctAnswers ||
+    (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0) ||
+    (typeof question.correctAnswers === "string" && question.correctAnswers.trim() === "")
+  ) {
+    errors.push("Đáp án đúng không được để trống")
+    return { isValid: false, errors }
+  }
+
+  // Kiểm tra chi tiết theo loại câu hỏi
+  switch (question.type) {
+    case "Một đáp án":
+      if (question.content.length < 2) {
+        errors.push("Câu hỏi một đáp án phải có ít nhất một câu hỏi và một lựa chọn")
+      }
+      break
+
+    case "Nhiều đáp án":
+      if (question.content.length < 2) {
+        errors.push("Câu hỏi nhiều đáp án phải có ít nhất một câu hỏi và một lựa chọn")
+      }
+      if (!Array.isArray(question.correctAnswers)) {
+        errors.push("Đáp án đúng phải là một mảng")
+      }
+      break
+
+    case "Ghép nối":
+      if (question.content.length < 3) {
+        errors.push("Câu hỏi ghép nối phải có tiêu đề và ít nhất một cặp ghép nối")
+      }
+      break
+
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      if (question.content.length < 4) {
+        errors.push("Câu hỏi ghi nhãn phải có loại, hướng dẫn, hình ảnh và ít nhất một nhãn")
+      }
+      if (!question.content[2] || question.content[2].trim() === "") {
+        errors.push("Hình ảnh không được để trống")
+      }
+      break
+
+    case "Hoàn thành ghi chú":
+      if (question.content.length < 3) {
+        errors.push("Câu hỏi hoàn thành ghi chú phải có hướng dẫn, chủ đề và ít nhất một ghi chú")
+      }
+      break
+
+    case "Hoàn thành bảng/biểu mẫu":
+      if (question.content.length < 4) {
+        errors.push("Câu hỏi hoàn thành bảng/biểu mẫu phải có hướng dẫn và ít nhất một hàng")
+      }
+      break
+
+    case "Hoàn thành lưu đồ":
+      if (question.content.length < 4) {
+        errors.push("Câu hỏi hoàn thành lưu đồ phải có tiêu đề, hướng dẫn và ít nhất một mục")
+      }
+      break
+
+    default:
+      errors.push(`Loại câu hỏi không được hỗ trợ: ${question.type}`)
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  }
+}
+
+// Thêm hàm validateQuestion vào window
+window.validateQuestion = validateQuestion
+
+/**
  * Khởi tạo form handlers
  */
 function initFormHandlers() {
@@ -1196,6 +1289,7 @@ window.savePlanMapDiagramQuestion = savePlanMapDiagramQuestion
 window.saveNoteCompletionQuestion = saveNoteCompletionQuestion
 window.saveFormTableCompletionQuestion = saveFormTableCompletionQuestion
 window.saveFlowChartCompletionQuestion = saveFlowChartCompletionQuestion
+window.validateQuestion = validateQuestion
 window.handleQuestionTypeChange = handleQuestionTypeChange
 window.initFormHandlers = initFormHandlers
 window.updateImagePreview = updateImagePreview

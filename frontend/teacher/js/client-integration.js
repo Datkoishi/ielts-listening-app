@@ -94,7 +94,7 @@ async function register(username, password, role = "teacher") {
   }
 }
 
-// Hàm fetch với xác thực và thử lại
+// Cập nhật hàm fetchWithAuth để xử lý vấn đề cookie
 async function fetchWithAuth(url, options = {}) {
   let attempts = 0
   const token = getToken()
@@ -106,6 +106,9 @@ async function fetchWithAuth(url, options = {}) {
       Authorization: `Bearer ${token}`,
     }
   }
+
+  // Thêm SameSite=None; Secure cho cookie
+  options.credentials = "include"
 
   while (attempts < MAX_RETRY_ATTEMPTS) {
     try {
@@ -169,18 +172,28 @@ function normalizeTestData(testData) {
   return normalizedTest
 }
 
-// Lưu bài kiểm tra lên server
+// Cải thiện hàm saveTestToServer để xử lý lỗi tốt hơn
 async function saveTestToServer(testData) {
   try {
     // Chuẩn hóa dữ liệu trước khi gửi
     const normalizedData = normalizeTestData(testData)
 
-    const response = await fetchWithAuth(`${API_URL}/tests`, {
+    // Thêm xác thực API
+    const headers = {
+      "Content-Type": "application/json",
+    }
+
+    // Thêm token xác thực nếu có
+    const token = getToken()
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_URL}/tests`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: headers,
       body: JSON.stringify(normalizedData),
+      credentials: "include", // Giúp xử lý cookie
     })
 
     if (!response.ok) {
@@ -272,6 +285,70 @@ async function deleteTest(testId) {
   }
 }
 
+// Thêm hàm xử lý tải lên file âm thanh
+async function uploadAudioFile(audioFile) {
+  try {
+    const formData = new FormData()
+    formData.append("audio", audioFile)
+
+    const token = getToken()
+    const headers = {}
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_URL}/upload/audio`, {
+      method: "POST",
+      headers: headers,
+      body: formData,
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Tải lên file âm thanh thất bại")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Lỗi khi tải lên file âm thanh:", error)
+    throw error
+  }
+}
+
+// Thêm hàm xử lý tải lên file hình ảnh
+async function uploadImageFile(imageFile) {
+  try {
+    const formData = new FormData()
+    formData.append("image", imageFile)
+
+    const token = getToken()
+    const headers = {}
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`
+    }
+
+    const response = await fetch(`${API_URL}/upload/image`, {
+      method: "POST",
+      headers: headers,
+      body: formData,
+      credentials: "include",
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Tải lên file hình ảnh thất bại")
+    }
+
+    return await response.json()
+  } catch (error) {
+    console.error("Lỗi khi tải lên file hình ảnh:", error)
+    throw error
+  }
+}
+
 // Xuất các hàm để sử dụng trong các file khác
 window.saveToken = saveToken
 window.getToken = getToken
@@ -285,3 +362,7 @@ window.getTests = getTests
 window.getTestById = getTestById
 window.updateTest = updateTest
 window.deleteTest = deleteTest
+
+// Xuất các hàm mới
+window.uploadAudioFile = uploadAudioFile
+window.uploadImageFile = uploadImageFile

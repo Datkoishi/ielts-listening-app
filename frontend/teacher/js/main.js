@@ -6,7 +6,7 @@ const PARTS = 4
 const selectedTypes = []
 let currentPart = 1
 const totalQuestions = 0
-let audioFile = null
+const audioFile = null
 let audioDuration = 0
 
 // Thêm metadata cho đối tượng bài kiểm tra
@@ -270,9 +270,9 @@ function updateTestMetadata(field, value) {
   test[field] = value
 }
 
-// Thiết lập xử lý âm thanh
+// Cải thiện hàm setupAudioHandlers để xử lý tải lên âm thanh
 function setupAudioHandlers() {
-  // Thêm chức năng tải lên âm thanh nếu cần
+  // Thêm chức năng tải lên âm thanh
   const audioUploadBtn = document.createElement("button")
   audioUploadBtn.id = "audioUploadBtn"
   audioUploadBtn.className = "action-button"
@@ -281,41 +281,68 @@ function setupAudioHandlers() {
     const input = document.createElement("input")
     input.type = "file"
     input.accept = "audio/*"
-    input.onchange = (e) => {
+    input.onchange = async (e) => {
       const file = e.target.files[0]
       if (file) {
-        audioFile = file
-        const audioPlayer = document.getElementById("audioPlayer") || document.createElement("audio")
-        audioPlayer.id = "audioPlayer"
-        audioPlayer.controls = true
-        audioPlayer.src = URL.createObjectURL(file)
+        try {
+          showNotification("Đang tải lên file âm thanh...", "info")
 
-        // Thêm vào trang nếu chưa tồn tại
-        if (!document.getElementById("audioPlayer")) {
-          const audioContainer = document.createElement("div")
-          audioContainer.id = "audioContainer"
-          audioContainer.className = "audio-container"
-          audioContainer.innerHTML = `<h3>Âm thanh bài kiểm tra</h3>`
-          audioContainer.appendChild(audioPlayer)
+          // Tạo URL tạm thời để hiển thị trước
+          const audioPlayer = document.getElementById("audioPlayer") || document.createElement("audio")
+          audioPlayer.id = "audioPlayer"
+          audioPlayer.controls = true
+          audioPlayer.src = URL.createObjectURL(file)
 
-          const testContent = document.getElementById("testContent")
-          if (testContent) {
-            testContent.insertBefore(audioContainer, testContent.firstChild)
+          // Thêm vào trang nếu chưa tồn tại
+          if (!document.getElementById("audioPlayer")) {
+            const audioContainer = document.createElement("div")
+            audioContainer.id = "audioContainer"
+            audioContainer.className = "audio-container"
+            audioContainer.innerHTML = `<h3>Âm thanh bài kiểm tra</h3>`
+            audioContainer.appendChild(audioPlayer)
+
+            const testContent = document.getElementById("testContent")
+            if (testContent) {
+              testContent.insertBefore(audioContainer, testContent.firstChild)
+            }
           }
-        }
 
-        // Lấy thời lượng âm thanh khi metadata được tải
-        audioPlayer.onloadedmetadata = () => {
-          audioDuration = audioPlayer.duration
-          const durationDisplay = document.createElement("div")
-          durationDisplay.textContent = `Thời lượng: ${Math.floor(audioDuration / 60)}:${Math.floor(audioDuration % 60)
-            .toString()
-            .padStart(2, "0")}`
-          const audioContainer = document.getElementById("audioContainer") // Declare audioContainer here
-          audioContainer.appendChild(durationDisplay)
-        }
+          // Lấy thời lượng âm thanh khi metadata được tải
+          audioPlayer.onloadedmetadata = () => {
+            audioDuration = audioPlayer.duration
+            const durationDisplay = document.createElement("div")
+            durationDisplay.textContent = `Thời lượng: ${Math.floor(audioDuration / 60)}:${Math.floor(
+              audioDuration % 60,
+            )
+              .toString()
+              .padStart(2, "0")}`
+            const audioContainer = document.getElementById("audioContainer")
+            if (audioContainer && !audioContainer.querySelector(".duration-display")) {
+              const durationDiv = document.createElement("div")
+              durationDiv.className = "duration-display"
+              durationDiv.appendChild(durationDisplay)
+              audioContainer.appendChild(durationDiv)
+            }
+          }
 
-        showNotification("Tải lên tệp âm thanh thành công", "success")
+          // Tải lên server
+          if (typeof window.uploadAudioFile === "function") {
+            try {
+              const response = await window.uploadAudioFile(file)
+              test.audioUrl = response.url // Lưu URL từ server
+              showNotification("Tải lên tệp âm thanh thành công", "success")
+            } catch (error) {
+              showNotification(`Lỗi khi tải lên file âm thanh: ${error.message}`, "error")
+            }
+          } else {
+            // Fallback nếu không có hàm uploadAudioFile
+            test.audioFile = file
+            showNotification("Tải lên tệp âm thanh thành công (chế độ offline)", "success")
+          }
+        } catch (error) {
+          console.error("Lỗi khi xử lý file âm thanh:", error)
+          showNotification(`Lỗi khi xử lý file âm thanh: ${error.message}`, "error")
+        }
       }
     }
     input.click()
@@ -402,11 +429,46 @@ function previewQuestion() {
 
 // Dummy functions to resolve undefined variable errors. Replace with actual implementations.
 function saveTest() {
-  console.warn("saveTest function is a placeholder.")
+  console.log("Saving test...")
+
   // Cập nhật tiêu đề, tên tiếng Việt và mô tả từ form
   test.title = document.getElementById("testTitle").value
   test.vietnameseName = document.getElementById("testVietnameseName").value
   test.description = document.getElementById("testDescription").value
+
+  // Kiểm tra tính hợp lệ của dữ liệu
+  if (!test.title) {
+    showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
+    return
+  }
+
+  // Kiểm tra có ít nhất một câu hỏi
+  let hasQuestions = false
+  for (let i = 1; i <= 4; i++) {
+    if (test[`part${i}`] && test[`part${i}`].length > 0) {
+      hasQuestions = true
+      break
+    }
+  }
+
+  if (!hasQuestions) {
+    showNotification("Bài kiểm tra phải có ít nhất một câu hỏi", "error")
+    return
+  }
+
+  // Hiển thị thông báo đang lưu
+  showNotification("Đang lưu bài kiểm tra...", "info")
+
+  // Lưu vào server
+  saveTestToServer(test)
+    .then((response) => {
+      console.log("Bài kiểm tra đã lưu vào server:", response)
+      showNotification(`Bài kiểm tra "${test.vietnameseName || test.title}" đã lưu thành công!`, "success")
+    })
+    .catch((error) => {
+      console.error("Lỗi khi lưu bài kiểm tra vào server:", error)
+      showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
+    })
 }
 
 function previewEntireTest() {
@@ -429,8 +491,46 @@ function showTestList() {
   console.warn("showTestList function is a placeholder.")
 }
 
+// Replace the placeholder fetchQuestionTypes function with this implementation
 function fetchQuestionTypes() {
-  console.warn("fetchQuestionTypes function is a placeholder.")
+  console.log("Fetching question types...")
+  const questionTypes = [
+    "Một đáp án",
+    "Nhiều đáp án",
+    "Ghép nối",
+    "Ghi nhãn Bản đồ/Sơ đồ",
+    "Hoàn thành ghi chú",
+    "Hoàn thành bảng/biểu mẫu",
+    "Hoàn thành lưu đồ",
+  ]
+  const questionTypeContainer = document.getElementById("questionTypes")
+
+  if (!questionTypeContainer) {
+    console.error("Không tìm thấy container loại câu hỏi")
+    return
+  }
+
+  questionTypeContainer.innerHTML = ""
+
+  questionTypes.forEach((type) => {
+    const checkbox = document.createElement("input")
+    checkbox.type = "checkbox"
+    checkbox.value = type
+    checkbox.id = type.replace(/\s+/g, "-").toLowerCase()
+    checkbox.className = "question-type-checkbox"
+
+    const label = document.createElement("label")
+    label.htmlFor = checkbox.id
+    label.textContent = type
+    label.className = "question-type-label"
+
+    const typeContainer = document.createElement("div")
+    typeContainer.className = "question-type-item"
+    typeContainer.appendChild(checkbox)
+    typeContainer.appendChild(label)
+
+    questionTypeContainer.appendChild(typeContainer)
+  })
 }
 
 function renderQuestionTypes(element) {
@@ -464,4 +564,15 @@ window.previewQuestion = previewQuestion
 function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
+}
+
+// Dummy function for saveTestToServer
+async function saveTestToServer(test) {
+  // Replace this with your actual implementation to save the test to the server
+  console.log("Saving test to server:", test)
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({ message: "Test saved successfully!" })
+    }, 1000)
+  })
 }

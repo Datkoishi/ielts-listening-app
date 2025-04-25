@@ -628,46 +628,82 @@ function initializeFlowChartCompletionForm(questionDiv) {
 }
 
 // Add the missing function for saving Plan/Map/Diagram questions
+// Cải thiện hàm savePlanMapDiagramQuestion để kiểm tra tính hợp lệ tốt hơn
 function savePlanMapDiagramQuestion(container) {
-  const questionType = container.querySelector("#questionType").value
-  const instructions = container.querySelector("#instructions").value
-  const imageFile = container.querySelector("#imageFile")
-  const answerInputs = container.querySelector("#answerInputs")
-  const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
+  try {
+    const questionType = container.querySelector("#questionType").value
+    const instructions = container.querySelector("#instructions").value
+    const imageFile = container.querySelector("#imageFile")
+    const answerInputs = container.querySelector("#answerInputs")
+    const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
+    const imagePreview = container.querySelector(".image-preview img")
 
-  // Validate inputs
-  if (!instructions) {
-    showNotification("Vui lòng nhập hướng dẫn", "error")
+    // Validate inputs
+    if (!instructions) {
+      showNotification("Vui lòng nhập hướng dẫn", "error")
+      return null
+    }
+
+    // Kiểm tra hình ảnh
+    let imageSource = ""
+    if (imagePreview) {
+      imageSource = imagePreview.src
+    } else if (imageFile && imageFile.files[0]) {
+      // Nếu có file mới, tạo URL tạm thời
+      imageSource = URL.createObjectURL(imageFile.files[0])
+
+      // Tải lên server nếu có hàm uploadImageFile
+      if (typeof window.uploadImageFile === "function") {
+        // Hiển thị thông báo đang tải lên
+        showNotification("Đang tải lên hình ảnh...", "info")
+
+        // Sử dụng Promise để đảm bảo hình ảnh được tải lên trước khi tiếp tục
+        return new Promise((resolve, reject) => {
+          window
+            .uploadImageFile(imageFile.files[0])
+            .then((response) => {
+              // Cập nhật URL hình ảnh từ server
+              imageSource = response.url
+
+              // Tiếp tục xử lý và trả về kết quả
+              const result = processPlanMapDiagramData(questionType, instructions, imageSource, answerGroups)
+              resolve(result)
+            })
+            .catch((error) => {
+              showNotification(`Lỗi khi tải lên hình ảnh: ${error.message}`, "error")
+              reject(error)
+            })
+        })
+      }
+    } else {
+      showNotification("Vui lòng tải lên hình ảnh", "error")
+      return null
+    }
+
+    // Xử lý dữ liệu nếu không cần tải lên hình ảnh
+    return processPlanMapDiagramData(questionType, instructions, imageSource, answerGroups)
+  } catch (error) {
+    console.error("Lỗi khi lưu câu hỏi ghi nhãn bản đồ/sơ đồ:", error)
+    showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
     return null
   }
+}
 
-  if (!imageFile.files[0] && !container.querySelector(".image-preview img")) {
-    showNotification("Vui lòng tải lên hình ảnh", "error")
-    return null
-  }
-
-  if (answerGroups.length === 0) {
-    showNotification("Vui lòng thêm ít nhất một nhãn", "error")
-    return null
-  }
-
-  // Get image source
-  let imageSource = ""
-  if (container.querySelector(".image-preview img")) {
-    imageSource = container.querySelector(".image-preview img").src
-  } else if (imageFile.files[0]) {
-    // This is a placeholder - in a real implementation, you'd upload the file to a server
-    // and get back a URL, but for this example we'll use a placeholder
-    imageSource = "/placeholder.svg?height=300&width=400"
-  }
-
+// Hàm phụ trợ để xử lý dữ liệu câu hỏi ghi nhãn bản đồ/sơ đồ
+function processPlanMapDiagramData(questionType, instructions, imageSource, answerGroups) {
   // Collect labels and answers
   const labels = []
   const correctAnswers = []
 
   answerGroups.forEach((group, index) => {
     const label = group.querySelector(`#answer${index}`).value
-    const answer = group.querySelector(`#correctAnswer${index}`).value
+    let answer = ""
+
+    if (questionType === "map") {
+      answer = group.querySelector(`#correctAnswer${index}`).value
+    } else {
+      answer = group.querySelector(`#shipAnswer${index}`).value
+    }
 
     if (!label || !answer) {
       showNotification(`Vui lòng điền đầy đủ thông tin cho nhãn ${index + 1}`, "error")
@@ -677,6 +713,11 @@ function savePlanMapDiagramQuestion(container) {
     labels.push(label)
     correctAnswers.push(answer)
   })
+
+  if (answerGroups.length === 0) {
+    showNotification("Vui lòng thêm ít nhất một nhãn", "error")
+    return null
+  }
 
   // Create question object
   const question = {
