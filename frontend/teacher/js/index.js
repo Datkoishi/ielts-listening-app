@@ -85,27 +85,24 @@ document.addEventListener("DOMContentLoaded", () => {
               window.renderQuestionsForCurrentPart()
             }
 
-            alert("Đã xóa câu hỏi thành công")
+            showNotification("Đã xóa câu hỏi thành công", "success")
           } else {
             console.error("Chỉ mục câu hỏi không hợp lệ hoặc cấu trúc test không đúng", {
               test: window.test,
               partKey: `part${partNumber}`,
               questionIndex: questionIndex,
             })
-            alert("Không thể xóa câu hỏi. Dữ liệu không hợp lệ.")
+            showNotification("Không thể xóa câu hỏi. Dữ liệu không hợp lệ.", "error")
           }
         } catch (error) {
           console.error("Lỗi khi xóa câu hỏi:", error)
-          alert("Lỗi khi xóa câu hỏi: " + error.message)
+          showNotification("Lỗi khi xóa câu hỏi: " + error.message, "error")
         }
       }
     }
   })
 
-  // Adicionar funções para manipular os modos de visualização e edição
-  // Código existente...
-
-  // Garantir que as funções de edição estejam disponíveis globalmente
+  // Đảm bảo các hàm chỉnh sửa câu hỏi được định nghĩa toàn cục
   window.toggleQuestionEdit = (button) => {
     const questionDiv = button.closest(".question")
     if (!questionDiv) return
@@ -126,7 +123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Cập nhật hàm setQuestionEditMode để hiển thị form giống như khi tạo câu hỏi mới
+  // Cập nhật hàm setQuestionEditMode để điền dữ liệu vào form khi chuyển sang chế độ chỉnh sửa
   window.setQuestionEditMode = (questionDiv) => {
     try {
       console.log("Đang chuyển sang chế độ chỉnh sửa...")
@@ -1392,28 +1389,12 @@ document.addEventListener("DOMContentLoaded", () => {
       <input type="text" id="instructions" name="instructions" value="Hoàn thành ghi chú. Viết MỘT TỪ VÀ/HOẶC MỘT SỐ vào mỗi khoảng trống." required>
       <label for="topic">Chủ đề:</label>
       <input type="text" id="topic" name="topic" required>
-      <div id="notes-container">
-        <div class="note-row">
-          <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
-          <textarea name="note" required></textarea>
-          <button type="button" class="remove-note-btn"><i class="fas fa-times"></i></button>
-        </div>
-      </div>
-      <button type="button" class="add-note-btn"><i class="fas fa-plus"></i> Thêm ghi chú</button>
-      <div id="answers-container">
-        <label>Đáp án đúng (theo thứ tự [ANSWER]):</label>
-        <div id="note-answers-list">
-          <div class="answer-row">
-            <span class="answer-label">Đáp án 1:</span>
-            <input type="text" name="noteAnswer" required>
-            <button type="button" class="remove-answer-btn"><i class="fas fa-times"></i></button>
-          </div>
-        </div>
-        <button type="button" class="add-answer-btn"><i class="fas fa-plus"></i> Thêm đáp án</button>
-      </div>
-      <button type="button" class="save-question-btn"><i class="fas fa-save"></i> Lưu câu hỏi</button>
+      <label>Ghi chú (sử dụng [ANSWER] cho chỗ trống):</label>
+      <textarea name="note1" required></textarea><br>
+      <textarea name="note2" required></textarea><br>
+      <textarea name="note3" required></textarea>
     </div>
-  `
+`
         break
       case "Hoàn thành bảng/biểu mẫu":
         formHTML = `

@@ -1,28 +1,12 @@
-// At the beginning of the file, modify the test object initialization
-// Change from:
-// let test = {
-//   title: "",
-//   description: "",
-//   part1: [],
-//   part2: [],
-//   part3: [],
-//   part4: [],
-// }
-
-// To:
-// Make sure we're using the same test object across files
-if (!window.test) {
-  window.test = {
-    title: "",
-    vietnameseName: "",
-    description: "",
-    part1: [],
-    part2: [],
-    part3: [],
-    part4: [],
-  }
+// Khai báo biến toàn cục
+let test = {
+  title: "",
+  description: "",
+  part1: [],
+  part2: [],
+  part3: [],
+  part4: [],
 }
-let test = window.test
 let totalQuestions = 0
 // Use window.currentPart instead of local currentPart
 // let currentPart = 1
@@ -646,64 +630,36 @@ function nextPart() {
 // Lưu bài kiểm tra
 function saveTest() {
   try {
-    console.log("Bắt đầu lưu bài kiểm tra từ test-management.js...")
+    console.log("Bắt đầu lưu bài kiểm tra...")
 
     // Cập nhật tiêu đề và mô tả từ form
     test.title = document.getElementById("testTitle").value
     test.vietnameseName = document.getElementById("testVietnameseName").value
     test.description = document.getElementById("testDescription").value
 
-    console.log("Đã lấy metadata từ form:", {
-      title: test.title,
-      vietnameseName: test.vietnameseName,
-      description: test.description,
-    })
-
     // Xác thực metadata bài kiểm tra trước
-    console.log("Đang xác thực metadata bài kiểm tra...")
-    const metadataValid = validateTestMetadata()
-    console.log("Kết quả xác thực metadata:", metadataValid)
-    if (!metadataValid) {
-      console.error("Lỗi: Metadata bài kiểm tra không hợp lệ")
+    if (!validateTestMetadata()) {
       return
     }
 
-    console.log("Metadata bài kiểm tra hợp lệ, tiếp tục kiểm tra câu hỏi...")
-
     // Kiểm tra xem chúng ta có câu hỏi nào trong bất kỳ phần nào không
     let hasQuestions = false
-    const questionCounts = {}
-
     for (let i = 1; i <= 4; i++) {
-      const partQuestions = test[`part${i}`] || []
-      questionCounts[`part${i}`] = partQuestions.length
-
-      if (partQuestions.length > 0) {
+      if (test[`part${i}`] && test[`part${i}`].length > 0) {
         hasQuestions = true
-        console.log(`Phần ${i}: Tìm thấy ${partQuestions.length} câu hỏi`)
-      } else {
-        console.log(`Phần ${i}: Không có câu hỏi`)
+        break
       }
     }
 
-    console.log("Tổng số câu hỏi theo phần:", questionCounts)
-
     if (!hasQuestions) {
-      console.error("Lỗi: Không tìm thấy câu hỏi nào trong tất cả các phần")
       showNotification("Không tìm thấy câu hỏi để lưu. Vui lòng thêm ít nhất một câu hỏi.", "error")
       return
     }
 
-    // Kiểm tra cấu trúc đối tượng test
-    console.log("Cấu trúc đối tượng test:", JSON.stringify(test, null, 2))
-
     // Xác thực câu hỏi phần
     if (!validatePartQuestions()) {
-      console.error("Lỗi: Câu hỏi không hợp lệ")
       return
     }
-
-    console.log("Tất cả câu hỏi đều hợp lệ, chuẩn bị dữ liệu để gửi lên server...")
 
     // Lưu vào server
     saveTestToServer(test)
@@ -718,188 +674,60 @@ function saveTest() {
 
     console.log("Bài kiểm tra đã lưu:", test)
   } catch (error) {
-    console.error("Lỗi ngoại lệ khi lưu bài kiểm tra:", error)
+    console.error("Lỗi khi lưu bài kiểm tra:", error)
     showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
   }
 }
 
-// Tìm hàm validateTestMetadata() và thay thế bằng phiên bản sau:
-
 // Xác thực metadata bài kiểm tra
 function validateTestMetadata() {
-  console.log("Bắt đầu xác thực metadata bài kiểm tra...")
-  console.log("Metadata hiện tại:", {
-    title: test.title,
-    vietnameseName: test.vietnameseName,
-    description: test.description,
-  })
-
-  if (!test.title || test.title.trim() === "") {
-    console.error("Lỗi: Tiêu đề bài kiểm tra không được để trống")
+  if (!test.title) {
     showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
     return false
   }
-
-  // Kiểm tra độ dài tiêu đề
-  if (test.title.length > 200) {
-    showNotification("Tiêu đề bài kiểm tra quá dài (tối đa 200 ký tự)", "error")
-    return false
-  }
-
-  // Kiểm tra tên tiếng Việt (không bắt buộc)
-  if (test.vietnameseName && test.vietnameseName.length > 200) {
-    showNotification("Tên tiếng Việt quá dài (tối đa 200 ký tự)", "error")
-    return false
-  }
-
-  // Kiểm tra mô tả (không bắt buộc)
-  if (test.description && test.description.length > 1000) {
-    showNotification("Mô tả quá dài (tối đa 1000 ký tự)", "error")
-    return false
-  }
-
-  console.log("Xác thực metadata bài kiểm tra thành công")
   return true
 }
 
 // Xác thực câu hỏi phần
 function validatePartQuestions() {
-  console.log("Bắt đầu xác thực câu hỏi trong các phần...")
-
   // Tối thiểu 2 câu hỏi mỗi phần được khuyến nghị nhưng không bắt buộc
   const warnings = []
-  let hasAnyQuestions = false
-
   for (let i = 1; i <= 4; i++) {
     const partQuestions = test[`part${i}`]?.length || 0
     if (partQuestions === 0) {
       warnings.push(`Phần ${i} không có câu hỏi nào`)
-    } else if (partQuestions < 2) {
-      warnings.push(`Phần ${i} chỉ có ${partQuestions} câu hỏi (khuyến nghị ít nhất 2 câu)`)
-      hasAnyQuestions = true
-    } else {
-      hasAnyQuestions = true
     }
-
-    // Kiểm tra từng câu hỏi trong phần
-    if (test[`part${i}`] && test[`part${i}`].length > 0) {
-      for (let j = 0; j < test[`part${i}`].length; j++) {
-        const question = test[`part${i}`][j]
-
-        // Kiểm tra loại câu hỏi
-        if (!question.type) {
-          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có loại câu hỏi`, "error")
-          return false
-        }
-
-        // Kiểm tra nội dung câu hỏi
-        if (!question.content || !Array.isArray(question.content) || question.content.length === 0) {
-          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có nội dung hoặc nội dung không hợp lệ`, "error")
-          return false
-        }
-
-        // Kiểm tra đáp án đúng
-        if (
-          question.correctAnswers === undefined ||
-          question.correctAnswers === null ||
-          (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0)
-        ) {
-          showNotification(`Câu hỏi #${j + 1} trong Phần ${i} không có đáp án đúng`, "error")
-          return false
-        }
-      }
-    }
-  }
-
-  if (!hasAnyQuestions) {
-    showNotification("Không tìm thấy câu hỏi nào trong tất cả các phần. Vui lòng thêm ít nhất một câu hỏi.", "error")
-    return false
   }
 
   if (warnings.length > 0) {
-    console.warn("Cảnh báo khi xác thực câu hỏi:", warnings)
     return confirm(`Cảnh báo:
 ${warnings.join("\n")}
 
 Bạn có muốn tiếp tục lưu không?`)
   }
 
-  console.log("Xác thực câu hỏi trong các phần thành công")
   return true
 }
 
 // Lưu bài kiểm tra vào server
 async function saveTestToServer(testData) {
   try {
-    console.log("Bắt đầu gửi dữ liệu bài kiểm tra lên server...")
-
-    // Chuẩn bị dữ liệu để gửi lên server
-    const dataToSend = {
-      title: testData.title,
-      vietnameseName: testData.vietnameseName || testData.title,
-      description: testData.description || "",
-      parts: [],
-    }
-
-    // Thêm dữ liệu từng phần
-    for (let i = 1; i <= 4; i++) {
-      if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
-        const partData = {
-          part_number: i,
-          questions: testData[`part${i}`].map((question) => ({
-            question_type: question.type,
-            content: JSON.stringify(question.content),
-            correct_answers: JSON.stringify(question.correctAnswers),
-          })),
-        }
-        dataToSend.parts.push(partData)
-        console.log(`Đã thêm dữ liệu Phần ${i} với ${partData.questions.length} câu hỏi`)
-      }
-    }
-
-    console.log("Dữ liệu bài kiểm tra sẽ gửi:", JSON.stringify(dataToSend, null, 2))
-
-    // Kiểm tra token xác thực
-    const token = localStorage.getItem("token")
-    if (!token) {
-      console.warn("Cảnh báo: Không tìm thấy token xác thực, tiếp tục gửi yêu cầu không có token")
-    } else {
-      console.log("Đã tìm thấy token xác thực")
-    }
-
-    const headers = {
-      "Content-Type": "application/json",
-    }
-
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
-    }
-
-    console.log("Headers yêu cầu:", headers)
-    console.log("Bắt đầu gửi yêu cầu POST đến /api/tests")
-
     const response = await fetch("/api/tests", {
       method: "POST",
-      headers: headers,
-      body: JSON.stringify(dataToSend),
-    })
-
-    console.log("Nhận phản hồi từ server:", {
-      status: response.status,
-      statusText: response.statusText,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(testData),
     })
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error("Server trả về lỗi:", errorData)
       throw new Error(errorData.message || "Lưu bài kiểm tra thất bại")
     }
 
-    const responseData = await response.json()
-    console.log("Phản hồi thành công từ server:", responseData)
-    return responseData
+    return await response.json()
   } catch (error) {
-    console.error("Lỗi ngoại lệ khi lưu bài kiểm tra lên server:", error)
+    console.error("Lỗi khi lưu bài kiểm tra:", error)
     throw error
   }
 }
@@ -1831,15 +1659,6 @@ function addQuestionDirectly(questionType) {
         ]
         newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2", "Đáp án 3"]
         break
-      case "Hoàn thành ghi chú":
-        newQuestion.content = [
-          "Hoàn thành ghi chú dưới đây",
-          "Chủ đề ghi chú",
-          "Câu 1 với [ANSWER] cần điền",
-          "Câu 2 với [ANSWER] cần điền",
-        ]
-        newQuestion.correctAnswers = ["Đáp án 1", "Đáp án 2"]
-        break
       case "Hoàn thành bảng/biểu mẫu":
         newQuestion.content = [
           "Hoàn thành bảng dưới đây",
@@ -1867,62 +1686,30 @@ function addQuestionDirectly(questionType) {
         break
     }
 
-    // Đảm bảo rằng đối tượng test và các mảng part tồn tại
-    if (!window.test) {
-      console.warn("window.test không tồn tại, tạo mới đối tượng test")
-      window.test = {
-        title: "",
-        vietnameseName: "",
-        description: "",
-        part1: [],
-        part2: [],
-        part3: [],
-        part4: [],
-      }
+    // Make sure the part array exists
+    if (!test[`part${window.currentPart}`]) {
+      test[`part${window.currentPart}`] = []
     }
 
-    // Đảm bảo rằng mảng part tồn tại
-    const partKey = `part${window.currentPart}`
-    if (!window.test[partKey]) {
-      console.warn(`window.test.${partKey} không tồn tại, tạo mảng mới`)
-      window.test[partKey] = []
-    }
+    // Add the new question to the current part
+    test[`part${window.currentPart}`].push(newQuestion)
 
-    // Thêm câu hỏi mới vào phần hiện tại
-    window.test[partKey].push(newQuestion)
-
-    // Ghi log chi tiết để kiểm tra
-    console.log(`DEBUG: Đã thêm câu hỏi vào ${partKey}`, {
-      questionType,
-      questionCount: window.test[partKey].length,
-      allParts: {
-        part1: window.test.part1?.length || 0,
-        part2: window.test.part2?.length || 0,
-        part3: window.test.part3?.length || 0,
-        part4: window.test.part4?.length || 0,
-      },
-      testObject: JSON.stringify(window.test),
-    })
-
-    // Cập nhật biến test cục bộ để đồng bộ với window.test
-    test = window.test
-
-    // Cập nhật tổng số câu hỏi
+    // Update the total question count
     updateQuestionCount()
 
-    // Tạo form câu hỏi trong DOM
+    // Create the question form in the DOM
     const questionDiv = document.createElement("div")
-    questionDiv.className = "question edit-mode" // Câu hỏi mới bắt đầu ở chế độ chỉnh sửa
+    questionDiv.className = "question edit-mode" // New questions start in edit mode
 
-    // Thêm tiêu đề câu hỏi
-    const questionNumber = window.test[partKey].length
+    // Add question header
+    const questionNumber = test[`part${window.currentPart}`].length
     questionDiv.innerHTML = `
       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
       <h3>${getIconForType(questionType)} ${questionType}</h3>
       <button class="delete-question" onclick="deleteQuestion(${questionNumber - 1})"><i class="fas fa-trash"></i></button>
     `
 
-    // Thêm form phù hợp dựa trên loại câu hỏi
+    // Add the appropriate form based on type
     let formHTML = ""
     switch (questionType) {
       case "Một đáp án":
@@ -1966,10 +1753,10 @@ function addQuestionDirectly(questionType) {
         formHTML = `<p>Không hỗ trợ loại câu hỏi: ${questionType}</p>`
     }
 
-    // Thêm HTML form vào div câu hỏi
+    // Add form HTML to question div
     questionDiv.innerHTML += formHTML
 
-    // Thêm nút lưu và hủy (nút chỉnh sửa bị ẩn ở chế độ chỉnh sửa)
+    // Add save and cancel buttons (edit button is hidden in edit mode)
     questionDiv.innerHTML += `
       <div class="question-actions">
         <button class="edit-question-btn" onclick="toggleQuestionEdit(this)" style="display: none;">
@@ -1984,10 +1771,10 @@ function addQuestionDirectly(questionType) {
       </div>
     `
 
-    // Thêm div câu hỏi vào phần tử part
+    // Append the question div to the part element
     partElement.appendChild(questionDiv)
 
-    // Khởi tạo chức năng form dựa trên loại
+    // Initialize form functionality based on type
     try {
       switch (questionType) {
         case "Một đáp án":
@@ -2027,36 +1814,15 @@ function addQuestionDirectly(questionType) {
           break
       }
     } catch (error) {
-      console.error("Lỗi khi khởi tạo form:", error)
+      console.error("Error initializing form:", error)
     }
 
-    console.log(`Đã thêm câu hỏi mới ${questionType} vào phần ${window.currentPart}`)
-    verifyQuestionAdded()
+    console.log(`Added new ${questionType} question to part ${window.currentPart}`)
     showNotification(`Đã thêm câu hỏi loại "${questionType}" vào Phần ${window.currentPart}`, "success")
   } catch (error) {
-    console.error("Lỗi khi tạo câu hỏi:", error)
+    console.error("Error creating question:", error)
     showNotification(`Lỗi khi tạo câu hỏi: ${error.message}`, "error")
   }
-}
-
-// Add this function after addQuestionDirectly
-function verifyQuestionAdded() {
-  console.log("Verifying questions in test object:")
-  let totalQuestions = 0
-
-  for (let i = 1; i <= 4; i++) {
-    const partQuestions = test[`part${i}`] || []
-    console.log(`Part ${i}: ${partQuestions.length} questions`)
-
-    if (partQuestions.length > 0) {
-      console.log(`Sample question in part ${i}:`, JSON.stringify(partQuestions[0]))
-    }
-
-    totalQuestions += partQuestions.length
-  }
-
-  console.log(`Total questions across all parts: ${totalQuestions}`)
-  return totalQuestions > 0
 }
 
 // Make sure all functions are available globally
@@ -2110,7 +1876,7 @@ function startTestCreation() {
   document.getElementById("testCreationPage").classList.remove("hidden")
 
   // Khởi tạo bài kiểm tra mới
-  window.test = {
+  test = {
     title: "Bài kiểm tra IELTS Listening mới",
     vietnameseName: "Bộ câu hỏi IELTS Listening mới",
     description: "Mô tả bài kiểm tra",
@@ -2119,9 +1885,6 @@ function startTestCreation() {
     part3: [],
     part4: [],
   }
-
-  // Đồng bộ biến test cục bộ với window.test
-  test = window.test
 
   // Hiển thị giao diện tạo bài kiểm tra
   window.currentPart = 1
@@ -2132,9 +1895,6 @@ function startTestCreation() {
     console.log("Automatically creating question form for: " + selectedTypes[0])
     addQuestionDirectly(selectedTypes[0])
   }
-
-  // Thêm nút debug
-  addDebugButton()
 }
 
 // Thêm hàm mới để lưu thay đổi cho từng câu hỏi riêng biệt
@@ -2604,7 +2364,7 @@ function cancelQuestionEdit(button) {
   }
 }
 
-// Cập nhật hàm saveQuestionChanges
+// Cập nhật hàm saveQuestionChanges để hiển thị thông báo chi tiết hơn
 function saveQuestionChanges(button) {
   try {
     // Tìm phần tử câu hỏi chứa nút được nhấn
@@ -2961,57 +2721,57 @@ function initializeFormTableCompletionForm(questionDiv) {}
 function initializeFlowChartCompletionForm(questionDiv) {}
 
 // Declare setQuestionViewMode
-// function setQuestionViewMode(questionDiv) {
-//   // Re-render the question content in view mode
-//   const partElement = questionDiv.closest(".part")
-//   const questions = Array.from(partElement.querySelectorAll(".question"))
-//   const questionIndex = questions.indexOf(questionDiv)
+function setQuestionViewMode(questionDiv) {
+  // Re-render the question content in view mode
+  const partElement = questionDiv.closest(".part")
+  const questions = Array.from(partElement.querySelectorAll(".question"))
+  const questionIndex = questions.indexOf(questionDiv)
 
-//   if (questionIndex !== -1) {
-//     const questionData = test[`part${window.currentPart}`][questionIndex]
+  if (questionIndex !== -1) {
+    const questionData = test[`part${window.currentPart}`][questionIndex]
 
-//     // Clear the current content
-//     questionDiv.innerHTML = ""
+    // Clear the current content
+    questionDiv.innerHTML = ""
 
-//     // Add question header
-//     const questionNumber = questionIndex + 1
-//     questionDiv.innerHTML = `
-//       <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
-//       <h3>${getIconForType(questionData.type)} ${questionData.type}</h3>
-//       <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
-//       ${renderQuestionContent(questionData)}
-//     `
+    // Add question header
+    const questionNumber = questionIndex + 1
+    questionDiv.innerHTML = `
+      <h4><i class="fas fa-question-circle"></i> Câu hỏi ${questionNumber}</h4>
+      <h3>${getIconForType(questionData.type)} ${questionData.type}</h3>
+      <button class="delete-question" onclick="deleteQuestion(${questionIndex})"><i class="fas fa-trash"></i></button>
+      ${renderQuestionContent(questionData)}
+    `
 
-//     // Disable input fields in view mode
-//     const inputs = questionDiv.querySelectorAll("input, textarea, select")
-//     inputs.forEach((input) => {
-//       input.disabled = true
-//     })
+    // Disable input fields in view mode
+    const inputs = questionDiv.querySelectorAll("input, textarea, select")
+    inputs.forEach((input) => {
+      input.disabled = true
+    })
 
-//     // Add action buttons for editing
-//     const questionContent = questionDiv.querySelector(".question-content") || questionDiv
-//     const actionDiv = document.createElement("div")
-//     actionDiv.className = "question-actions"
-//     actionDiv.innerHTML = `
-//       <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
-//         <i class="fas fa-edit"></i> Chỉnh sửa
-//       </button>
-//       <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
-//         <i class="fas fa-save"></i> Lưu thay đổi
-//       </button>
-//       <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
-//         <i class="fas fa-times"></i> Hủy
-//       </button>
-//     `
-//     questionContent.appendChild(actionDiv)
+    // Add action buttons for editing
+    const questionContent = questionDiv.querySelector(".question-content") || questionDiv
+    const actionDiv = document.createElement("div")
+    actionDiv.className = "question-actions"
+    actionDiv.innerHTML = `
+      <button class="edit-question-btn" onclick="toggleQuestionEdit(this)">
+        <i class="fas fa-edit"></i> Chỉnh sửa
+      </button>
+      <button class="save-question-btn" onclick="saveQuestionChanges(this)" style="display: none;">
+        <i class="fas fa-save"></i> Lưu thay đổi
+      </button>
+      <button class="cancel-edit-btn" onclick="cancelQuestionEdit(this)" style="display: none;">
+        <i class="fas fa-times"></i> Hủy
+      </button>
+    `
+    questionContent.appendChild(actionDiv)
 
-//     // Switch to view mode
-//     questionDiv.classList.remove("edit-mode")
-//     questionDiv.classList.add("view-mode")
+    // Switch to view mode
+    questionDiv.classList.remove("edit-mode")
+    questionDiv.classList.add("view-mode")
 
-//     showNotification("Đã chuyển sang chế độ xem", "info")
-//   }
-// }
+    showNotification("Đã chuyển sang chế độ xem", "info")
+  }
+}
 
 // Functions to save question data
 function saveOneAnswerQuestion(questionDiv) {
@@ -3203,59 +2963,3 @@ console.log("Functions exposed to window:", {
 if (typeof window.currentPart === "undefined") {
   window.currentPart = 1
 }
-
-// Thêm hàm này vào cuối file test-management.js
-function addDebugButton() {
-  // Kiểm tra xem nút debug đã tồn tại chưa
-  if (document.getElementById("debugTestButton")) {
-    return
-  }
-
-  // Tạo nút debug
-  const debugButton = document.createElement("button")
-  debugButton.id = "debugTestButton"
-  debugButton.textContent = "Kiểm tra đối tượng Test"
-  debugButton.className = "action-button"
-  debugButton.style.backgroundColor = "#ff9800"
-  debugButton.style.color = "white"
-  debugButton.style.padding = "10px"
-  debugButton.style.margin = "10px"
-  debugButton.style.border = "none"
-  debugButton.style.borderRadius = "4px"
-  debugButton.style.cursor = "pointer"
-
-  // Thêm sự kiện click
-  debugButton.addEventListener("click", () => {
-    console.log("=== THÔNG TIN DEBUG ĐỐI TƯỢNG TEST ===")
-    console.log("window.test:", window.test)
-    console.log("test (biến cục bộ):", test)
-
-    // Kiểm tra từng phần
-    for (let i = 1; i <= 4; i++) {
-      console.log(`Phần ${i}:`, window.test[`part${i}`])
-      console.log(`Số câu hỏi trong phần ${i}:`, window.test[`part${i}`]?.length || 0)
-    }
-
-    // Kiểm tra tổng số câu hỏi
-    let totalQuestions = 0
-    for (let i = 1; i <= 4; i++) {
-      totalQuestions += window.test[`part${i}`]?.length || 0
-    }
-    console.log("Tổng số câu hỏi:", totalQuestions)
-
-    // Hiển thị thông báo
-    showNotification("Đã in thông tin debug vào console. Mở DevTools để xem.", "info")
-  })
-
-  // Thêm nút vào trang
-  const testCreationPage = document.getElementById("testCreationPage")
-  if (testCreationPage) {
-    testCreationPage.appendChild(debugButton)
-  }
-}
-
-// Gọi hàm thêm nút debug khi trang được tải
-document.addEventListener("DOMContentLoaded", () => {
-  // Thêm nút debug sau khi trang đã tải
-  setTimeout(addDebugButton, 1000)
-})

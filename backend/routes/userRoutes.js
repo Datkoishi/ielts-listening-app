@@ -1,6 +1,6 @@
 const express = require("express")
 const router = express.Router()
-const { authenticateToken } = require("../middleware/auth")
+const { auth } = require("../middleware/auth")
 const userController = require("../controllers/userController")
 
 // Đăng ký người dùng mới
@@ -10,6 +10,6 @@ router.post("/register", userController.register)
 router.post("/login", userController.login)
 
 // Lấy thông tin người dùng hiện tại
-router.get("/me", authenticateToken, userController.getCurrentUser)
+router.get("/me", auth, userController.getCurrentUser)
 
 module.exports = router

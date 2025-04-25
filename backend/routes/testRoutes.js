@@ -1,18 +1,23 @@
 const express = require("express")
 const router = express.Router()
-const { authenticateToken } = require("../middleware/auth")
 const testController = require("../controllers/testController")
 
-// Routes cho giáo viên (yêu cầu xác thực)
-router.get("/", authenticateToken, testController.getTests)
-router.post("/", authenticateToken, testController.createTest)
-router.get("/:id", authenticateToken, testController.getTestById)
-router.put("/:id", authenticateToken, testController.updateTest)
-router.delete("/:id", authenticateToken, testController.deleteTest)
+// Lấy tất cả bài kiểm tra
+router.get("/", testController.getAllTests)
 
-// Routes công khai cho học sinh (không yêu cầu xác thực)
-router.get("/public/tests", testController.getPublicTests)
-router.get("/public/tests/:id", testController.getPublicTestById)
-router.post("/public/submit", testController.submitPublicAnswers)
+// Lấy bài kiểm tra theo ID
+router.get("/:id", testController.getTestById)
+
+// Tạo bài kiểm tra mới
+router.post("/", testController.createTest)
+
+// Cập nhật bài kiểm tra
+router.put("/:id", testController.updateTest)
+
+// Xóa bài kiểm tra
+router.delete("/:id", testController.deleteTest)
+
+// Nhận câu trả lời từ học sinh
+router.post("/:testId/submit", testController.submitAnswers)
 
 module.exports = router

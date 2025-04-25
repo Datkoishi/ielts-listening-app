@@ -1,377 +1,262 @@
 const Test = require("../models/Test")
-const db = require("../config/database")
+const { query } = require("../config/database")
 
-// Lấy tất cả bài kiểm tra
-const getAllTests = async (req, res) => {
+// Update the getAllTests function to include the vietnameseName field
+exports.getAllTests = async (req, res) => {
   try {
-    const userId = req.user.id
-    const [tests] = await db.query("SELECT * FROM tests WHERE user_id = ? ORDER BY created_at DESC", [userId])
+    const tests = await query(`
+      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+      FROM tests t
+      ORDER BY t.created_at DESC
+    `)
     res.json(tests)
   } catch (error) {
-    console.error("Error fetching tests:", error)
-    res.status(500).json({ message: "Lỗi khi lấy danh sách bài kiểm tra" })
-  }
-}
-
-// Lấy tất cả bài kiểm tra công khai (không cần xác thực)
-const getPublicTests = async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT id, title, description, created_at FROM tests WHERE is_public = 1")
-    res.json(rows)
-  } catch (error) {
-    console.error("Error fetching public tests:", error)
-    res.status(500).json({ message: "Server error" })
+    console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }
 
 // Lấy bài kiểm tra theo ID
-const getTestById = async (req, res) => {
+// Update the getTestById function to include the vietnameseName field
+exports.getTestById = async (req, res) => {
   try {
-    // Get test
-    const [tests] = await db.query("SELECT * FROM tests WHERE id = ? AND user_id = ?", [req.params.id, req.user.id])
-
-    if (tests.length === 0) {
-      return res.status(404).json({ message: "Test not found" })
-    }
-
-    const test = tests[0]
-
-    // Get questions
-    const [questions] = await db.query("SELECT * FROM questions WHERE test_id = ? ORDER BY section, position", [
-      req.params.id,
-    ])
-
-    // Parse JSON strings
-    const formattedQuestions = questions.map((q) => ({
-      ...q,
-      options: JSON.parse(q.options),
-      correct_answer: JSON.parse(q.correct_answer),
-    }))
-
-    res.json({
-      ...test,
-      questions: formattedQuestions,
-    })
-  } catch (error) {
-    console.error("Error fetching test:", error)
-    res.status(500).json({ message: "Server error" })
-  }
-}
-
-// Lấy bài kiểm tra công khai theo ID (không cần xác thực)
-const getPublicTestById = async (req, res) => {
-  try {
-    // Get test
-    const [tests] = await db.query(
-      "SELECT id, title, description, audio_url, created_at FROM tests WHERE id = ? AND is_public = 1",
+    const test = await query(
+      `
+      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
+      FROM tests t
+      WHERE t.id = ?
+    `,
       [req.params.id],
     )
 
-    if (tests.length === 0) {
-      return res.status(404).json({ message: "Test not found or not public" })
+    if (!test || test.length === 0) {
+      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
-    const test = tests[0]
-
-    // Get questions (without correct answers for students)
-    const [questions] = await db.query(
-      "SELECT id, type, content, options, section, position FROM questions WHERE test_id = ? ORDER BY section, position",
+    // Lấy các phần và câu hỏi
+    const parts = await query(
+      `
+      SELECT id, part_number, audio_url
+      FROM parts
+      WHERE test_id = ?
+      ORDER BY part_number
+    `,
       [req.params.id],
     )
 
-    // Parse JSON strings for options only (not sending correct answers)
-    const formattedQuestions = questions.map((q) => ({
-      ...q,
-      options: JSON.parse(q.options),
-    }))
+    const partsWithQuestions = await Promise.all(
+      parts.map(async (part) => {
+        const questions = await query(
+          `
+        SELECT id, question_type, content, correct_answers
+        FROM questions
+        WHERE part_id = ?
+        ORDER BY id
+      `,
+          [part.id],
+        )
 
-    res.json({
-      ...test,
-      questions: formattedQuestions,
-    })
+        return { ...part, questions }
+      }),
+    )
+
+    // Map vietnamese_name to vietnameseName for frontend consistency
+    const testData = {
+      ...test[0],
+      vietnameseName: test[0].vietnamese_name,
+      parts: partsWithQuestions,
+    }
+    delete testData.vietnamese_name
+
+    res.json(testData)
   } catch (error) {
-    console.error("Error fetching public test:", error)
-    res.status(500).json({ message: "Server error" })
+    console.error("Lỗi lấy bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }
 
 // Tạo bài kiểm tra mới
-const createTest = async (req, res) => {
+exports.createTest = async (req, res) => {
+  const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
+
   try {
-    const { title, description, audio_url, questions } = req.body
+    await query("START TRANSACTION")
 
-    if (!title || !audio_url || !questions || !Array.isArray(questions)) {
-      return res.status(400).json({ message: "Missing required fields" })
-    }
-
-    // Insert test
-    const [result] = await db.query(
-      "INSERT INTO tests (user_id, title, description, audio_url, created_at) VALUES (?, ?, ?, ?, NOW())",
-      [req.user.id, title, description, audio_url],
-    )
+    // Tạo bài kiểm tra
+    const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
+      title,
+      vietnameseName,
+      description,
+    ])
 
     const testId = result.insertId
 
-    // Insert questions
-    for (const question of questions) {
-      const { type, content, options, correct_answer, section, position } = question
+    // Tạo các phần và câu hỏi
+    for (let i = 1; i <= 4; i++) {
+      const partData = req.body[`part${i}`]
+      if (partData?.length > 0) {
+        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
 
-      const [questionResult] = await db.query(
-        "INSERT INTO questions (test_id, type, content, options, correct_answer, section, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [testId, type, content, JSON.stringify(options), JSON.stringify(correct_answer), section, position],
-      )
+        const partId = partResult.insertId
+
+        for (const question of partData) {
+          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
+            partId,
+            question.type,
+            JSON.stringify(question.content),
+            JSON.stringify(question.correctAnswers),
+          ])
+        }
+      }
     }
 
-    res.status(201).json({
-      message: "Test created successfully",
-      testId,
-    })
+    await query("COMMIT")
+    res.status(201).json({ message: "Tạo bài kiểm tra thành công", testId })
   } catch (error) {
-    console.error("Error creating test:", error)
-    res.status(500).json({ message: "Server error" })
+    await query("ROLLBACK")
+    console.error("Lỗi tạo bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }
 
-// Cập nhật bài kiểm tra
-const updateTest = async (req, res) => {
+// Update the updateTest function to handle the vietnameseName field
+exports.updateTest = async (req, res) => {
+  const { id } = req.params
+  const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
+
   try {
-    const { title, description, audio_url, questions } = req.body
+    await query("START TRANSACTION")
 
-    if (!title || !audio_url || !questions || !Array.isArray(questions)) {
-      return res.status(400).json({ message: "Missing required fields" })
-    }
-
-    // Check if test exists and belongs to user
-    const [tests] = await db.query("SELECT * FROM tests WHERE id = ? AND user_id = ?", [req.params.id, req.user.id])
-
-    if (tests.length === 0) {
-      return res.status(404).json({ message: "Test not found" })
-    }
-
-    // Update test
-    await db.query("UPDATE tests SET title = ?, description = ?, audio_url = ?, updated_at = NOW() WHERE id = ?", [
+    // Cập nhật bài kiểm tra
+    await query("UPDATE tests SET title = ?, vietnamese_name = ?, description = ? WHERE id = ?", [
       title,
+      vietnameseName,
       description,
-      audio_url,
-      req.params.id,
+      id,
     ])
 
-    // Delete existing questions
-    await db.query("DELETE FROM questions WHERE test_id = ?", [req.params.id])
+    // Xóa các phần và câu hỏi hiện có
+    await query("DELETE FROM parts WHERE test_id = ?", [id])
 
-    // Insert new questions
-    for (const question of questions) {
-      const { type, content, options, correct_answer, section, position } = question
+    // Tạo các phần và câu hỏi mới
+    for (let i = 1; i <= 4; i++) {
+      const partData = req.body[`part${i}`]
+      if (partData?.length > 0) {
+        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, i])
 
-      await db.query(
-        "INSERT INTO questions (test_id, type, content, options, correct_answer, section, position) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [req.params.id, type, content, JSON.stringify(options), JSON.stringify(correct_answer), section, position],
-      )
+        const partId = partResult.insertId
+
+        for (const question of partData) {
+          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
+            partId,
+            question.type,
+            JSON.stringify(question.content),
+            JSON.stringify(question.correctAnswers),
+          ])
+        }
+      }
     }
 
-    res.json({ message: "Test updated successfully" })
+    await query("COMMIT")
+    res.json({ message: "Cập nhật bài kiểm tra thành công" })
   } catch (error) {
-    console.error("Error updating test:", error)
-    res.status(500).json({ message: "Server error" })
+    await query("ROLLBACK")
+    console.error("Lỗi cập nhật bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }
 
 // Xóa bài kiểm tra
-const deleteTest = async (req, res) => {
+exports.deleteTest = async (req, res) => {
   try {
-    // Check if test exists and belongs to user
-    const [tests] = await db.query("SELECT * FROM tests WHERE id = ? AND user_id = ?", [req.params.id, req.user.id])
-
-    if (tests.length === 0) {
-      return res.status(404).json({ message: "Test not found" })
-    }
-
-    // Delete questions first (due to foreign key constraint)
-    await db.query("DELETE FROM questions WHERE test_id = ?", [req.params.id])
-
-    // Delete test
-    await db.query("DELETE FROM tests WHERE id = ?", [req.params.id])
-
-    res.json({ message: "Test deleted successfully" })
+    await query("DELETE FROM tests WHERE id = ?", [req.params.id])
+    res.json({ message: "Xóa bài kiểm tra thành công" })
   } catch (error) {
-    console.error("Error deleting test:", error)
-    res.status(500).json({ message: "Server error" })
+    console.error("Lỗi xóa bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
   }
 }
 
 // Nhận câu trả lời từ học sinh
-const submitAnswers = async (req, res) => {
+exports.submitAnswers = async (req, res) => {
   try {
-    const testId = req.params.testId
-    const { answers } = req.body
-    const userId = req.user.id
+    const { testId } = req.params
+    const { answers, studentId } = req.body
 
-    // Lấy thông tin bài kiểm tra
-    const [test] = await db.query("SELECT * FROM tests WHERE id = ?", [testId])
-
-    if (test.length === 0) {
+    // Kiểm tra bài kiểm tra tồn tại
+    const test = await query("SELECT id FROM tests WHERE id = ?", [testId])
+    if (!test || test.length === 0) {
       return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
     }
 
-    // Lấy các câu hỏi của bài kiểm tra
-    const [questions] = await db.query("SELECT * FROM questions WHERE test_id = ? ORDER BY question_order", [testId])
+    // Lấy tất cả câu hỏi của bài kiểm tra
+    const questions = await query(
+      `
+      SELECT q.*, p.part_number
+      FROM questions q
+      JOIN parts p ON q.part_id = p.id
+      WHERE p.test_id = ?
+      ORDER BY p.part_number, q.id
+    `,
+      [testId],
+    )
 
-    // Chấm điểm
-    let score = 0
-    const totalQuestions = questions.length
+    // Kiểm tra và lưu câu trả lời
     const results = []
+    let correctCount = 0
 
-    questions.forEach((question, index) => {
-      const questionId = question.id
-      const userAnswer = answers[questionId]
-      const correctAnswer = JSON.parse(question.answers)
+    for (const answer of answers) {
+      const { questionId, studentAnswer } = answer
+
+      // Tìm câu hỏi tương ứng
+      const question = questions.find((q) => q.id === Number.parseInt(questionId))
+      if (!question) continue
+
+      // Lấy đáp án đúng
+      const correctAnswers = JSON.parse(question.correct_answers)
+
+      // Kiểm tra câu trả lời
       let isCorrect = false
-
-      // Kiểm tra đáp án
-      if (userAnswer && correctAnswer) {
-        // Logic chấm điểm tùy theo loại câu hỏi
-        switch (question.type) {
-          case "multiple_choice":
-            isCorrect = userAnswer === correctAnswer
-            break
-          case "multiple_answers":
-            // So sánh mảng đáp án
-            isCorrect =
-              Array.isArray(userAnswer) &&
-              Array.isArray(correctAnswer) &&
-              userAnswer.length === correctAnswer.length &&
-              userAnswer.every((ans) => correctAnswer.includes(ans))
-            break
-          case "matching":
-          case "map_labeling":
-          case "note_completion":
-          case "form_completion":
-          case "flow_chart":
-            // So sánh object đáp án
-            isCorrect = JSON.stringify(userAnswer) === JSON.stringify(correctAnswer)
-            break
-          default:
-            isCorrect = false
+      if (Array.isArray(correctAnswers)) {
+        // Nếu có nhiều đáp án đúng
+        if (Array.isArray(studentAnswer)) {
+          isCorrect =
+            studentAnswer.length === correctAnswers.length && studentAnswer.every((a) => correctAnswers.includes(a))
+        } else {
+          isCorrect = correctAnswers.includes(studentAnswer)
         }
+      } else {
+        // Nếu chỉ có một đáp án đúng
+        isCorrect = studentAnswer === correctAnswers
       }
 
-      if (isCorrect) {
-        score++
-      }
+      // Lưu kết quả
+      await query(
+        "INSERT INTO student_answers (student_id, test_id, question_id, answer, is_correct) VALUES (?, ?, ?, ?, ?)",
+        [studentId || 0, testId, questionId, JSON.stringify(studentAnswer), isCorrect],
+      )
 
       results.push({
         questionId,
-        userAnswer,
-        correctAnswer,
         isCorrect,
       })
-    })
 
-    // Lưu kết quả vào database
-    await db.query(
-      "INSERT INTO submissions (test_id, user_id, score, total_questions, answers) VALUES (?, ?, ?, ?, ?)",
-      [testId, userId, score, totalQuestions, JSON.stringify(answers)],
-    )
+      if (isCorrect) correctCount++
+    }
+
+    // Tính điểm
+    const totalQuestions = questions.length
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0
 
     res.json({
+      message: "Nộp bài thành công",
       score,
+      correctCount,
       totalQuestions,
-      percentage: Math.round((score / totalQuestions) * 100),
       results,
     })
   } catch (error) {
-    console.error("Error submitting answers:", error)
-    res.status(500).json({ message: "Lỗi khi nộp bài" })
+    console.error("Lỗi khi nộp bài:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ" })
   }
-}
-
-// Nhận câu trả lời từ học sinh (không cần xác thực)
-const submitPublicAnswers = async (req, res) => {
-  try {
-    const { answers } = req.body
-    const testId = req.params.id
-
-    if (!answers || !Array.isArray(answers)) {
-      return res.status(400).json({ message: "Invalid answers format" })
-    }
-
-    // Get test to verify it exists and is public
-    const [tests] = await db.query("SELECT * FROM tests WHERE id = ? AND is_public = 1", [testId])
-
-    if (tests.length === 0) {
-      return res.status(404).json({ message: "Test not found or not public" })
-    }
-
-    // Get questions with correct answers
-    const [questions] = await db.query("SELECT id, correct_answer FROM questions WHERE test_id = ?", [testId])
-
-    // Create a map of question IDs to correct answers
-    const correctAnswersMap = {}
-    questions.forEach((q) => {
-      correctAnswersMap[q.id] = JSON.parse(q.correct_answer)
-    })
-
-    // Calculate score
-    let score = 0
-    const totalQuestions = questions.length
-
-    answers.forEach((answer) => {
-      const correctAnswer = correctAnswersMap[answer.questionId]
-
-      if (correctAnswer) {
-        // Handle different question types
-        if (Array.isArray(correctAnswer) && Array.isArray(answer.value)) {
-          // For multiple choice or matching questions
-          const isCorrect =
-            correctAnswer.length === answer.value.length && correctAnswer.every((val, idx) => val === answer.value[idx])
-          if (isCorrect) score++
-        } else if (typeof correctAnswer === "string" && typeof answer.value === "string") {
-          // For text input questions (case insensitive)
-          if (correctAnswer.toLowerCase() === answer.value.toLowerCase()) score++
-        } else if (typeof correctAnswer === "object" && typeof answer.value === "object") {
-          // For diagram/map questions
-          const isCorrect = Object.keys(correctAnswer).every(
-            (key) => correctAnswer[key].toLowerCase() === (answer.value[key] || "").toLowerCase(),
-          )
-          if (isCorrect) score++
-        }
-      }
-    })
-
-    const percentage = (score / totalQuestions) * 100
-
-    res.json({
-      score,
-      totalQuestions,
-      percentage: Math.round(percentage * 10) / 10, // Round to 1 decimal place
-      message: `You scored ${score} out of ${totalQuestions} (${Math.round(percentage)}%)`,
-    })
-  } catch (error) {
-    console.error("Error submitting answers:", error)
-    res.status(500).json({ message: "Server error" })
-  }
-}
-
-// Get all tests for authenticated user
-const getTests = async (req, res) => {
-  try {
-    const [rows] = await db.query("SELECT * FROM tests WHERE user_id = ?", [req.user.id])
-    res.json(rows)
-  } catch (error) {
-    console.error("Error fetching tests:", error)
-    res.status(500).json({ message: "Server error" })
-  }
-}
-
-module.exports = {
-  getAllTests,
-  getPublicTests,
-  getTestById,
-  getPublicTestById,
-  createTest,
-  updateTest,
-  deleteTest,
-  submitAnswers,
-  submitPublicAnswers,
-  getTests,
 }
