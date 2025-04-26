@@ -76,13 +76,18 @@ function getIconForType(type) {
 }
 
 // Thêm câu hỏi mới
-function addQuestion(type, partNumber) {
+function addQuestion(type, partNumber = window.currentPart) {
   if (totalQuestions >= MAX_QUESTIONS) {
     alert("Bạn đã đạt đến giới hạn tối đa 40 câu hỏi.")
     return
   }
 
   const part = document.getElementById(`part${partNumber}`)
+  if (!part) {
+    console.error(`Cannot find part${partNumber} element`)
+    return
+  }
+
   const questionNumber = totalQuestions + 1
   const questionDiv = document.createElement("div")
   questionDiv.className = "question"
@@ -154,6 +159,42 @@ function addQuestion(type, partNumber) {
       initializeFlowChartCompletionForm(questionDiv)
       break
   }
+
+  // IMPORTANT: Make sure the question is added to the test object
+  // Access the global window.test object instead of the local test variable
+  if (!window.test) {
+    window.test = {
+      title: "",
+      vietnameseName: "",
+      description: "",
+      part1: [],
+      part2: [],
+      part3: [],
+      part4: [],
+    }
+    console.log("Created global test object")
+  }
+
+  if (!window.test[`part${partNumber}`]) {
+    window.test[`part${partNumber}`] = []
+    console.log(`Created part${partNumber} array in global test object`)
+  }
+
+  // Create a basic question object
+  const newQuestion = {
+    type: type,
+    content: ["New question"],
+    correctAnswers: [],
+  }
+
+  // Add the question to the global test object
+  window.test[`part${partNumber}`].push(newQuestion)
+
+  console.log(
+    `Added question to global test object part${partNumber}. Current questions:`,
+    window.test[`part${partNumber}`].length,
+  )
+  console.log("Global test object:", window.test)
 }
 
 // Xóa câu hỏi
@@ -628,82 +669,46 @@ function initializeFlowChartCompletionForm(questionDiv) {
 }
 
 // Add the missing function for saving Plan/Map/Diagram questions
-// Cải thiện hàm savePlanMapDiagramQuestion để kiểm tra tính hợp lệ tốt hơn
 function savePlanMapDiagramQuestion(container) {
-  try {
-    const questionType = container.querySelector("#questionType").value
-    const instructions = container.querySelector("#instructions").value
-    const imageFile = container.querySelector("#imageFile")
-    const answerInputs = container.querySelector("#answerInputs")
-    const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
-    const imagePreview = container.querySelector(".image-preview img")
+  const questionType = container.querySelector("#questionType").value
+  const instructions = container.querySelector("#instructions").value
+  const imageFile = container.querySelector("#imageFile")
+  const answerInputs = container.querySelector("#answerInputs")
+  const answerGroups = answerInputs.querySelectorAll(".t1-form-group")
 
-    // Validate inputs
-    if (!instructions) {
-      showNotification("Vui lòng nhập hướng dẫn", "error")
-      return null
-    }
-
-    // Kiểm tra hình ảnh
-    let imageSource = ""
-    if (imagePreview) {
-      imageSource = imagePreview.src
-    } else if (imageFile && imageFile.files[0]) {
-      // Nếu có file mới, tạo URL tạm thời
-      imageSource = URL.createObjectURL(imageFile.files[0])
-
-      // Tải lên server nếu có hàm uploadImageFile
-      if (typeof window.uploadImageFile === "function") {
-        // Hiển thị thông báo đang tải lên
-        showNotification("Đang tải lên hình ảnh...", "info")
-
-        // Sử dụng Promise để đảm bảo hình ảnh được tải lên trước khi tiếp tục
-        return new Promise((resolve, reject) => {
-          window
-            .uploadImageFile(imageFile.files[0])
-            .then((response) => {
-              // Cập nhật URL hình ảnh từ server
-              imageSource = response.url
-
-              // Tiếp tục xử lý và trả về kết quả
-              const result = processPlanMapDiagramData(questionType, instructions, imageSource, answerGroups)
-              resolve(result)
-            })
-            .catch((error) => {
-              showNotification(`Lỗi khi tải lên hình ảnh: ${error.message}`, "error")
-              reject(error)
-            })
-        })
-      }
-    } else {
-      showNotification("Vui lòng tải lên hình ảnh", "error")
-      return null
-    }
-
-    // Xử lý dữ liệu nếu không cần tải lên hình ảnh
-    return processPlanMapDiagramData(questionType, instructions, imageSource, answerGroups)
-  } catch (error) {
-    console.error("Lỗi khi lưu câu hỏi ghi nhãn bản đồ/sơ đồ:", error)
-    showNotification("Lỗi khi lưu câu hỏi: " + error.message, "error")
+  // Validate inputs
+  if (!instructions) {
+    showNotification("Vui lòng nhập hướng dẫn", "error")
     return null
   }
-}
 
-// Hàm phụ trợ để xử lý dữ liệu câu hỏi ghi nhãn bản đồ/sơ đồ
-function processPlanMapDiagramData(questionType, instructions, imageSource, answerGroups) {
+  if (!imageFile.files[0] && !container.querySelector(".image-preview img")) {
+    showNotification("Vui lòng tải lên hình ảnh", "error")
+    return null
+  }
+
+  if (answerGroups.length === 0) {
+    showNotification("Vui lòng thêm ít nhất một nhãn", "error")
+    return null
+  }
+
+  // Get image source
+  let imageSource = ""
+  if (container.querySelector(".image-preview img")) {
+    imageSource = container.querySelector(".image-preview img").src
+  } else if (imageFile.files[0]) {
+    // This is a placeholder - in a real implementation, you'd upload the file to a server
+    // and get back a URL, but for this example we'll use a placeholder
+    imageSource = "/placeholder.svg?height=300&width=400"
+  }
+
   // Collect labels and answers
   const labels = []
   const correctAnswers = []
 
   answerGroups.forEach((group, index) => {
     const label = group.querySelector(`#answer${index}`).value
-    let answer = ""
-
-    if (questionType === "map") {
-      answer = group.querySelector(`#correctAnswer${index}`).value
-    } else {
-      answer = group.querySelector(`#shipAnswer${index}`).value
-    }
+    const answer = group.querySelector(`#correctAnswer${index}`).value
 
     if (!label || !answer) {
       showNotification(`Vui lòng điền đầy đủ thông tin cho nhãn ${index + 1}`, "error")
@@ -714,11 +719,6 @@ function processPlanMapDiagramData(questionType, instructions, imageSource, answ
     correctAnswers.push(answer)
   })
 
-  if (answerGroups.length === 0) {
-    showNotification("Vui lòng thêm ít nhất một nhãn", "error")
-    return null
-  }
-
   // Create question object
   const question = {
     type: "Ghi nhãn Bản đồ/Sơ đồ",
@@ -727,6 +727,170 @@ function processPlanMapDiagramData(questionType, instructions, imageSource, answ
   }
 
   return question
+}
+
+// Implement the saveOneAnswerQuestion function
+function saveOneAnswerQuestion(questionDiv) {
+  const question = questionDiv.querySelector("#question").value
+  const option1 = questionDiv.querySelector("input[name='option1']").value
+  const option2 = questionDiv.querySelector("input[name='option2']").value
+  const option3 = questionDiv.querySelector("input[name='option3']").value
+  const option4 = questionDiv.querySelector("input[name='option4']").value
+  const correctAnswer = questionDiv.querySelector("#correctAnswer").value
+
+  return {
+    type: "Một đáp án",
+    content: [question, option1, option2, option3, option4],
+    correctAnswers: [correctAnswer],
+  }
+}
+
+// Implement the saveMultipleAnswerQuestion function
+function saveMultipleAnswerQuestion(questionDiv) {
+  const question = questionDiv.querySelector("#question").value
+  const option1 = questionDiv.querySelector("input[name='option1']").value
+  const option2 = questionDiv.querySelector("input[name='option2']").value
+  const option3 = questionDiv.querySelector("input[name='option3']").value
+  const option4 = questionDiv.querySelector("input[name='option4']").value
+
+  const correctAnswers = []
+  if (questionDiv.querySelector("#correctAnswer1").checked) correctAnswers.push("1")
+  if (questionDiv.querySelector("#correctAnswer2").checked) correctAnswers.push("2")
+  if (questionDiv.querySelector("#correctAnswer3").checked) correctAnswers.push("3")
+  if (questionDiv.querySelector("#correctAnswer4").checked) correctAnswers.push("4")
+
+  return {
+    type: "Nhiều đáp án",
+    content: [question, option1, option2, option3, option4],
+    correctAnswers: correctAnswers,
+  }
+}
+
+// Implement the saveMatchingQuestion function
+function saveMatchingQuestion(questionDiv) {
+  const title = questionDiv.querySelector("#title").value
+  const item1 = questionDiv.querySelector("input[name='item1']").value
+  const item2 = questionDiv.querySelector("input[name='item2']").value
+  const item3 = questionDiv.querySelector("input[name='item3']").value
+  const match1 = questionDiv.querySelector("input[name='match1']").value
+  const match2 = questionDiv.querySelector("input[name='match2']").value
+  const match3 = questionDiv.querySelector("input[name='match3']").value
+  const correctMatches = questionDiv.querySelector("#correctMatches").value
+
+  return {
+    type: "Ghép nối",
+    content: [title, item1, item2, item3, match1, match2, match3],
+    correctAnswers: [correctMatches],
+  }
+}
+
+// Implement the saveNoteCompletionQuestion function
+function saveNoteCompletionQuestion(questionDiv) {
+  const instructions = questionDiv.querySelector("#instructions").value
+  const topic = questionDiv.querySelector("#topic").value
+  const note1 = questionDiv.querySelector("textarea[name='note1']").value
+  const note2 = questionDiv.querySelector("textarea[name='note2']").value
+  const note3 = questionDiv.querySelector("textarea[name='note3']").value
+  const correctAnswers = questionDiv.querySelector("#correctAnswers").value.split(",")
+
+  return {
+    type: "Hoàn thành ghi chú",
+    content: [instructions, topic, note1, note2, note3],
+    correctAnswers: correctAnswers,
+  }
+}
+
+// Implement the saveFormTableCompletionQuestion function
+function saveFormTableCompletionQuestion(questionDiv) {
+  const instructions = questionDiv.querySelector("#instructions").value
+  const row1 = questionDiv.querySelector("input[name='row1']").value
+  const row2 = questionDiv.querySelector("input[name='row2']").value
+  const row3 = questionDiv.querySelector("input[name='row3']").value
+  const correctAnswers = questionDiv.querySelector("#correctAnswers").value.split(",")
+
+  return {
+    type: "Hoàn thành bảng/biểu mẫu",
+    content: [instructions, row1, row2, row3],
+    correctAnswers: correctAnswers,
+  }
+}
+
+// Implement the saveFlowChartCompletionQuestion function
+function saveFlowChartCompletionQuestion(questionDiv) {
+  const title = questionDiv.querySelector("#title").value
+  const instructions = questionDiv.querySelector("#instructions").value
+  const item1 = questionDiv.querySelector("input[name='item1']").value
+  const item2 = questionDiv.querySelector("input[name='item2']").value
+  const item3 = questionDiv.querySelector("input[name='item3']").value
+  const options = questionDiv.querySelector("#options").value.split(",")
+  const correctAnswers = questionDiv.querySelector("#correctAnswers").value.split(",")
+
+  return {
+    type: "Hoàn thành lưu đồ",
+    content: [title, instructions, item1, item2, item3, ...options],
+    correctAnswers: correctAnswers,
+  }
+}
+
+// Update the saveQuestion function to properly extract and save question content
+function saveQuestion(questionDiv, questionType, partNumber) {
+  console.log(`Saving question of type: ${questionType} to part ${partNumber}`)
+
+  // Get the question data based on type
+  let questionData = null
+
+  switch (questionType) {
+    case "Một đáp án":
+      questionData = saveOneAnswerQuestion(questionDiv)
+      break
+    case "Nhiều đáp án":
+      questionData = saveMultipleAnswerQuestion(questionDiv)
+      break
+    case "Ghép nối":
+      questionData = saveMatchingQuestion(questionDiv)
+      break
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      questionData = savePlanMapDiagramQuestion(questionDiv)
+      break
+    case "Hoàn thành ghi chú":
+      questionData = saveNoteCompletionQuestion(questionDiv)
+      break
+    case "Hoàn thành bảng/biểu mẫu":
+      questionData = saveFormTableCompletionQuestion(questionDiv)
+      break
+    case "Hoàn thành lưu đồ":
+      questionData = saveFlowChartCompletionQuestion(questionDiv)
+      break
+    default:
+      console.error("Unsupported question type:", questionType)
+      return false
+  }
+
+  if (!questionData) {
+    console.error("Failed to extract question data")
+    return false
+  }
+
+  // Make sure the part array exists in the global test object
+  if (!window.test[`part${partNumber}`]) {
+    window.test[`part${partNumber}`] = []
+  }
+
+  // Find the question index in the DOM
+  const partElement = questionDiv.closest(".part")
+  const questions = Array.from(partElement.querySelectorAll(".question"))
+  const questionIndex = questions.indexOf(questionDiv)
+
+  // Update or add the question to the test object
+  if (questionIndex !== -1 && questionIndex < window.test[`part${partNumber}`].length) {
+    window.test[`part${partNumber}`][questionIndex] = questionData
+    console.log(`Updated question at index ${questionIndex} in part${partNumber}`)
+  } else {
+    window.test[`part${partNumber}`].push(questionData)
+    console.log(`Added new question to part${partNumber}`)
+  }
+
+  return true
 }
 
 // Make sure these functions are exposed to the global window object

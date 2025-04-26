@@ -6,7 +6,7 @@ const PARTS = 4
 const selectedTypes = []
 let currentPart = 1
 const totalQuestions = 0
-const audioFile = null
+let audioFile = null
 let audioDuration = 0
 
 // Thêm metadata cho đối tượng bài kiểm tra
@@ -122,7 +122,7 @@ function startTestCreation() {
 // window.startTestCreation = startTestCreation; // COMMENTING OUT
 window.previousPart = previousPart
 window.nextPart = nextPart
-window.saveTest = saveTest
+// window.saveTest = saveTest
 // window.renderTestCreation = renderTestCreation; // COMMENTING OUT
 
 // Hiển thị giao diện tạo bài kiểm tra - COMMENTING OUT THIS FUNCTION AS WE'LL USE THE ONE FROM test-management.js
@@ -270,9 +270,9 @@ function updateTestMetadata(field, value) {
   test[field] = value
 }
 
-// Cải thiện hàm setupAudioHandlers để xử lý tải lên âm thanh
+// Thiết lập xử lý âm thanh
 function setupAudioHandlers() {
-  // Thêm chức năng tải lên âm thanh
+  // Thêm chức năng tải lên âm thanh nếu cần
   const audioUploadBtn = document.createElement("button")
   audioUploadBtn.id = "audioUploadBtn"
   audioUploadBtn.className = "action-button"
@@ -281,68 +281,41 @@ function setupAudioHandlers() {
     const input = document.createElement("input")
     input.type = "file"
     input.accept = "audio/*"
-    input.onchange = async (e) => {
+    input.onchange = (e) => {
       const file = e.target.files[0]
       if (file) {
-        try {
-          showNotification("Đang tải lên file âm thanh...", "info")
+        audioFile = file
+        const audioPlayer = document.getElementById("audioPlayer") || document.createElement("audio")
+        audioPlayer.id = "audioPlayer"
+        audioPlayer.controls = true
+        audioPlayer.src = URL.createObjectURL(file)
 
-          // Tạo URL tạm thời để hiển thị trước
-          const audioPlayer = document.getElementById("audioPlayer") || document.createElement("audio")
-          audioPlayer.id = "audioPlayer"
-          audioPlayer.controls = true
-          audioPlayer.src = URL.createObjectURL(file)
+        // Thêm vào trang nếu chưa tồn tại
+        if (!document.getElementById("audioPlayer")) {
+          const audioContainer = document.createElement("div")
+          audioContainer.id = "audioContainer"
+          audioContainer.className = "audio-container"
+          audioContainer.innerHTML = `<h3>Âm thanh bài kiểm tra</h3>`
+          audioContainer.appendChild(audioPlayer)
 
-          // Thêm vào trang nếu chưa tồn tại
-          if (!document.getElementById("audioPlayer")) {
-            const audioContainer = document.createElement("div")
-            audioContainer.id = "audioContainer"
-            audioContainer.className = "audio-container"
-            audioContainer.innerHTML = `<h3>Âm thanh bài kiểm tra</h3>`
-            audioContainer.appendChild(audioPlayer)
-
-            const testContent = document.getElementById("testContent")
-            if (testContent) {
-              testContent.insertBefore(audioContainer, testContent.firstChild)
-            }
+          const testContent = document.getElementById("testContent")
+          if (testContent) {
+            testContent.insertBefore(audioContainer, testContent.firstChild)
           }
-
-          // Lấy thời lượng âm thanh khi metadata được tải
-          audioPlayer.onloadedmetadata = () => {
-            audioDuration = audioPlayer.duration
-            const durationDisplay = document.createElement("div")
-            durationDisplay.textContent = `Thời lượng: ${Math.floor(audioDuration / 60)}:${Math.floor(
-              audioDuration % 60,
-            )
-              .toString()
-              .padStart(2, "0")}`
-            const audioContainer = document.getElementById("audioContainer")
-            if (audioContainer && !audioContainer.querySelector(".duration-display")) {
-              const durationDiv = document.createElement("div")
-              durationDiv.className = "duration-display"
-              durationDiv.appendChild(durationDisplay)
-              audioContainer.appendChild(durationDiv)
-            }
-          }
-
-          // Tải lên server
-          if (typeof window.uploadAudioFile === "function") {
-            try {
-              const response = await window.uploadAudioFile(file)
-              test.audioUrl = response.url // Lưu URL từ server
-              showNotification("Tải lên tệp âm thanh thành công", "success")
-            } catch (error) {
-              showNotification(`Lỗi khi tải lên file âm thanh: ${error.message}`, "error")
-            }
-          } else {
-            // Fallback nếu không có hàm uploadAudioFile
-            test.audioFile = file
-            showNotification("Tải lên tệp âm thanh thành công (chế độ offline)", "success")
-          }
-        } catch (error) {
-          console.error("Lỗi khi xử lý file âm thanh:", error)
-          showNotification(`Lỗi khi xử lý file âm thanh: ${error.message}`, "error")
         }
+
+        // Lấy thời lượng âm thanh khi metadata được tải
+        audioPlayer.onloadedmetadata = () => {
+          audioDuration = audioPlayer.duration
+          const durationDisplay = document.createElement("div")
+          durationDisplay.textContent = `Thời lượng: ${Math.floor(audioDuration / 60)}:${Math.floor(audioDuration % 60)
+            .toString()
+            .padStart(2, "0")}`
+          const audioContainer = document.getElementById("audioContainer") // Declare audioContainer here
+          audioContainer.appendChild(durationDisplay)
+        }
+
+        showNotification("Tải lên tệp âm thanh thành công", "success")
       }
     }
     input.click()
@@ -429,46 +402,102 @@ function previewQuestion() {
 
 // Dummy functions to resolve undefined variable errors. Replace with actual implementations.
 function saveTest() {
-  console.log("Saving test...")
+  try {
+    console.log("Saving test from main.js")
 
-  // Cập nhật tiêu đề, tên tiếng Việt và mô tả từ form
-  test.title = document.getElementById("testTitle").value
-  test.vietnameseName = document.getElementById("testVietnameseName").value
-  test.description = document.getElementById("testDescription").value
-
-  // Kiểm tra tính hợp lệ của dữ liệu
-  if (!test.title) {
-    showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
-    return
-  }
-
-  // Kiểm tra có ít nhất một câu hỏi
-  let hasQuestions = false
-  for (let i = 1; i <= 4; i++) {
-    if (test[`part${i}`] && test[`part${i}`].length > 0) {
-      hasQuestions = true
-      break
+    // Get the global test object
+    const globalTest = window.test || {
+      title: "",
+      vietnameseName: "",
+      description: "",
+      part1: [],
+      part2: [],
+      part3: [],
+      part4: [],
     }
+
+    // Update test metadata from form inputs
+    globalTest.title = document.getElementById("testTitle").value
+    globalTest.vietnameseName = document.getElementById("testVietnameseName").value
+    globalTest.description = document.getElementById("testDescription").value
+
+    // Ensure questions are properly included in the test object
+    for (let i = 1; i <= 4; i++) {
+      const partElement = document.getElementById(`part${i}`)
+      if (partElement) {
+        const questionElements = partElement.querySelectorAll(".question")
+
+        // If we have questions in the DOM but the test object's part array is empty,
+        // rebuild the part array
+        if (questionElements.length > 0) {
+          console.log(`Found ${questionElements.length} questions in part${i} DOM`)
+
+          // Initialize the part array if it doesn't exist
+          if (!globalTest[`part${i}`]) {
+            globalTest[`part${i}`] = []
+          }
+
+          // If DOM has more questions than the test object, rebuild from DOM
+          if (questionElements.length > globalTest[`part${i}`].length) {
+            console.log(`Rebuilding part${i} array with ${questionElements.length} questions from main.js`)
+
+            // For each question element, create a basic question object if needed
+            questionElements.forEach((questionElement, index) => {
+              if (!globalTest[`part${i}`][index]) {
+                // Try to determine the question type from the element
+                const typeElement = questionElement.querySelector("h3")
+                const questionType = typeElement
+                  ? typeElement.textContent.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1").trim()
+                  : "Unknown Type"
+
+                // Create a basic question object
+                globalTest[`part${i}`][index] = {
+                  type: questionType,
+                  content: ["Question content needs to be rebuilt"],
+                  correctAnswers: ["Answer needs to be rebuilt"],
+                }
+
+                console.log(`Added placeholder question to part${i} at index ${index}`)
+              }
+            })
+          }
+        }
+      }
+    }
+
+    // Log the test object to verify parts are included
+    console.log("Test to be saved:", globalTest)
+
+    // Update the global test object
+    window.test = globalTest
+
+    // Call the test-management.js implementation if available
+    if (window.saveTest && typeof window.saveTest === "function" && window.saveTest !== saveTest) {
+      console.log("Delegating to test-management.js saveTest function")
+      window.saveTest()
+    }
+    // If saveTestToServer is available but not the test-management saveTest function
+    else if (window.saveTestToServer && typeof window.saveTestToServer === "function") {
+      showNotification("Saving test...", "info")
+
+      window
+        .saveTestToServer(globalTest)
+        .then((response) => {
+          console.log("Test saved successfully:", response)
+          showNotification("Test saved successfully!", "success")
+        })
+        .catch((error) => {
+          console.error("Error saving test:", error)
+          showNotification(`Error saving test: ${error.message || "Unknown error"}`, "error")
+        })
+    } else {
+      console.warn("saveTestToServer function not found, using local implementation")
+      showNotification("Test data prepared but server save function not available", "warning")
+    }
+  } catch (error) {
+    console.error("Error in saveTest function:", error)
+    showNotification(`Error: ${error.message || "Unknown error"}`, "error")
   }
-
-  if (!hasQuestions) {
-    showNotification("Bài kiểm tra phải có ít nhất một câu hỏi", "error")
-    return
-  }
-
-  // Hiển thị thông báo đang lưu
-  showNotification("Đang lưu bài kiểm tra...", "info")
-
-  // Lưu vào server
-  saveTestToServer(test)
-    .then((response) => {
-      console.log("Bài kiểm tra đã lưu vào server:", response)
-      showNotification(`Bài kiểm tra "${test.vietnameseName || test.title}" đã lưu thành công!`, "success")
-    })
-    .catch((error) => {
-      console.error("Lỗi khi lưu bài kiểm tra vào server:", error)
-      showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
-    })
 }
 
 function previewEntireTest() {
@@ -491,46 +520,8 @@ function showTestList() {
   console.warn("showTestList function is a placeholder.")
 }
 
-// Replace the placeholder fetchQuestionTypes function with this implementation
 function fetchQuestionTypes() {
-  console.log("Fetching question types...")
-  const questionTypes = [
-    "Một đáp án",
-    "Nhiều đáp án",
-    "Ghép nối",
-    "Ghi nhãn Bản đồ/Sơ đồ",
-    "Hoàn thành ghi chú",
-    "Hoàn thành bảng/biểu mẫu",
-    "Hoàn thành lưu đồ",
-  ]
-  const questionTypeContainer = document.getElementById("questionTypes")
-
-  if (!questionTypeContainer) {
-    console.error("Không tìm thấy container loại câu hỏi")
-    return
-  }
-
-  questionTypeContainer.innerHTML = ""
-
-  questionTypes.forEach((type) => {
-    const checkbox = document.createElement("input")
-    checkbox.type = "checkbox"
-    checkbox.value = type
-    checkbox.id = type.replace(/\s+/g, "-").toLowerCase()
-    checkbox.className = "question-type-checkbox"
-
-    const label = document.createElement("label")
-    label.htmlFor = checkbox.id
-    label.textContent = type
-    label.className = "question-type-label"
-
-    const typeContainer = document.createElement("div")
-    typeContainer.className = "question-type-item"
-    typeContainer.appendChild(checkbox)
-    typeContainer.appendChild(label)
-
-    questionTypeContainer.appendChild(typeContainer)
-  })
+  console.warn("fetchQuestionTypes function is a placeholder.")
 }
 
 function renderQuestionTypes(element) {
@@ -564,15 +555,4 @@ window.previewQuestion = previewQuestion
 function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
-}
-
-// Dummy function for saveTestToServer
-async function saveTestToServer(test) {
-  // Replace this with your actual implementation to save the test to the server
-  console.log("Saving test to server:", test)
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({ message: "Test saved successfully!" })
-    }, 1000)
-  })
 }

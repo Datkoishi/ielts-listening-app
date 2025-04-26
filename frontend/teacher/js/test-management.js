@@ -683,40 +683,278 @@ function validateTestData(testData) {
   }
 }
 
-// Lưu bài kiểm tra
-async function saveTest() {
+// Update the saveTest function to use the global test object
+function saveTest() {
   try {
-    console.log("Bắt đầu lưu bài kiểm tra...")
+    console.log("Saving test data from test-management.js...")
 
-    // Cập nhật tiêu đề và mô tả từ form
-    test.title = document.getElementById("testTitle").value
-    test.vietnameseName = document.getElementById("testVietnameseName").value
-    test.description = document.getElementById("testDescription").value
+    // Get the global test object
+    const globalTest = window.test || {
+      title: "",
+      vietnameseName: "",
+      description: "",
+      part1: [],
+      part2: [],
+      part3: [],
+      part4: [],
+    }
 
-    // Kiểm tra tính hợp lệ của dữ liệu
-    const validation = validateTestData(test)
-    if (!validation.isValid) {
-      showNotification(`Lỗi: ${validation.errors.join("<br>")}`, "error")
+    // Update test metadata from form inputs
+    globalTest.title = document.getElementById("testTitle").value
+    globalTest.vietnameseName = document.getElementById("testVietnameseName").value
+    globalTest.description = document.getElementById("testDescription").value
+
+    // Validate test metadata
+    if (!globalTest.title) {
+      showNotification("Please enter a test title", "error")
       return
     }
 
-    // Hiển thị thông báo đang lưu
-    showNotification("Đang lưu bài kiểm tra...", "info")
+    // Ensure all questions in the DOM are reflected in the test object
+    let totalQuestions = 0
+    let questionsUpdated = 0
 
-    // Lưu vào server
-    try {
-      const response = await saveTestToServer(test)
-      console.log("Bài kiểm tra đã lưu vào server:", response)
-      showNotification(`Bài kiểm tra "${test.vietnameseName || test.title}" đã lưu thành công!`, "success")
-    } catch (error) {
-      console.error("Lỗi khi lưu bài kiểm tra vào server:", error)
-      showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
+    for (let i = 1; i <= 4; i++) {
+      const partElement = document.getElementById(`part${i}`)
+      if (partElement) {
+        // Get all question elements in this part
+        const questionElements = partElement.querySelectorAll(".question")
+        console.log(`Found ${questionElements.length} questions in part${i} DOM`)
+        totalQuestions += questionElements.length
+
+        // Initialize the part array if it doesn't exist
+        if (!globalTest[`part${i}`]) {
+          globalTest[`part${i}`] = []
+        }
+
+        // Ensure each DOM question has a corresponding entry in the test object
+        questionElements.forEach((questionElement, index) => {
+          // Try to determine the question type from the element
+          const typeElement = questionElement.querySelector("h3")
+          const questionType = typeElement
+            ? typeElement.textContent.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1").trim()
+            : "Unknown Type"
+
+          // If the question doesn't exist in the test object or is at a different index, update it
+          if (index >= globalTest[`part${i}`].length || !globalTest[`part${i}`][index]) {
+            // Extract question data based on type
+            let questionData = null
+
+            switch (questionType) {
+              case "Một đáp án":
+                questionData = extractOneAnswerData(questionElement)
+                break
+              case "Nhiều đáp án":
+                questionData = extractMultipleAnswerData(questionElement)
+                break
+              case "Ghép nối":
+                questionData = extractMatchingData(questionElement)
+                break
+              case "Ghi nhãn Bản đồ/Sơ đồ":
+                questionData = extractPlanMapDiagramData(questionElement)
+                break
+              case "Hoàn thành ghi chú":
+                questionData = extractNoteCompletionData(questionElement)
+                break
+              case "Hoàn thành bảng/biểu mẫu":
+                questionData = extractFormTableCompletionData(questionElement)
+                break
+              case "Hoàn thành lưu đồ":
+                questionData = extractFlowChartCompletionData(questionElement)
+                break
+              default:
+                questionData = {
+                  type: questionType,
+                  content: ["Question content needs to be rebuilt"],
+                  correctAnswers: ["Answer needs to be rebuilt"],
+                }
+            }
+
+            // Add or update the question in the test object
+            if (index < globalTest[`part${i}`].length) {
+              globalTest[`part${i}`][index] = questionData
+            } else {
+              globalTest[`part${i}`].push(questionData)
+            }
+
+            questionsUpdated++
+          }
+        })
+
+        // Remove any extra questions from the test object that aren't in the DOM
+        if (globalTest[`part${i}`].length > questionElements.length) {
+          globalTest[`part${i}`].splice(questionElements.length)
+        }
+      }
     }
 
-    console.log("Bài kiểm tra đã lưu:", test)
+    // Update the global test object
+    window.test = globalTest
+
+    // Log the test object to verify parts are included
+    console.log("Test to be saved:", globalTest)
+    console.log(`Total questions: ${totalQuestions}, Updated: ${questionsUpdated}`)
+
+    // Show saving notification
+    showNotification("Saving test data...", "info")
+
+    // Save to server using the client-integration.js function
+    if (typeof saveTestToServer === "function") {
+      saveTestToServer(globalTest)
+        .then((response) => {
+          console.log("Test saved successfully:", response)
+          showNotification(`Test "${globalTest.vietnameseName || globalTest.title}" saved successfully!`, "success")
+        })
+        .catch((error) => {
+          console.error("Error saving test:", error)
+          showNotification(`Error saving test: ${error.message || "Unknown error"}`, "error")
+        })
+    } else {
+      console.warn("saveTestToServer function not available")
+      showNotification("Test data prepared but server save function not available", "warning")
+    }
   } catch (error) {
-    console.error("Lỗi khi lưu bài kiểm tra:", error)
-    showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
+    console.error("Error in saveTest function:", error)
+    showNotification(`Error: ${error.message || "Unknown error"}`, "error")
+  }
+}
+
+// Helper functions to extract question data from DOM elements
+function extractOneAnswerData(questionElement) {
+  const questionText = questionElement.querySelector("#t3-questionText")?.value || "Default question"
+  const optionsText = questionElement.querySelector("#t3-options")?.value || ""
+  const options = optionsText.split("\n").filter((option) => option.trim() !== "")
+  const correctAnswer = questionElement.querySelector("#t3-correctAnswer")?.value || options[0] || "Default answer"
+
+  return {
+    type: "Một đáp án",
+    content: [questionText, ...options],
+    correctAnswers: correctAnswer,
+  }
+}
+
+// Add similar extraction functions for other question types
+function extractMultipleAnswerData(questionElement) {
+  const questionText = questionElement.querySelector("#t4-questionText")?.value || "Default question"
+  const optionsText = questionElement.querySelector("#t4-options")?.value || ""
+  const options = optionsText.split("\n").filter((option) => option.trim() !== "")
+  const correctAnswersText = questionElement.querySelector("#t4-correctAnswers")?.value || ""
+  const correctAnswers = correctAnswersText
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+
+  return {
+    type: "Nhiều đáp án",
+    content: [questionText, ...options],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function extractMatchingData(questionElement) {
+  const questionTitle = questionElement.querySelector("#t3-questionTitle")?.value || "Default title"
+  const peopleText = questionElement.querySelector("#t3-people")?.value || ""
+  const responsibilitiesText = questionElement.querySelector("#t3-responsibilities")?.value || ""
+  const correctAnswersText = questionElement.querySelector("#t3-correctAnswers")?.value || ""
+
+  const people = peopleText.split("\n").filter((item) => item.trim() !== "")
+  const responsibilities = responsibilitiesText.split("\n").filter((item) => item.trim() !== "")
+  const correctAnswers = correctAnswersText.split("\n").filter((item) => item.trim() !== "")
+
+  return {
+    type: "Ghép nối",
+    content: [questionTitle, ...people, ...responsibilities],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function extractPlanMapDiagramData(questionElement) {
+  const questionType = questionElement.querySelector("#questionType")?.value || "map"
+  const instructions = questionElement.querySelector("#instructions")?.value || "Default instructions"
+
+  // Collect labels and correct answers from the form
+  const labels = []
+  const correctAnswers = []
+  let i = 0
+  while (questionElement.querySelector(`#answer${i}`)) {
+    labels.push(questionElement.querySelector(`#answer${i}`)?.value || "")
+    correctAnswers.push(questionElement.querySelector(`#correctAnswer${i}`)?.value || "")
+    i++
+  }
+
+  // Get the existing image URL (it's not directly editable in the form)
+  const imageElement = questionElement.querySelector("img")
+  const imageFile = imageElement ? imageElement.src : ""
+
+  return {
+    type: "Ghi nhãn Bản đồ/Sơ đồ",
+    content: [questionType, instructions, imageFile, ...labels],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function extractNoteCompletionData(questionElement) {
+  const instructions =
+    questionElement.querySelector("#t2ListeningExerciseInstructions")?.value || "Default instructions"
+  const topic = questionElement.querySelector("#t2ListeningExerciseTopic")?.value || "Default topic"
+
+  const questions = []
+  const correctAnswers = []
+  let i = 1
+  while (questionElement.querySelector(`#t2ListeningExerciseQuestion${i}`)) {
+    questions.push(questionElement.querySelector(`#t2ListeningExerciseQuestion${i}`)?.value || "")
+    correctAnswers.push(questionElement.querySelector(`#t2ListeningExerciseCorrectAnswers${i} input`)?.value || "")
+    i++
+  }
+
+  return {
+    type: "Hoàn thành ghi chú",
+    content: [instructions, topic, ...questions],
+    correctAnswers: correctAnswers,
+  }
+}
+
+function extractFormTableCompletionData(questionElement) {
+  const tableInstruction = questionElement.querySelector("#tableInstruction")?.value || "Default instruction"
+  const content = [tableInstruction]
+  const correctAnswers = []
+
+  const tableRows = questionElement.querySelectorAll("#fareTable tr")
+  for (let i = 1; i < tableRows.length; i++) {
+    const row = tableRows[i]
+    const cells = row.querySelectorAll("td")
+
+    content.push(cells[0].querySelector("input")?.value || "")
+    content.push(cells[1].querySelector("input")?.value || "")
+    content.push(cells[2].querySelector("input")?.value || "")
+    correctAnswers.push(cells[3].querySelector(".t6-correct-answer-input")?.value || "")
+  }
+
+  return {
+    type: "Hoàn thành bảng/biểu mẫu",
+    content: content,
+    correctAnswers: correctAnswers,
+  }
+}
+
+function extractFlowChartCompletionData(questionElement) {
+  const title = questionElement.querySelector("#title")?.value || "Default title"
+  const instructions = questionElement.querySelector("#instructions")?.value || "Default instructions"
+  const flowItemsText = questionElement.querySelector("#flowItems1")?.value || ""
+  const optionsText = questionElement.querySelector("#options1")?.value || ""
+  const correctAnswersText = questionElement.querySelector("#correctAnswers1")?.value || ""
+
+  const flowItems = flowItemsText.split("\n").filter((item) => item.trim() !== "")
+  const options = optionsText.split("\n").filter((item) => item.trim() !== "")
+  const correctAnswers = correctAnswersText
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s !== "")
+
+  return {
+    type: "Hoàn thành lưu đồ",
+    content: [title, instructions, ...flowItems, ...options],
+    correctAnswers: correctAnswers,
   }
 }
 
@@ -1823,47 +2061,82 @@ function toggleQuestionEdit(button) {
 
 // Save question changes
 function saveQuestionChanges(button) {
-  const questionDiv = button.closest(".question")
-  const questionIndex = Array.from(questionDiv.parentNode.children).indexOf(questionDiv)
-
-  // Get the question type
-  const questionType = test[`part${window.currentPart}`][questionIndex].type
-
-  // Update the question data based on the form values
-  switch (questionType) {
-    case "Một đáp án":
-      updateOneAnswerQuestion(questionDiv, questionIndex)
-      break
-    case "Nhiều đáp án":
-      updateMultipleAnswerQuestion(questionDiv, questionIndex)
-      break
-    case "Ghép nối":
-      updateMatchingQuestion(questionDiv, questionIndex)
-      break
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      updatePlanMapDiagramQuestion(questionDiv, questionIndex)
-      break
-    case "Hoàn thành ghi chú":
-      updateNoteCompletionQuestion(questionDiv, questionIndex)
-      break
-    case "Hoàn thành bảng/biểu mẫu":
-      updateFormTableCompletionQuestion(questionDiv, questionIndex)
-      break
-    case "Hoàn thành lưu đồ":
-      updateFlowChartCompletionQuestion(questionDiv, questionIndex)
-      break
-    default:
-      console.warn("Unsupported question type:", questionType)
+  try {
+    const questionDiv = button.closest(".question")
+    if (!questionDiv) {
+      showNotification("Cannot find question element", "error")
       return
+    }
+
+    // Get the question index and part number
+    const partElement = questionDiv.closest(".part")
+    if (!partElement) {
+      showNotification("Cannot find part element", "error")
+      return
+    }
+
+    const partNumber = Number.parseInt(partElement.id.replace("part", ""))
+    const questions = Array.from(partElement.querySelectorAll(".question"))
+    const questionIndex = questions.indexOf(questionDiv)
+
+    if (questionIndex === -1) {
+      showNotification("Cannot determine question index", "error")
+      return
+    }
+
+    // Get the question type
+    const questionType = test[`part${partNumber}`][questionIndex].type
+    console.log(`Saving changes for ${questionType} question at index ${questionIndex} in part ${partNumber}`)
+
+    // Extract and save question data based on type
+    let success = false
+
+    switch (questionType) {
+      case "Một đáp án":
+        success = updateOneAnswerQuestion(questionDiv, questionIndex)
+        break
+      case "Nhiều đáp án":
+        success = updateMultipleAnswerQuestion(questionDiv, questionIndex)
+        break
+      case "Ghép nối":
+        success = updateMatchingQuestion(questionDiv, questionIndex)
+        break
+      case "Ghi nhãn Bản đồ/Sơ đồ":
+        success = updatePlanMapDiagramQuestion(questionDiv, questionIndex)
+        break
+      case "Hoàn thành ghi chú":
+        success = updateNoteCompletionQuestion(questionDiv, questionIndex)
+        break
+      case "Hoàn thành bảng/biểu mẫu":
+        success = updateFormTableCompletionQuestion(questionDiv, questionIndex)
+        break
+      case "Hoàn thành lưu đồ":
+        success = updateFlowChartCompletionQuestion(questionDiv, questionIndex)
+        break
+      default:
+        showNotification(`Unsupported question type: ${questionType}`, "error")
+        return
+    }
+
+    if (!success) {
+      showNotification("Failed to save question changes", "error")
+      return
+    }
+
+    // Toggle back to view mode
+    toggleQuestionEdit(button)
+
+    // Re-render the questions to reflect changes
+    renderQuestionsForCurrentPart()
+
+    showNotification("Question changes saved successfully", "success")
+
+    // Log the updated test object to verify changes
+    console.log("Updated test object:", window.test)
+  } catch (error) {
+    console.error("Error saving question changes:", error)
+    showNotification(`Error: ${error.message}`, "error")
   }
-
-  // Toggle back to view mode
-  toggleQuestionEdit(button)
-
-  // Re-render the questions
-  renderQuestionsForCurrentPart()
-
-  showNotification("Đã lưu thay đổi câu hỏi", "success")
 }
 
 // Cancel question edit
@@ -1879,12 +2152,36 @@ function cancelQuestionEdit(button) {
 
 // Update Một đáp án question
 function updateOneAnswerQuestion(questionDiv, questionIndex) {
-  const questionText = questionDiv.querySelector("#t3-questionText").value
-  const options = questionDiv.querySelector("#t3-options").value.split("\n")
-  const correctAnswer = questionDiv.querySelector("#t3-correctAnswer").value
+  try {
+    const questionText = questionDiv.querySelector("#t3-questionText")?.value
+    const optionsText = questionDiv.querySelector("#t3-options")?.value
+    const correctAnswer = questionDiv.querySelector("#t3-correctAnswer")?.value
 
-  test[`part${window.currentPart}`][questionIndex].content = [questionText, ...options]
-  test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswer
+    if (!questionText || !optionsText || !correctAnswer) {
+      console.error("Missing required fields for One Answer question")
+      return false
+    }
+
+    const options = optionsText.split("\n").filter((option) => option.trim() !== "")
+
+    if (options.length === 0) {
+      console.error("No options provided for One Answer question")
+      return false
+    }
+
+    // Update the question in the test object
+    test[`part${window.currentPart}`][questionIndex] = {
+      type: "Một đáp án",
+      content: [questionText, ...options],
+      correctAnswers: correctAnswer,
+    }
+
+    console.log("Updated One Answer question:", test[`part${window.currentPart}`][questionIndex])
+    return true
+  } catch (error) {
+    console.error("Error updating One Answer question:", error)
+    return false
+  }
 }
 
 // Update Nhiều đáp án question
@@ -1898,6 +2195,7 @@ function updateMultipleAnswerQuestion(questionDiv, questionIndex) {
 
   test[`part${window.currentPart}`][questionIndex].content = [questionText, ...options]
   test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswers
+  return true
 }
 
 // Update Ghép nối question
@@ -1909,6 +2207,7 @@ function updateMatchingQuestion(questionDiv, questionIndex) {
 
   test[`part${window.currentPart}`][questionIndex].content = [questionTitle, ...people, ...responsibilities]
   test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswers
+  return true
 }
 
 // Update Ghi nhãn Bản đồ/Sơ đồ question
@@ -1929,6 +2228,7 @@ function updatePlanMapDiagramQuestion(questionDiv, questionIndex) {
 
   test[`part${window.currentPart}`][questionIndex].content = [questionType, instructions, imageFile, ...labels]
   test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswers
+  return true
 }
 
 // Update Hoàn thành ghi chú question
@@ -1948,6 +2248,7 @@ function updateNoteCompletionQuestion(questionDiv, questionIndex) {
 
   test[`part${window.currentPart}`][questionIndex].content = [instructions, topic, ...questions]
   test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswers
+  return true
 }
 
 // Update Hoàn thành bảng/biểu mẫu question
@@ -1973,6 +2274,7 @@ function updateFormTableCompletionQuestion(questionDiv, questionIndex) {
 
   test[`part${window.currentPart}`][questionIndex].content = content
   test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswers
+  return true
 }
 
 // Update Hoàn thành lưu đồ question
@@ -1985,6 +2287,7 @@ function updateFlowChartCompletionQuestion(questionDiv, questionIndex) {
 
   test[`part${window.currentPart}`][questionIndex].content = [title, instructions, ...flowItems, ...options]
   test[`part${window.currentPart}`][questionIndex].correctAnswers = correctAnswers
+  return true
 }
 
 // Define functions to create question forms
