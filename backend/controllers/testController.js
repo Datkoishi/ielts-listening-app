@@ -79,10 +79,22 @@ exports.getTestById = async (req, res) => {
 exports.createTest = async (req, res) => {
   const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
 
+  console.log("Received test data:", {
+    title,
+    vietnameseName,
+    description,
+    part1: part1?.length || 0,
+    part2: part2?.length || 0,
+    part3: part3?.length || 0,
+    part4: part4?.length || 0,
+  })
+
   try {
     await query("START TRANSACTION")
+    console.log("Transaction started")
 
     // Tạo bài kiểm tra
+    console.log("Inserting test with title:", title, "vietnameseName:", vietnameseName)
     const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
       title,
       vietnameseName,
@@ -90,16 +102,24 @@ exports.createTest = async (req, res) => {
     ])
 
     const testId = result.insertId
+    console.log("Created test with ID:", testId)
 
     // Tạo các phần và câu hỏi
     for (let i = 1; i <= 4; i++) {
       const partData = req.body[`part${i}`]
       if (partData?.length > 0) {
+        console.log(`Processing part ${i} with ${partData.length} questions`)
+
         const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
 
         const partId = partResult.insertId
+        console.log(`Created part ${i} with ID:`, partId)
 
         for (const question of partData) {
+          console.log(`Inserting question of type: ${question.type}`)
+          console.log("Question content:", JSON.stringify(question.content))
+          console.log("Question correctAnswers:", JSON.stringify(question.correctAnswers))
+
           await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
             partId,
             question.type,
@@ -111,11 +131,14 @@ exports.createTest = async (req, res) => {
     }
 
     await query("COMMIT")
+    console.log("Transaction committed successfully")
+
     res.status(201).json({ message: "Tạo bài kiểm tra thành công", testId })
   } catch (error) {
+    console.error("Error in createTest:", error)
     await query("ROLLBACK")
-    console.error("Lỗi tạo bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    console.error("Transaction rolled back due to error:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
   }
 }
 

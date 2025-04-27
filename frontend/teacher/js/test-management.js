@@ -706,9 +706,12 @@ function saveTest() {
 
     // Validate test metadata
     if (!globalTest.title) {
-      showNotification("Please enter a test title", "error")
+      showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
       return
     }
+
+    // Log the test object before saving
+    console.log("Test object before saving:", JSON.stringify(globalTest))
 
     // Ensure all questions in the DOM are reflected in the test object
     let totalQuestions = 0
@@ -792,30 +795,33 @@ function saveTest() {
     window.test = globalTest
 
     // Log the test object to verify parts are included
-    console.log("Test to be saved:", globalTest)
+    console.log("Test to be saved:", JSON.stringify(globalTest))
     console.log(`Total questions: ${totalQuestions}, Updated: ${questionsUpdated}`)
 
     // Show saving notification
-    showNotification("Saving test data...", "info")
+    showNotification("Đang lưu dữ liệu bài kiểm tra...", "info")
 
     // Save to server using the client-integration.js function
     if (typeof saveTestToServer === "function") {
       saveTestToServer(globalTest)
         .then((response) => {
           console.log("Test saved successfully:", response)
-          showNotification(`Test "${globalTest.vietnameseName || globalTest.title}" saved successfully!`, "success")
+          showNotification(
+            `Bài kiểm tra "${globalTest.vietnameseName || globalTest.title}" đã được lưu thành công!`,
+            "success",
+          )
         })
         .catch((error) => {
           console.error("Error saving test:", error)
-          showNotification(`Error saving test: ${error.message || "Unknown error"}`, "error")
+          showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message || "Lỗi không xác định"}`, "error")
         })
     } else {
       console.warn("saveTestToServer function not available")
-      showNotification("Test data prepared but server save function not available", "warning")
+      showNotification("Dữ liệu bài kiểm tra đã được chuẩn bị nhưng hàm lưu server không khả dụng", "warning")
     }
   } catch (error) {
     console.error("Error in saveTest function:", error)
-    showNotification(`Error: ${error.message || "Unknown error"}`, "error")
+    showNotification(`Lỗi: ${error.message || "Lỗi không xác định"}`, "error")
   }
 }
 

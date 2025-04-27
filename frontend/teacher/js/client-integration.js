@@ -1,13 +1,63 @@
 // Tích hợp frontend với backend API
-const API_URL = "http://localhost:3000/api"
+const API_URL =
+  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+    ? "http://localhost:3000/api"
+    : "/api"
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_DELAY = 1000 // 1 giây
 
 // Declare showNotification (assuming it's a global function or imported)
 // If it's imported, replace this with the actual import statement
 function showNotification(message, type) {
-  // Implement your notification logic here, e.g., using an alert or a library
-  console.log(`${type}: ${message}`) // Placeholder implementation
+  // Kiểm tra xem đã có thông báo nào chưa
+  let notification = document.querySelector(".notification")
+  if (!notification) {
+    notification = document.createElement("div")
+    notification.className = "notification"
+    document.body.appendChild(notification)
+  }
+
+  // Thiết lập loại thông báo
+  notification.className = `notification notification-${type}`
+  notification.innerHTML = message
+  notification.style.position = "fixed"
+  notification.style.top = "20px"
+  notification.style.right = "20px"
+  notification.style.padding = "15px"
+  notification.style.borderRadius = "5px"
+  notification.style.zIndex = "1000"
+  notification.style.maxWidth = "300px"
+  notification.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)"
+
+  // Thiết lập màu sắc dựa trên loại thông báo
+  if (type === "success") {
+    notification.style.backgroundColor = "#d4edda"
+    notification.style.color = "#155724"
+    notification.style.border = "1px solid #c3e6cb"
+  } else if (type === "error") {
+    notification.style.backgroundColor = "#f8d7da"
+    notification.style.color = "#721c24"
+    notification.style.border = "1px solid #f5c6cb"
+  } else if (type === "warning") {
+    notification.style.backgroundColor = "#fff3cd"
+    notification.style.color = "#856404"
+    notification.style.border = "1px solid #ffeeba"
+  } else if (type === "info") {
+    notification.style.backgroundColor = "#d1ecf1"
+    notification.style.color = "#0c5460"
+    notification.style.border = "1px solid #bee5eb"
+  }
+
+  // Tự động ẩn thông báo sau 5 giây
+  setTimeout(() => {
+    notification.style.opacity = "0"
+    notification.style.transition = "opacity 0.5s"
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification)
+      }
+    }, 500)
+  }, 5000)
 }
 
 // Lưu token vào localStorage
@@ -297,24 +347,39 @@ async function saveTestToServer(testData) {
     const normalizedData = normalizeTestData(globalTest)
     console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
 
-    // Make API request
-    const response = await fetchWithAuth(`${API_URL}/tests`, {
+    // Make API request with detailed error handling
+    console.log(`Sending request to ${API_URL}/tests`)
+
+    const response = await fetch(`${API_URL}/tests`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(normalizedData),
+      credentials: "include", // Thêm credentials để gửi cookies nếu cần
     })
 
+    console.log("API Response status:", response.status)
+
     if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || "Không thể lưu bài kiểm tra")
+      let errorMessage = `HTTP error! status: ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.message || errorMessage
+        console.error("API error response:", errorData)
+      } catch (e) {
+        console.error("Could not parse error response:", e)
+      }
+      throw new Error(errorMessage)
     }
 
+    const responseData = await response.json()
+    console.log("API Response data:", responseData)
+
     showNotification("Bài kiểm tra đã được lưu thành công!", "success")
-    return await response.json()
+    return responseData
   } catch (error) {
-    console.error("Lỗi khi lưu bài kiểm tra lên máy chủ:", error)
+    console.error("Lỗi chi tiết khi lưu bài kiểm tra:", error)
     showNotification(`Lỗi: ${error.message}`, "error")
 
     // If there's a network error or server is down, provide a fallback
