@@ -30,7 +30,7 @@ exports.login = async (req, res) => {
   try {
     const { username, password } = req.body
 
-    // Kiểm tra ng��ời dùng tồn tại
+    // Kiểm tra người dùng tồn tại
     const user = await User.findByUsername(username)
     if (!user) {
       return res.status(400).json({ message: "Thông tin đăng nhập không hợp lệ" })
