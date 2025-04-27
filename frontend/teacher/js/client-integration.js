@@ -2,68 +2,12 @@
 const API_URL = "/api"
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_DELAY = 1000 // 1 giây
-const AUTO_SAVE_INTERVAL = 60000 // 1 phút
-
-// Biến để theo dõi thời gian chỉnh sửa cuối cùng
-let lastEditTime = Date.now()
-let autoSaveTimer = null
-let isSaving = false
 
 // Declare showNotification (assuming it's a global function or imported)
 // If it's imported, replace this with the actual import statement
 function showNotification(message, type) {
   // Implement your notification logic here, e.g., using an alert or a library
   console.log(`${type}: ${message}`) // Placeholder implementation
-
-  // Kiểm tra xem hàm showNotification đã được định nghĩa trong window chưa
-  if (typeof window.showNotification === "function") {
-    window.showNotification(message, type)
-  } else {
-    // Tạo thông báo đơn giản nếu không có hàm showNotification
-    const notificationElement = document.createElement("div")
-    notificationElement.className = `notification ${type}`
-    notificationElement.textContent = message
-    notificationElement.style.position = "fixed"
-    notificationElement.style.top = "20px"
-    notificationElement.style.right = "20px"
-    notificationElement.style.padding = "10px"
-    notificationElement.style.borderRadius = "5px"
-    notificationElement.style.zIndex = "9999"
-
-    // Thiết lập màu sắc dựa trên loại thông báo
-    switch (type) {
-      case "success":
-        notificationElement.style.backgroundColor = "#d4edda"
-        notificationElement.style.color = "#155724"
-        break
-      case "error":
-        notificationElement.style.backgroundColor = "#f8d7da"
-        notificationElement.style.color = "#721c24"
-        break
-      case "warning":
-        notificationElement.style.backgroundColor = "#fff3cd"
-        notificationElement.style.color = "#856404"
-        break
-      case "info":
-      default:
-        notificationElement.style.backgroundColor = "#d1ecf1"
-        notificationElement.style.color = "#0c5460"
-        break
-    }
-
-    document.body.appendChild(notificationElement)
-
-    // Tự động ẩn thông báo sau 5 giây
-    setTimeout(() => {
-      notificationElement.style.opacity = "0"
-      notificationElement.style.transition = "opacity 0.5s"
-      setTimeout(() => {
-        if (notificationElement.parentNode) {
-          notificationElement.parentNode.removeChild(notificationElement)
-        }
-      }, 500)
-    }, 5000)
-  }
 }
 
 // Lưu token vào localStorage
@@ -236,134 +180,11 @@ function normalizeTestData(testData) {
   return normalizedTest
 }
 
-// Khởi tạo tính năng tự động lưu
-function initAutoSave(testId) {
-  // Xóa timer cũ nếu có
-  if (autoSaveTimer) {
-    clearInterval(autoSaveTimer)
-  }
-
-  // Thiết lập timer mới
-  autoSaveTimer = setInterval(() => {
-    // Chỉ tự động lưu nếu có thay đổi và không đang trong quá trình lưu
-    const timeSinceLastEdit = Date.now() - lastEditTime
-    if (timeSinceLastEdit < AUTO_SAVE_INTERVAL && !isSaving) {
-      autoSaveTestDraft(testId)
-    }
-  }, AUTO_SAVE_INTERVAL)
-
-  // Theo dõi các sự kiện chỉnh sửa
-  document.addEventListener("input", () => {
-    lastEditTime = Date.now()
-  })
-
-  // Lưu khi người dùng rời khỏi trang
-  window.addEventListener("beforeunload", (event) => {
-    if (Date.now() - lastEditTime < AUTO_SAVE_INTERVAL * 2) {
-      autoSaveTestDraft(testId, true)
-      // Hiển thị thông báo xác nhận
-      event.preventDefault()
-      event.returnValue = "Bạn có thay đổi chưa được lưu. Bạn có chắc chắn muốn rời khỏi trang?"
-    }
-  })
-}
-
-// Tự động lưu bản nháp
-async function autoSaveTestDraft(testId, isSync = false) {
-  if (isSaving) return
-
-  try {
-    isSaving = true
-
-    // Lấy dữ liệu bài kiểm tra hiện tại
-    const testData = window.test || {}
-
-    // Kiểm tra xem có dữ liệu để lưu không
-    if (!testData.title && (!testData.part1 || testData.part1.length === 0)) {
-      isSaving = false
-      return
-    }
-
-    // Cập nhật metadata từ form
-    const titleElement = document.getElementById("testTitle")
-    const vietnameseNameElement = document.getElementById("testVietnameseName")
-    const descriptionElement = document.getElementById("testDescription")
-
-    if (titleElement) testData.title = titleElement.value
-    if (vietnameseNameElement) testData.vietnameseName = vietnameseNameElement.value
-    if (descriptionElement) testData.description = descriptionElement.value
-
-    // Gửi yêu cầu lưu bản nháp
-    const url = `${API_URL}/tests/${testId}/drafts`
-    const options = {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(testData),
-    }
-
-    // Nếu là đồng bộ, sử dụng fetch đồng bộ
-    if (isSync) {
-      const xhr = new XMLHttpRequest()
-      xhr.open("POST", url, false) // false = đồng bộ
-      xhr.setRequestHeader("Content-Type", "application/json")
-      xhr.send(JSON.stringify(testData))
-    } else {
-      // Nếu là bất đồng bộ, sử dụng fetch thông thường
-      const response = await fetchWithAuth(url, options)
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.warn("Lỗi khi tự động lưu:", errorData.message)
-      } else {
-        const result = await response.json()
-        console.log("Tự động lưu thành công:", result)
-
-        // Hiển thị thông báo nhỏ
-        const autoSaveIndicator = document.getElementById("autoSaveIndicator")
-        if (autoSaveIndicator) {
-          autoSaveIndicator.textContent = `Đã tự động lưu lúc ${new Date().toLocaleTimeString()}`
-          autoSaveIndicator.style.opacity = "1"
-          setTimeout(() => {
-            autoSaveIndicator.style.opacity = "0.5"
-          }, 2000)
-        }
-      }
-    }
-  } catch (error) {
-    console.error("Lỗi khi tự động lưu bản nháp:", error)
-  } finally {
-    isSaving = false
-  }
-}
-
-// Khôi phục bản nháp mới nhất
-async function recoverLatestDraft(testId) {
-  try {
-    const response = await fetchWithAuth(`${API_URL}/tests/${testId}/drafts/latest`)
-
-    if (!response.ok) {
-      if (response.status === 404) {
-        // Không có bản nháp
-        return null
-      }
-      throw new Error("Không thể lấy bản nháp")
-    }
-
-    const draft = await response.json()
-    return draft
-  } catch (error) {
-    console.error("Lỗi khi khôi phục bản nháp:", error)
-    return null
-  }
-}
-
 // Lưu bài kiểm tra lên server
 async function saveTestToServer(testData) {
   try {
     // Show loading notification
-    showNotification("Đang kết nối đến máy chủ...", "info")
+    showNotification("Connecting to server...", "info")
 
     // Make sure we're using the global test object
     const globalTest = window.test || testData
@@ -468,23 +289,6 @@ async function saveTestToServer(testData) {
             question.correctAnswers = ["Missing answer"]
             console.warn(`Fixed missing correctAnswers for question ${index} in part${i}`)
           }
-
-          // Validate Plan/Map/Diagram questions
-          if (question.type === "Ghi nhãn Bản đồ/Sơ đồ") {
-            if (!Array.isArray(question.content) || question.content.length < 3 || !question.content[2]) {
-              console.warn(`Invalid Plan/Map/Diagram question at part${i}, index ${index}. Adding placeholder image.`)
-              if (!Array.isArray(question.content)) {
-                question.content = ["map", "Instructions", "/placeholder.svg?height=300&width=400"]
-              } else if (question.content.length < 3) {
-                while (question.content.length < 2) {
-                  question.content.push("")
-                }
-                question.content.push("/placeholder.svg?height=300&width=400")
-              } else if (!question.content[2]) {
-                question.content[2] = "/placeholder.svg?height=300&width=400"
-              }
-            }
-          }
         })
       }
     }
@@ -493,14 +297,9 @@ async function saveTestToServer(testData) {
     const normalizedData = normalizeTestData(globalTest)
     console.log("Normalized data to be sent:", normalizedData)
 
-    // Kiểm tra xem đây là tạo mới hay cập nhật
-    const isUpdate = globalTest.id ? true : false
-    const url = isUpdate ? `${API_URL}/tests/${globalTest.id}` : `${API_URL}/tests`
-    const method = isUpdate ? "PUT" : "POST"
-
     // Make API request
-    const response = await fetchWithAuth(url, {
-      method: method,
+    const response = await fetchWithAuth(`${API_URL}/tests`, {
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
@@ -512,74 +311,15 @@ async function saveTestToServer(testData) {
       throw new Error(errorData.message || "Failed to save test")
     }
 
-    const result = await response.json()
-
-    // Nếu là tạo mới, cập nhật ID
-    if (!isUpdate && result.testId) {
-      globalTest.id = result.testId
-
-      // Khởi tạo tính năng tự động lưu
-      initAutoSave(result.testId)
-    }
-
-    // Cập nhật thời gian chỉnh sửa cuối cùng
-    lastEditTime = Date.now()
-
-    // Hiển thị thông báo thành công
-    showNotification("Lưu bài kiểm tra thành công", "success")
-
-    return result
+    return await response.json()
   } catch (error) {
     console.error("Error saving test to server:", error)
-    showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
 
     // If there's a network error or server is down, provide a fallback
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
       throw new Error("Cannot connect to server. Please check your internet connection.")
     }
 
-    throw error
-  }
-}
-
-// Tải lên file âm thanh
-async function uploadAudio(testId, partNumber, audioFile) {
-  try {
-    // Kiểm tra file
-    if (!audioFile) {
-      throw new Error("Không có file âm thanh")
-    }
-
-    // Kiểm tra loại file
-    const allowedTypes = ["audio/mpeg", "audio/mp3", "audio/wav", "audio/ogg"]
-    if (!allowedTypes.includes(audioFile.type)) {
-      throw new Error("Loại file không được hỗ trợ. Chỉ chấp nhận MP3, WAV và OGG.")
-    }
-
-    // Kiểm tra kích thước file (giới hạn 50MB)
-    const maxSize = 50 * 1024 * 1024 // 50MB
-    if (audioFile.size > maxSize) {
-      throw new Error("Kích thước file quá lớn. Giới hạn là 50MB.")
-    }
-
-    // Tạo FormData
-    const formData = new FormData()
-    formData.append("audio", audioFile)
-
-    // Gửi yêu cầu
-    const response = await fetchWithAuth(`${API_URL}/tests/${testId}/parts/${partNumber}/audio`, {
-      method: "POST",
-      body: formData,
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || "Lỗi khi tải lên file âm thanh")
-    }
-
-    return await response.json()
-  } catch (error) {
-    console.error("Lỗi khi tải lên file âm thanh:", error)
     throw error
   }
 }
@@ -601,7 +341,7 @@ function extractOneAnswerDataFromDOM(questionElement) {
       const optionItems = optionsList.querySelectorAll("li")
       optionItems.forEach((item) => {
         // Remove the "(Đúng)" text if present
-        const optionText = item.textContent.replace(/$$Đúng$$/, "").trim()
+        const optionText = item.textContent.replace(/$$Đúng$$$/, "").trim()
         options.push(optionText)
 
         // Check if this is the correct answer
@@ -758,6 +498,3 @@ window.getTests = getTests
 window.getTestById = getTestById
 window.updateTest = updateTest
 window.deleteTest = deleteTest
-window.uploadAudio = uploadAudio
-window.recoverLatestDraft = recoverLatestDraft
-window.initAutoSave = initAutoSave
