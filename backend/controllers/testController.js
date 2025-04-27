@@ -12,7 +12,7 @@ exports.getAllTests = async (req, res) => {
     res.json(tests)
   } catch (error) {
     console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
   }
 }
 
@@ -71,62 +71,78 @@ exports.getTestById = async (req, res) => {
     res.json(testData)
   } catch (error) {
     console.error("Lỗi lấy bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
   }
 }
 
 // Tạo bài kiểm tra mới
 exports.createTest = async (req, res) => {
-  const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
+  const { title, vietnamese_name, description, parts } = req.body
 
   console.log("Received test data:", {
     title,
-    vietnameseName,
+    vietnamese_name,
     description,
-    part1: part1?.length || 0,
-    part2: part2?.length || 0,
-    part3: part3?.length || 0,
-    part4: part4?.length || 0,
+    parts: parts?.length || 0,
   })
+
+  if (!title) {
+    return res.status(400).json({ message: "Title is required" })
+  }
+
+  if (!parts || !Array.isArray(parts) || parts.length === 0) {
+    return res.status(400).json({ message: "At least one part with questions is required" })
+  }
 
   try {
     await query("START TRANSACTION")
     console.log("Transaction started")
 
     // Tạo bài kiểm tra
-    console.log("Inserting test with title:", title, "vietnameseName:", vietnameseName)
+    console.log("Inserting test with title:", title, "vietnameseName:", vietnamese_name)
     const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
       title,
-      vietnameseName,
-      description,
+      vietnamese_name || null,
+      description || null,
     ])
 
     const testId = result.insertId
     console.log("Created test with ID:", testId)
 
     // Tạo các phần và câu hỏi
-    for (let i = 1; i <= 4; i++) {
-      const partData = req.body[`part${i}`]
-      if (partData?.length > 0) {
-        console.log(`Processing part ${i} with ${partData.length} questions`)
+    for (const part of parts) {
+      const { part_number, questions } = part
 
-        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, i])
+      if (!part_number || !questions || !Array.isArray(questions)) {
+        console.warn(`Skipping invalid part: ${JSON.stringify(part)}`)
+        continue
+      }
 
-        const partId = partResult.insertId
-        console.log(`Created part ${i} with ID:`, partId)
+      console.log(`Processing part ${part_number} with ${questions.length} questions`)
 
-        for (const question of partData) {
-          console.log(`Inserting question of type: ${question.type}`)
-          console.log("Question content:", JSON.stringify(question.content))
-          console.log("Question correctAnswers:", JSON.stringify(question.correctAnswers))
+      const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, part_number])
 
-          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
-            partId,
-            question.type,
-            JSON.stringify(question.content),
-            JSON.stringify(question.correctAnswers),
-          ])
+      const partId = partResult.insertId
+      console.log(`Created part ${part_number} with ID:`, partId)
+
+      for (const question of questions) {
+        const { question_type, content, correct_answers } = question
+
+        if (!question_type || !content || !correct_answers) {
+          console.warn(`Skipping invalid question: ${JSON.stringify(question)}`)
+          continue
         }
+
+        console.log(`Inserting question of type: ${question_type}`)
+        console.log("Question content:", content)
+        console.log("Question correctAnswers:", correct_answers)
+
+        await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
+          partId,
+          question_type,
+          content,
+          correct_answers,
+        ])
       }
     }
 
@@ -145,7 +161,7 @@ exports.createTest = async (req, res) => {
 // Update the updateTest function to handle the vietnameseName field
 exports.updateTest = async (req, res) => {
   const { id } = req.params
-  const { title, vietnameseName, description, part1, part2, part3, part4 } = req.body
+  const { title, vietnamese_name, description, parts } = req.body
 
   try {
     await query("START TRANSACTION")
@@ -153,8 +169,8 @@ exports.updateTest = async (req, res) => {
     // Cập nhật bài kiểm tra
     await query("UPDATE tests SET title = ?, vietnamese_name = ?, description = ? WHERE id = ?", [
       title,
-      vietnameseName,
-      description,
+      vietnamese_name || null,
+      description || null,
       id,
     ])
 
@@ -162,19 +178,29 @@ exports.updateTest = async (req, res) => {
     await query("DELETE FROM parts WHERE test_id = ?", [id])
 
     // Tạo các phần và câu hỏi mới
-    for (let i = 1; i <= 4; i++) {
-      const partData = req.body[`part${i}`]
-      if (partData?.length > 0) {
-        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, i])
+    if (parts && Array.isArray(parts)) {
+      for (const part of parts) {
+        const { part_number, questions } = part
 
+        if (!part_number || !questions || !Array.isArray(questions)) {
+          continue
+        }
+
+        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, part_number])
         const partId = partResult.insertId
 
-        for (const question of partData) {
+        for (const question of questions) {
+          const { question_type, content, correct_answers } = question
+
+          if (!question_type || !content || !correct_answers) {
+            continue
+          }
+
           await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
             partId,
-            question.type,
-            JSON.stringify(question.content),
-            JSON.stringify(question.correctAnswers),
+            question_type,
+            content,
+            correct_answers,
           ])
         }
       }
@@ -185,7 +211,7 @@ exports.updateTest = async (req, res) => {
   } catch (error) {
     await query("ROLLBACK")
     console.error("Lỗi cập nhật bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
   }
 }
 
@@ -196,7 +222,7 @@ exports.deleteTest = async (req, res) => {
     res.json({ message: "Xóa bài kiểm tra thành công" })
   } catch (error) {
     console.error("Lỗi xóa bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
   }
 }
 
@@ -280,6 +306,6 @@ exports.submitAnswers = async (req, res) => {
     })
   } catch (error) {
     console.error("Lỗi khi nộp bài:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ" })
+    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
   }
 }

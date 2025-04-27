@@ -348,9 +348,10 @@ async function saveTestToServer(testData) {
     console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
 
     // Make API request with detailed error handling
-    console.log(`Sending request to ${API_URL}/tests`)
+    const apiUrl = `${API_URL}/tests`
+    console.log(`Sending request to ${apiUrl}`)
 
-    const response = await fetch(`${API_URL}/tests`, {
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -361,19 +362,22 @@ async function saveTestToServer(testData) {
 
     console.log("API Response status:", response.status)
 
-    if (!response.ok) {
-      let errorMessage = `HTTP error! status: ${response.status}`
-      try {
-        const errorData = await response.json()
-        errorMessage = errorData.message || errorMessage
-        console.error("API error response:", errorData)
-      } catch (e) {
-        console.error("Could not parse error response:", e)
-      }
-      throw new Error(errorMessage)
+    // Log the full response for debugging
+    const responseText = await response.text()
+    console.log("API Response text:", responseText)
+
+    let responseData
+    try {
+      responseData = JSON.parse(responseText)
+    } catch (e) {
+      console.error("Could not parse response as JSON:", e)
+      throw new Error(`Server returned non-JSON response: ${responseText}`)
     }
 
-    const responseData = await response.json()
+    if (!response.ok) {
+      throw new Error(responseData.message || `HTTP error! status: ${response.status}`)
+    }
+
     console.log("API Response data:", responseData)
 
     showNotification("Bài kiểm tra đã được lưu thành công!", "success")
@@ -406,6 +410,7 @@ function extractOneAnswerDataFromDOM(questionElement) {
     const optionsList = questionContent.querySelector("ul")
     if (optionsList) {
       const optionItems = optionsList.querySelectorAll("li")
+      let correctAnswer
       optionItems.forEach((item) => {
         // Remove the "(Đúng)" text if present
         const optionText = item.textContent.replace(/$$Đúng$$/, "").trim()
@@ -621,10 +626,11 @@ function extractFormTableCompletionDataFromDOM(questionElement) {
     const answerElements = questionContent.querySelectorAll(".table-answer")
     answerElements.forEach((item, index) => {
       const blankNumber = item.getAttribute("data-blank-number") || (index + 1).toString()
-      const answer = item.textContent.replace("Đáp án:", "").trim() || `Answer ${index + 1}`
+      const answer = item.textContent.replace("Đáp án:", "").trim() || (index + 1).toString()
+      const answer_value = item.textContent.replace("Đáp án:", "").trim() || `Answer ${index + 1}`
 
       blanks.push(blankNumber)
-      answers.push(answer)
+      answers.push(answer_value)
     })
 
     return {
