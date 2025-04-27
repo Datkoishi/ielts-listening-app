@@ -492,7 +492,7 @@ function createFormTableCompletionForm() {
       <input type="text" name="row2" required><br>
       <label>Hàng 3 (cách nhau bằng dấu phẩy):</label>
       <input type="text" name="row3" required><br>
-      <label for="correctAnswers">Đáp án đúng (cách nhau bằng dấu phẩy):</label>
+      <label for="correctAnswers">Đáp án ��úng (cách nhau bằng dấu phẩy):</label>
       <input type="text" id="correctAnswers" name="correctAnswers" required>
     </div>
   `
