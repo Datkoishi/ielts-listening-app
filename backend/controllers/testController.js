@@ -1,228 +1,234 @@
 const Test = require("../models/Test")
+const db = require("../config/database")
 const { query } = require("../config/database")
 
-// Update the getAllTests function to include the vietnameseName field
+// Get all tests
 exports.getAllTests = async (req, res) => {
   try {
-    const tests = await query(`
-      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
-      FROM tests t
-      ORDER BY t.created_at DESC
-    `)
-    res.json(tests)
+    const [tests] = await db.query("SELECT * FROM tests ORDER BY created_at DESC")
+    res.status(200).json(tests)
   } catch (error) {
-    console.error("Lỗi lấy danh sách bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
+    console.error("Error getting tests:", error)
+    res.status(500).json({ message: "Error getting tests", error: error.message })
   }
 }
 
-// Lấy bài kiểm tra theo ID
-// Update the getTestById function to include the vietnameseName field
+// Get a specific test by ID
 exports.getTestById = async (req, res) => {
   try {
-    const test = await query(
-      `
-      SELECT t.id, t.title, t.vietnamese_name, t.description, t.created_at
-      FROM tests t
-      WHERE t.id = ?
-    `,
-      [req.params.id],
-    )
+    const { id } = req.params
 
-    if (!test || test.length === 0) {
-      return res.status(404).json({ message: "Không tìm thấy bài kiểm tra" })
+    // Get test
+    const [tests] = await db.query("SELECT * FROM tests WHERE id = ?", [id])
+
+    if (tests.length === 0) {
+      return res.status(404).json({ message: "Test not found" })
     }
 
-    // Lấy các phần và câu hỏi
-    const parts = await query(
-      `
-      SELECT id, part_number, audio_url
-      FROM parts
-      WHERE test_id = ?
-      ORDER BY part_number
-    `,
-      [req.params.id],
-    )
+    const test = tests[0]
 
-    const partsWithQuestions = await Promise.all(
-      parts.map(async (part) => {
-        const questions = await query(
-          `
-        SELECT id, question_type, content, correct_answers
-        FROM questions
-        WHERE part_id = ?
-        ORDER BY id
-      `,
-          [part.id],
-        )
+    // Get parts for this test
+    const [parts] = await db.query("SELECT * FROM parts WHERE test_id = ? ORDER BY part_number", [id])
 
-        return { ...part, questions }
-      }),
-    )
+    // Get questions for each part
+    const testWithParts = { ...test, parts: [] }
 
-    // Map vietnamese_name to vietnameseName for frontend consistency
-    const testData = {
-      ...test[0],
-      vietnameseName: test[0].vietnamese_name,
-      parts: partsWithQuestions,
+    for (const part of parts) {
+      const [questions] = await db.query("SELECT * FROM questions WHERE part_id = ?", [part.id])
+
+      // Parse JSON content and correct_answers
+      const parsedQuestions = questions.map((q) => ({
+        ...q,
+        content: JSON.parse(q.content || "[]"),
+        correct_answers: JSON.parse(q.correct_answers || "[]"),
+      }))
+
+      testWithParts.parts.push({
+        ...part,
+        questions: parsedQuestions,
+      })
     }
-    delete testData.vietnamese_name
 
-    res.json(testData)
+    res.status(200).json(testWithParts)
   } catch (error) {
-    console.error("Lỗi lấy bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
+    console.error("Error getting test:", error)
+    res.status(500).json({ message: "Error getting test", error: error.message })
   }
 }
 
-// Tạo bài kiểm tra mới
+// Create a new test
 exports.createTest = async (req, res) => {
-  const { title, vietnamese_name, description, parts } = req.body
-
-  console.log("Received test data:", {
-    title,
-    vietnamese_name,
-    description,
-    parts: parts?.length || 0,
-  })
-
-  if (!title) {
-    return res.status(400).json({ message: "Title is required" })
-  }
-
-  if (!parts || !Array.isArray(parts) || parts.length === 0) {
-    return res.status(400).json({ message: "At least one part with questions is required" })
-  }
-
+  let connection
   try {
-    await query("START TRANSACTION")
-    console.log("Transaction started")
+    connection = await db.getConnection()
+    await connection.beginTransaction()
 
-    // Tạo bài kiểm tra
-    console.log("Inserting test with title:", title, "vietnameseName:", vietnamese_name)
-    const result = await query("INSERT INTO tests (title, vietnamese_name, description) VALUES (?, ?, ?)", [
-      title,
-      vietnamese_name || null,
-      description || null,
-    ])
+    console.log("Creating new test with data:", JSON.stringify(req.body, null, 2))
+
+    const { title, description, vietnamese_name, parts } = req.body
+
+    if (!title) {
+      return res.status(400).json({ message: "Title is required" })
+    }
+
+    // Insert test
+    const [result] = await connection.query(
+      "INSERT INTO tests (title, description, vietnamese_name) VALUES (?, ?, ?)",
+      [title, description || "", vietnamese_name || ""],
+    )
 
     const testId = result.insertId
-    console.log("Created test with ID:", testId)
+    console.log(`Created test with ID: ${testId}`)
 
-    // Tạo các phần và câu hỏi
-    for (const part of parts) {
-      const { part_number, questions } = part
-
-      if (!part_number || !questions || !Array.isArray(questions)) {
-        console.warn(`Skipping invalid part: ${JSON.stringify(part)}`)
-        continue
-      }
-
-      console.log(`Processing part ${part_number} with ${questions.length} questions`)
-
-      const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [testId, part_number])
-
-      const partId = partResult.insertId
-      console.log(`Created part ${part_number} with ID:`, partId)
-
-      for (const question of questions) {
-        const { question_type, content, correct_answers } = question
-
-        if (!question_type || !content || !correct_answers) {
-          console.warn(`Skipping invalid question: ${JSON.stringify(question)}`)
-          continue
-        }
-
-        console.log(`Inserting question of type: ${question_type}`)
-        console.log("Question content:", content)
-        console.log("Question correctAnswers:", correct_answers)
-
-        await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
-          partId,
-          question_type,
-          content,
-          correct_answers,
-        ])
-      }
-    }
-
-    await query("COMMIT")
-    console.log("Transaction committed successfully")
-
-    res.status(201).json({ message: "Tạo bài kiểm tra thành công", testId })
-  } catch (error) {
-    console.error("Error in createTest:", error)
-    await query("ROLLBACK")
-    console.error("Transaction rolled back due to error:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
-  }
-}
-
-// Update the updateTest function to handle the vietnameseName field
-exports.updateTest = async (req, res) => {
-  const { id } = req.params
-  const { title, vietnamese_name, description, parts } = req.body
-
-  try {
-    await query("START TRANSACTION")
-
-    // Cập nhật bài kiểm tra
-    await query("UPDATE tests SET title = ?, vietnamese_name = ?, description = ? WHERE id = ?", [
-      title,
-      vietnamese_name || null,
-      description || null,
-      id,
-    ])
-
-    // Xóa các phần và câu hỏi hiện có
-    await query("DELETE FROM parts WHERE test_id = ?", [id])
-
-    // Tạo các phần và câu hỏi mới
-    if (parts && Array.isArray(parts)) {
+    // Insert parts and questions
+    if (Array.isArray(parts)) {
       for (const part of parts) {
         const { part_number, questions } = part
 
-        if (!part_number || !questions || !Array.isArray(questions)) {
-          continue
-        }
+        // Insert part
+        const [partResult] = await connection.query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [
+          testId,
+          part_number,
+        ])
 
-        const partResult = await query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [id, part_number])
         const partId = partResult.insertId
+        console.log(`Created part ${part_number} with ID: ${partId}`)
 
-        for (const question of questions) {
-          const { question_type, content, correct_answers } = question
+        // Insert questions
+        if (Array.isArray(questions)) {
+          for (const question of questions) {
+            const { question_type, content, correct_answers } = question
 
-          if (!question_type || !content || !correct_answers) {
-            continue
+            await connection.query(
+              "INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)",
+              [partId, question_type, content, correct_answers],
+            )
           }
-
-          await query("INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)", [
-            partId,
-            question_type,
-            content,
-            correct_answers,
-          ])
+          console.log(`Added ${questions.length} questions to part ${part_number}`)
         }
       }
     }
 
-    await query("COMMIT")
-    res.json({ message: "Cập nhật bài kiểm tra thành công" })
+    await connection.commit()
+
+    res.status(201).json({
+      message: "Test created successfully",
+      testId: testId,
+    })
   } catch (error) {
-    await query("ROLLBACK")
-    console.error("Lỗi cập nhật bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
+    if (connection) {
+      await connection.rollback()
+    }
+    console.error("Error creating test:", error)
+    res.status(500).json({ message: "Error creating test", error: error.message })
+  } finally {
+    if (connection) {
+      connection.release()
+    }
   }
 }
 
-// Xóa bài kiểm tra
-exports.deleteTest = async (req, res) => {
+// Update a test
+exports.updateTest = async (req, res) => {
+  let connection
   try {
-    await query("DELETE FROM tests WHERE id = ?", [req.params.id])
-    res.json({ message: "Xóa bài kiểm tra thành công" })
+    connection = await db.getConnection()
+    await connection.beginTransaction()
+
+    const { id } = req.params
+    const { title, description, vietnamese_name, parts } = req.body
+
+    // Update test
+    await connection.query(
+      "UPDATE tests SET title = ?, description = ?, vietnamese_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+      [title, description || "", vietnamese_name || "", id],
+    )
+
+    // Delete existing parts and questions
+    const [existingParts] = await connection.query("SELECT id FROM parts WHERE test_id = ?", [id])
+    for (const part of existingParts) {
+      await connection.query("DELETE FROM questions WHERE part_id = ?", [part.id])
+    }
+    await connection.query("DELETE FROM parts WHERE test_id = ?", [id])
+
+    // Insert new parts and questions
+    if (Array.isArray(parts)) {
+      for (const part of parts) {
+        const { part_number, questions } = part
+
+        // Insert part
+        const [partResult] = await connection.query("INSERT INTO parts (test_id, part_number) VALUES (?, ?)", [
+          id,
+          part_number,
+        ])
+
+        const partId = partResult.insertId
+
+        // Insert questions
+        if (Array.isArray(questions)) {
+          for (const question of questions) {
+            const { question_type, content, correct_answers } = question
+
+            await connection.query(
+              "INSERT INTO questions (part_id, question_type, content, correct_answers) VALUES (?, ?, ?, ?)",
+              [partId, question_type, content, correct_answers],
+            )
+          }
+        }
+      }
+    }
+
+    await connection.commit()
+
+    res.status(200).json({
+      message: "Test updated successfully",
+      testId: id,
+    })
   } catch (error) {
-    console.error("Lỗi xóa bài kiểm tra:", error.message)
-    res.status(500).json({ message: "Lỗi máy chủ: " + error.message })
+    if (connection) {
+      await connection.rollback()
+    }
+    console.error("Error updating test:", error)
+    res.status(500).json({ message: "Error updating test", error: error.message })
+  } finally {
+    if (connection) {
+      connection.release()
+    }
+  }
+}
+
+// Delete a test
+exports.deleteTest = async (req, res) => {
+  let connection
+  try {
+    connection = await db.getConnection()
+    await connection.beginTransaction()
+
+    const { id } = req.params
+
+    // Delete parts and questions
+    const [parts] = await connection.query("SELECT id FROM parts WHERE test_id = ?", [id])
+    for (const part of parts) {
+      await connection.query("DELETE FROM questions WHERE part_id = ?", [part.id])
+    }
+    await connection.query("DELETE FROM parts WHERE test_id = ?", [id])
+
+    // Delete test
+    await connection.query("DELETE FROM tests WHERE id = ?", [id])
+
+    await connection.commit()
+
+    res.status(200).json({ message: "Test deleted successfully" })
+  } catch (error) {
+    if (connection) {
+      await connection.rollback()
+    }
+    console.error("Error deleting test:", error)
+    res.status(500).json({ message: "Error deleting test", error: error.message })
+  } finally {
+    if (connection) {
+      connection.release()
+    }
   }
 }
 

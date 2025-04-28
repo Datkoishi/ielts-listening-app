@@ -1,13 +1,24 @@
 // Tích hợp frontend với backend API
-const API_URL =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000/api"
-    : "/api"
+const API_URL = (() => {
+  // Determine the API URL based on the current environment
+  const hostname = window.location.hostname
+  const port = window.location.port
+
+  if (hostname === "localhost" || hostname === "127.0.0.1") {
+    // For local development, use explicit port 3000 for the API
+    return "http://localhost:3000/api"
+  } else {
+    // For production, use relative path
+    return "/api"
+  }
+})()
+
+console.log("Using API URL:", API_URL)
+
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_DELAY = 1000 // 1 giây
 
 // Declare showNotification (assuming it's a global function or imported)
-// If it's imported, replace this with the actual import statement
 function showNotification(message, type) {
   // Kiểm tra xem đã có thông báo nào chưa
   let notification = document.querySelector(".notification")
@@ -177,6 +188,8 @@ async function fetchWithAuth(url, options = {}) {
       return response
     } catch (error) {
       attempts++
+      console.error(`Attempt ${attempts} failed:`, error)
+
       if (attempts >= MAX_RETRY_ATTEMPTS) {
         throw error
       }
@@ -230,11 +243,33 @@ function normalizeTestData(testData) {
   return normalizedTest
 }
 
+// Test API connection before attempting to save
+async function testApiConnection() {
+  try {
+    const response = await fetch(`${API_URL}/health`)
+    if (!response.ok) {
+      console.error("API health check failed:", await response.text())
+      return false
+    }
+    console.log("API connection successful")
+    return true
+  } catch (error) {
+    console.error("API connection test failed:", error)
+    return false
+  }
+}
+
 // Lưu bài kiểm tra lên server
 async function saveTestToServer(testData) {
   try {
     // Show loading notification
     showNotification("Đang kết nối với máy chủ...", "info")
+
+    // Test API connection first
+    const apiConnected = await testApiConnection()
+    if (!apiConnected) {
+      throw new Error("Không thể kết nối đến API. Vui lòng kiểm tra kết nối mạng và máy chủ.")
+    }
 
     // Make sure we're using the global test object
     const globalTest = window.test || testData
@@ -351,37 +386,58 @@ async function saveTestToServer(testData) {
     const apiUrl = `${API_URL}/tests`
     console.log(`Sending request to ${apiUrl}`)
 
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(normalizedData),
-      credentials: "include", // Thêm credentials để gửi cookies nếu cần
+    // Use XMLHttpRequest instead of fetch for better compatibility
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+      xhr.open("POST", apiUrl, true)
+      xhr.setRequestHeader("Content-Type", "application/json")
+
+      // Add event listeners
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const responseData = JSON.parse(xhr.responseText)
+            console.log("API Response data:", responseData)
+            showNotification("Bài kiểm tra đã được lưu thành công!", "success")
+            resolve(responseData)
+          } catch (e) {
+            console.error("Error parsing response:", e)
+            reject(new Error("Invalid JSON response from server"))
+          }
+        } else {
+          console.error("API error response:", xhr.responseText)
+          let errorMessage = `HTTP error! status: ${xhr.status}`
+          try {
+            const errorData = JSON.parse(xhr.responseText)
+            errorMessage = errorData.message || errorMessage
+          } catch (e) {
+            // Not JSON, use text
+          }
+          reject(new Error(errorMessage))
+        }
+      }
+
+      xhr.onerror = () => {
+        console.error("Network error occurred")
+        reject(new Error("Network error occurred. Please check your connection and server status."))
+      }
+
+      xhr.ontimeout = () => {
+        console.error("Request timed out")
+        reject(new Error("Request timed out. Server may be unavailable."))
+      }
+
+      // Send the request
+      xhr.send(JSON.stringify(normalizedData))
     })
-
-    console.log("API Response status:", response.status)
-
-    // Log the full response for debugging
-    const responseText = await response.text()
-    console.log("API Response text:", responseText)
-
-    let responseData
-    try {
-      responseData = JSON.parse(responseText)
-    } catch (e) {
-      console.error("Could not parse response as JSON:", e)
-      throw new Error(`Server returned non-JSON response: ${responseText}`)
-    }
-
-    if (!response.ok) {
-      throw new Error(responseData.message || `HTTP error! status: ${response.status}`)
-    }
-
-    console.log("API Response data:", responseData)
-
-    showNotification("Bài kiểm tra đã được lưu thành công!", "success")
-    return responseData
+      .then((responseData) => {
+        return responseData
+      })
+      .catch((error) => {
+        console.error("Lỗi chi tiết khi lưu bài kiểm tra:", error)
+        showNotification(`Lỗi: ${error.message}`, "error")
+        throw error
+      })
   } catch (error) {
     console.error("Lỗi chi tiết khi lưu bài kiểm tra:", error)
     showNotification(`Lỗi: ${error.message}`, "error")
@@ -407,10 +463,10 @@ function extractOneAnswerDataFromDOM(questionElement) {
     const questionText = paragraphs[0].textContent.replace("Nội dung:", "").trim()
 
     const options = []
+    let correctAnswer = null
     const optionsList = questionContent.querySelector("ul")
     if (optionsList) {
       const optionItems = optionsList.querySelectorAll("li")
-      let correctAnswer
       optionItems.forEach((item) => {
         // Remove the "(Đúng)" text if present
         const optionText = item.textContent.replace(/$$Đúng$$/, "").trim()
@@ -424,10 +480,12 @@ function extractOneAnswerDataFromDOM(questionElement) {
     }
 
     // Find the correct answer
-    let correctAnswer = options[0] || "Default answer"
-    const correctAnswerText = Array.from(paragraphs).find((p) => p.textContent.includes("Đáp án đúng:"))
-    if (correctAnswerText) {
-      correctAnswer = correctAnswerText.textContent.replace("Đáp án đúng:", "").trim()
+    if (!correctAnswer) {
+      correctAnswer = options[0] || "Default answer"
+      const correctAnswerText = Array.from(paragraphs).find((p) => p.textContent.includes("Đáp án đúng:"))
+      if (correctAnswerText) {
+        correctAnswer = correctAnswerText.textContent.replace("Đáp án đúng:", "").trim()
+      }
     }
 
     return {
@@ -736,6 +794,12 @@ function defaultQuestionData(type) {
 // Lấy danh sách bài kiểm tra
 async function getTests() {
   try {
+    // Test API connection first
+    const apiConnected = await testApiConnection()
+    if (!apiConnected) {
+      throw new Error("Không thể kết nối đến API. Vui lòng kiểm tra kết nối mạng và máy chủ.")
+    }
+
     const response = await fetchWithAuth(`${API_URL}/tests`)
 
     if (!response.ok) {
@@ -752,6 +816,12 @@ async function getTests() {
 // Lấy chi tiết bài kiểm tra theo ID
 async function getTestById(testId) {
   try {
+    // Test API connection first
+    const apiConnected = await testApiConnection()
+    if (!apiConnected) {
+      throw new Error("Không thể kết nối đến API. Vui lòng kiểm tra kết nối mạng và máy chủ.")
+    }
+
     const response = await fetchWithAuth(`${API_URL}/tests/${testId}`)
 
     if (!response.ok) {
@@ -768,6 +838,12 @@ async function getTestById(testId) {
 // Cập nhật bài kiểm tra
 async function updateTest(testId, testData) {
   try {
+    // Test API connection first
+    const apiConnected = await testApiConnection()
+    if (!apiConnected) {
+      throw new Error("Không thể kết nối đến API. Vui lòng kiểm tra kết nối mạng và máy chủ.")
+    }
+
     // Chuẩn hóa dữ liệu trước khi gửi
     const normalizedData = normalizeTestData(testData)
 
@@ -794,6 +870,12 @@ async function updateTest(testId, testData) {
 // Xóa bài kiểm tra
 async function deleteTest(testId) {
   try {
+    // Test API connection first
+    const apiConnected = await testApiConnection()
+    if (!apiConnected) {
+      throw new Error("Không thể kết nối đến API. Vui lòng kiểm tra kết nối mạng và máy chủ.")
+    }
+
     const response = await fetchWithAuth(`${API_URL}/tests/${testId}`, {
       method: "DELETE",
     })
@@ -823,3 +905,7 @@ window.getTests = getTests
 window.getTestById = getTestById
 window.updateTest = updateTest
 window.deleteTest = deleteTest
+window.testApiConnection = testApiConnection
+
+// Log API URL on load for debugging
+console.log("client-integration.js loaded. API URL:", API_URL)
