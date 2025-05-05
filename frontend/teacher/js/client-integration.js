@@ -1,63 +1,13 @@
 // Tích hợp frontend với backend API
-const API_URL =
-  window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-    ? "http://localhost:3000/api"
-    : "/api"
+const API_URL = "http://localhost:3000/api"
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_DELAY = 1000 // 1 giây
 
 // Declare showNotification (assuming it's a global function or imported)
 // If it's imported, replace this with the actual import statement
 function showNotification(message, type) {
-  // Kiểm tra xem đã có thông báo nào chưa
-  let notification = document.querySelector(".notification")
-  if (!notification) {
-    notification = document.createElement("div")
-    notification.className = "notification"
-    document.body.appendChild(notification)
-  }
-
-  // Thiết lập loại thông báo
-  notification.className = `notification notification-${type}`
-  notification.innerHTML = message
-  notification.style.position = "fixed"
-  notification.style.top = "20px"
-  notification.style.right = "20px"
-  notification.style.padding = "15px"
-  notification.style.borderRadius = "5px"
-  notification.style.zIndex = "1000"
-  notification.style.maxWidth = "300px"
-  notification.style.boxShadow = "0 4px 8px rgba(0,0,0,0.1)"
-
-  // Thiết lập màu sắc dựa trên loại thông báo
-  if (type === "success") {
-    notification.style.backgroundColor = "#d4edda"
-    notification.style.color = "#155724"
-    notification.style.border = "1px solid #c3e6cb"
-  } else if (type === "error") {
-    notification.style.backgroundColor = "#f8d7da"
-    notification.style.color = "#721c24"
-    notification.style.border = "1px solid #f5c6cb"
-  } else if (type === "warning") {
-    notification.style.backgroundColor = "#fff3cd"
-    notification.style.color = "#856404"
-    notification.style.border = "1px solid #ffeeba"
-  } else if (type === "info") {
-    notification.style.backgroundColor = "#d1ecf1"
-    notification.style.color = "#0c5460"
-    notification.style.border = "1px solid #bee5eb"
-  }
-
-  // Tự động ẩn thông báo sau 5 giây
-  setTimeout(() => {
-    notification.style.opacity = "0"
-    notification.style.transition = "opacity 0.5s"
-    setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification)
-      }
-    }, 500)
-  }, 5000)
+  // Implement your notification logic here, e.g., using an alert or a library
+  console.log(`${type}: ${message}`) // Placeholder implementation
 }
 
 // Lưu token vào localStorage
@@ -204,353 +154,177 @@ function normalizeQuestionData(question) {
   return normalizedQuestion
 }
 
-// Hàm chuẩn hóa dữ liệu bài kiểm tra để phù hợp với cấu trúc database
+// Chuẩn hóa dữ liệu bài kiểm tra trước khi gửi đến server
 function normalizeTestData(testData) {
-  console.log("Dữ liệu trước khi chuẩn hóa:", testData)
-
-  // Đảm bảo có dữ liệu cơ bản
-  if (!testData || typeof testData !== "object") {
-    console.error("Dữ liệu không hợp lệ:", testData)
-    throw new Error("Dữ liệu bài kiểm tra không hợp lệ")
-  }
-
-  // Tạo đối tượng chuẩn hóa
   const normalizedTest = {
-    title: testData.title || "Bài kiểm tra không có tiêu đề",
+    title: testData.title || "",
     description: testData.description || "",
-    vietnamese_name: testData.vietnameseName || testData.title || "",
-    content: JSON.stringify({
-      type: "listening",
-      difficulty: testData.difficulty || "medium",
-      total_questions: countTotalQuestions(testData),
-      version: testData.version || 1,
-    }),
-    version: 1,
+    vietnamese_name: testData.vietnameseName || "",
     parts: [],
   }
 
-  // Chuyển đổi các phần thành định dạng mà backend mong đợi
+  // Convert parts to the format expected by the backend
   for (let i = 1; i <= 4; i++) {
-    const partKey = `part${i}`
-    if (testData[partKey] && Array.isArray(testData[partKey]) && testData[partKey].length > 0) {
-      const part = {
+    if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
+      normalizedTest.parts.push({
         part_number: i,
-        audio_url: testData[`${partKey}AudioUrl`] || `/uploads/audio/part${i}-sample.mp3`,
-        questions: [],
-      }
-
-      // Chuyển đổi các câu hỏi
-      testData[partKey].forEach((question) => {
-        if (!question || !question.type) {
-          console.warn(`Bỏ qua câu hỏi không hợp lệ trong phần ${i}:`, question)
-          return
-        }
-
-        // Map loại câu hỏi sang type_id
-        const typeIdMap = {
-          "Một đáp án": 1,
-          "Nhiều đáp án": 2,
-          "Ghép nối": 3,
-          "Điền vào form": 4,
-          "Điền vào câu": 5,
-          "Trả lời ngắn": 6,
-          "Đúng/Sai/Không đề cập": 7,
-        }
-
-        const questionData = {
+        questions: testData[`part${i}`].map((question) => ({
           question_type: question.type,
-          type_id: typeIdMap[question.type] || 1,
-          content: JSON.stringify(question.content || {}),
-          correct_answers: JSON.stringify(question.correctAnswers || []),
-        }
-
-        part.questions.push(questionData)
+          content: JSON.stringify(question.content),
+          correct_answers: JSON.stringify(question.correctAnswers),
+        })),
       })
-
-      normalizedTest.parts.push(part)
     }
   }
 
-  console.log("Dữ liệu sau khi chuẩn hóa:", normalizedTest)
   return normalizedTest
 }
 
-// Hàm đếm tổng số câu hỏi
-function countTotalQuestions(testData) {
-  let count = 0
-  for (let i = 1; i <= 4; i++) {
-    const partKey = `part${i}`
-    if (testData[partKey] && Array.isArray(testData[partKey])) {
-      count += testData[partKey].length
-    }
-  }
-  return count
-}
-
-// Hàm lưu bài kiểm tra lên server
+// Lưu bài kiểm tra lên server
 async function saveTestToServer(testData) {
   try {
-    console.log("Bắt đầu lưu bài kiểm tra:", testData)
+    // Show loading notification
+    showNotification("Đang kết nối với máy chủ...", "info")
 
-    // Chuẩn hóa dữ liệu
-    const normalizedData = normalizeTestData(testData)
+    // Make sure we're using the global test object
+    const globalTest = window.test || testData
 
-    // Hiển thị thông báo đang lưu
-    showNotification("Đang lưu bài kiểm tra...", "info")
+    console.log("Test data received by saveTestToServer:", testData)
+    console.log("Global test object:", globalTest)
 
-    // Gửi request đến API
-    const apiUrl = `${API_URL || "http://localhost:3000"}/api/tests`
-    console.log(`Gửi request đến ${apiUrl}`)
+    // Check if the test data has questions
+    let hasQuestions = false
+    let totalQuestions = 0
 
-    const response = await fetch(apiUrl, {
+    for (let i = 1; i <= 4; i++) {
+      if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
+        hasQuestions = true
+        totalQuestions += globalTest[`part${i}`].length
+      }
+    }
+
+    console.log(`Test has questions: ${hasQuestions}, Total questions: ${totalQuestions}`)
+
+    if (!hasQuestions) {
+      console.warn("Không tìm thấy câu hỏi trong dữ liệu bài kiểm tra, đang cố gắng tạo lại từ DOM")
+
+      // Try to rebuild from DOM
+      for (let i = 1; i <= 4; i++) {
+        const partElement = document.getElementById(`part${i}`)
+        if (partElement) {
+          const questionElements = partElement.querySelectorAll(".question")
+
+          if (questionElements.length > 0) {
+            console.log(`Tìm thấy ${questionElements.length} câu hỏi trong phần ${i} từ DOM`)
+
+            // Initialize the part array if it doesn't exist
+            if (!globalTest[`part${i}`]) {
+              globalTest[`part${i}`] = []
+            }
+
+            // Add missing questions
+            questionElements.forEach((questionElement, index) => {
+              if (!globalTest[`part${i}`][index]) {
+                // Try to determine the question type
+                const typeElement = questionElement.querySelector("h3")
+                const questionType = typeElement
+                  ? typeElement.textContent.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1").trim()
+                  : "Unknown Type"
+
+                // Extract question data based on type
+                let questionData = null
+
+                switch (questionType) {
+                  case "Một đáp án":
+                    questionData = extractOneAnswerDataFromDOM(questionElement)
+                    break
+                  case "Nhiều đáp án":
+                    questionData = extractMultipleAnswerDataFromDOM(questionElement)
+                    break
+                  case "Ghép nối":
+                    questionData = extractMatchingDataFromDOM(questionElement)
+                    break
+                  case "Ghi nhãn Bản đồ/Sơ đồ":
+                    questionData = extractPlanMapDiagramDataFromDOM(questionElement)
+                    break
+                  case "Hoàn thành ghi chú":
+                    questionData = extractNoteCompletionDataFromDOM(questionElement)
+                    break
+                  case "Hoàn thành bảng/biểu mẫu":
+                    questionData = extractFormTableCompletionDataFromDOM(questionElement)
+                    break
+                  case "Hoàn thành lưu đồ":
+                    questionData = extractFlowChartCompletionDataFromDOM(questionElement)
+                    break
+                  default:
+                    questionData = {
+                      type: questionType,
+                      content: ["Question content from DOM"],
+                      correctAnswers: ["Answer from DOM"],
+                    }
+                }
+
+                // Add the question to the test part
+                globalTest[`part${i}`][index] = questionData
+                console.log(`Đã thêm câu hỏi từ DOM vào phần ${i} tại vị trí ${index}`)
+              }
+            })
+          }
+        }
+      }
+    }
+
+    // Validate test data before sending
+    for (let i = 1; i <= 4; i++) {
+      if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
+        globalTest[`part${i}`].forEach((question, index) => {
+          // Ensure content is an array
+          if (!Array.isArray(question.content)) {
+            question.content = ["Missing content"]
+            console.warn(`Đã sửa nội dung không hợp lệ cho câu hỏi ${index} trong phần ${i}`)
+          }
+
+          // Ensure correctAnswers exists
+          if (!question.correctAnswers) {
+            question.correctAnswers = ["Missing answer"]
+            console.warn(`Đã sửa câu trả lời bị thiếu cho câu hỏi ${index} trong phần ${i}`)
+          }
+        })
+      }
+    }
+
+    // Normalize data before sending
+    const normalizedData = normalizeTestData(globalTest)
+    console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
+
+    // Make API request
+    const response = await fetchWithAuth(`${API_URL}/tests`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: localStorage.getItem("token") ? `Bearer ${localStorage.getItem("token")}` : "",
       },
       body: JSON.stringify(normalizedData),
-      credentials: "include",
     })
 
-    // Log response status
-    console.log("API Response status:", response.status)
-
-    // Đọc response text
-    const responseText = await response.text()
-    console.log("API Response text:", responseText)
-
-    // Parse JSON nếu có thể
-    let responseData
-    try {
-      responseData = JSON.parse(responseText)
-    } catch (e) {
-      console.error("Không thể parse response JSON:", e)
-      throw new Error(`Server trả về response không phải JSON: ${responseText}`)
-    }
-
-    // Kiểm tra response status
     if (!response.ok) {
-      throw new Error(responseData.message || `Lỗi HTTP! status: ${response.status}`)
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Không thể lưu bài kiểm tra")
     }
 
-    // Hiển thị thông báo thành công
-    showNotification(`Bài kiểm tra "${normalizedData.title}" đã được lưu thành công!`, "success")
-
-    // Lưu ID bài kiểm tra vào localStorage nếu có
-    if (responseData && responseData.id) {
-      localStorage.setItem("currentTestId", responseData.id)
-    }
-
-    return responseData
+    showNotification("Bài kiểm tra đã được lưu thành công!", "success")
+    return await response.json()
   } catch (error) {
-    console.error("Lỗi chi tiết khi lưu bài kiểm tra:", error)
-    showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message}`, "error")
+    console.error("Lỗi khi lưu bài kiểm tra lên máy chủ:", error)
+    showNotification(`Lỗi: ${error.message}`, "error")
+
+    // If there's a network error or server is down, provide a fallback
+    if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+      throw new Error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn.")
+    }
+
     throw error
   }
 }
-
-// Hàm hiển thị thông báo
-function showNotification(message, type = "info") {
-  // Kiểm tra xem hàm có tồn tại không
-  if (typeof window.showNotification === "function") {
-    window.showNotification(message, type)
-  } else {
-    // Fallback nếu không có hàm showNotification
-    console.log(`[${type.toUpperCase()}] ${message}`)
-    alert(message)
-  }
-}
-
-// Chuẩn hóa dữ liệu bài kiểm tra trước khi gửi đến server
-// function normalizeTestData(testData) {
-//   const normalizedTest = {
-//     title: testData.title || "",
-//     description: testData.description || "",
-//     vietnamese_name: testData.vietnameseName || "",
-//     parts: [],
-//   }
-
-//   // Convert parts to the format expected by the backend
-//   for (let i = 1; i <= 4; i++) {
-//     if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
-//       normalizedTest.parts.push({
-//         part_number: i,
-//         questions: testData[`part${i}`].map((question) => ({
-//           question_type: question.type,
-//           content: JSON.stringify(question.content),
-//           correct_answers: JSON.stringify(question.correctAnswers),
-//         })),
-//       })
-//     }
-//   }
-
-//   return normalizedTest
-// }
-
-// Lưu bài kiểm tra lên server
-// async function saveTestToServer(testData) {
-//   try {
-//     // Show loading notification
-//     showNotification("Đang kết nối với máy chủ...", "info")
-
-//     // Make sure we're using the global test object
-//     const globalTest = window.test || testData
-
-//     console.log("Test data received by saveTestToServer:", testData)
-//     console.log("Global test object:", globalTest)
-
-//     // Check if the test data has questions
-//     let hasQuestions = false
-//     let totalQuestions = 0
-
-//     for (let i = 1; i <= 4; i++) {
-//       if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
-//         hasQuestions = true
-//         totalQuestions += globalTest[`part${i}`].length
-//       }
-//     }
-
-//     console.log(`Test has questions: ${hasQuestions}, Total questions: ${totalQuestions}`)
-
-//     if (!hasQuestions) {
-//       console.warn("Không tìm thấy câu hỏi trong dữ liệu bài kiểm tra, đang cố gắng tạo lại từ DOM")
-
-//       // Try to rebuild from DOM
-//       for (let i = 1; i <= 4; i++) {
-//         const partElement = document.getElementById(`part${i}`)
-//         if (partElement) {
-//           const questionElements = partElement.querySelectorAll(".question")
-
-//           if (questionElements.length > 0) {
-//             console.log(`Tìm thấy ${questionElements.length} câu hỏi trong phần ${i} từ DOM`)
-
-//             // Initialize the part array if it doesn't exist
-//             if (!globalTest[`part${i}`]) {
-//               globalTest[`part${i}`] = []
-//             }
-
-//             // Add missing questions
-//             questionElements.forEach((questionElement, index) => {
-//               if (!globalTest[`part${i}`][index]) {
-//                 // Try to determine the question type
-//                 const typeElement = questionElement.querySelector("h3")
-//                 const questionType = typeElement
-//                   ? typeElement.textContent.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1").trim()
-//                   : "Unknown Type"
-
-//                 // Extract question data based on type
-//                 let questionData = null
-
-//                 switch (questionType) {
-//                   case "Một đáp án":
-//                     questionData = extractOneAnswerDataFromDOM(questionElement)
-//                     break
-//                   case "Nhiều đáp án":
-//                     questionData = extractMultipleAnswerDataFromDOM(questionElement)
-//                     break
-//                   case "Ghép nối":
-//                     questionData = extractMatchingDataFromDOM(questionElement)
-//                     break
-//                   case "Ghi nhãn Bản đồ/Sơ đồ":
-//                     questionData = extractPlanMapDiagramDataFromDOM(questionElement)
-//                     break
-//                   case "Hoàn thành ghi chú":
-//                     questionData = extractNoteCompletionDataFromDOM(questionElement)
-//                     break
-//                   case "Hoàn thành bảng/biểu mẫu":
-//                     questionData = extractFormTableCompletionDataFromDOM(questionElement)
-//                     break
-//                   case "Hoàn thành lưu đồ":
-//                     questionData = extractFlowChartCompletionDataFromDOM(questionElement)
-//                     break
-//                   default:
-//                     questionData = {
-//                       type: questionType,
-//                       content: ["Question content from DOM"],
-//                       correctAnswers: ["Answer from DOM"],
-//                     }
-//                 }
-
-//                 // Add the question to the test part
-//                 globalTest[`part${i}`][index] = questionData
-//                 console.log(`Đã thêm câu hỏi từ DOM vào phần ${i} tại vị trí ${index}`)
-//               }
-//             })
-//           }
-//         }
-//       }
-//     }
-
-//     // Validate test data before sending
-//     for (let i = 1; i <= 4; i++) {
-//       if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
-//         globalTest[`part${i}`].forEach((question, index) => {
-//           // Ensure content is an array
-//           if (!Array.isArray(question.content)) {
-//             question.content = ["Missing content"]
-//             console.warn(`Đã sửa nội dung không hợp lệ cho câu hỏi ${index} trong phần ${i}`)
-//           }
-
-//           // Ensure correctAnswers exists
-//           if (!question.correctAnswers) {
-//             question.correctAnswers = ["Missing answer"]
-//             console.warn(`Đã sửa câu trả lời bị thiếu cho câu hỏi ${index} trong phần ${i}`)
-//           }
-//         })
-//       }
-//     }
-
-//     // Normalize data before sending
-//     const normalizedData = normalizeTestData(globalTest)
-//     console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
-
-//     // Make API request with detailed error handling
-//     const apiUrl = `${API_URL}/tests`
-//     console.log(`Sending request to ${apiUrl}`)
-
-//     const response = await fetch(apiUrl, {
-//       method: "POST",
-//       headers: {
-//         "Content-Type": "application/json",
-//       },
-//       body: JSON.stringify(normalizedData),
-//       credentials: "include", // Thêm credentials để gửi cookies nếu cần
-//     })
-
-//     console.log("API Response status:", response.status)
-
-//     // Log the full response for debugging
-//     const responseText = await response.text()
-//     console.log("API Response text:", responseText)
-
-//     let responseData
-//     try {
-//       responseData = JSON.parse(responseText)
-//     } catch (e) {
-//       console.error("Could not parse response as JSON:", e)
-//       throw new Error(`Server returned non-JSON response: ${responseText}`)
-//     }
-
-//     if (!response.ok) {
-//       throw new Error(responseData.message || `HTTP error! status: ${response.status}`)
-//     }
-
-//     console.log("API Response data:", responseData)
-
-//     showNotification("Bài kiểm tra đã được lưu thành công!", "success")
-//     return responseData
-//   } catch (error) {
-//     console.error("Lỗi chi tiết khi lưu bài kiểm tra:", error)
-//     showNotification(`Lỗi: ${error.message}`, "error")
-
-//     // If there's a network error or server is down, provide a fallback
-//     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-//       throw new Error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn.")
-//     }
-
-//     throw error
-//   }
-// }
 
 // Helper functions to extract question data from DOM elements
 function extractOneAnswerDataFromDOM(questionElement) {
@@ -567,7 +341,6 @@ function extractOneAnswerDataFromDOM(questionElement) {
     const optionsList = questionContent.querySelector("ul")
     if (optionsList) {
       const optionItems = optionsList.querySelectorAll("li")
-      let correctAnswer
       optionItems.forEach((item) => {
         // Remove the "(Đúng)" text if present
         const optionText = item.textContent.replace(/$$Đúng$$/, "").trim()
@@ -783,11 +556,10 @@ function extractFormTableCompletionDataFromDOM(questionElement) {
     const answerElements = questionContent.querySelectorAll(".table-answer")
     answerElements.forEach((item, index) => {
       const blankNumber = item.getAttribute("data-blank-number") || (index + 1).toString()
-      const answer = item.textContent.replace("Đáp án:", "").trim() || (index + 1).toString()
-      const answer_value = item.textContent.replace("Đáp án:", "").trim() || `Answer ${index + 1}`
+      const answer = item.textContent.replace("Đáp án:", "").trim() || `Answer ${index + 1}`
 
       blanks.push(blankNumber)
-      answers.push(answer_value)
+      answers.push(answer)
     })
 
     return {
@@ -967,8 +739,7 @@ async function deleteTest(testId) {
   }
 }
 
-// Export các hàm để sử dụng trong các file khác
-window.normalizeTestData = normalizeTestData
+// Xuất các hàm để sử dụng trong các file khác
 window.saveToken = saveToken
 window.getToken = getToken
 window.removeToken = removeToken
