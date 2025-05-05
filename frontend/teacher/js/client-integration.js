@@ -160,21 +160,74 @@ function normalizeTestData(testData) {
     title: testData.title || "",
     description: testData.description || "",
     vietnamese_name: testData.vietnameseName || "",
+    version: testData.version || 1,
+    created_by: testData.createdBy || 1, // Mặc định là user ID 1 nếu không có
+    content: JSON.stringify({
+      difficulty: testData.difficulty || "medium",
+      total_questions: calculateTotalQuestions(testData),
+      type: "listening",
+      metadata: {
+        last_modified: new Date().toISOString(),
+        status: testData.status || "draft",
+      },
+    }),
     parts: [],
   }
 
-  // Convert parts to the format expected by the backend
+  // Tính tổng số câu hỏi
+  function calculateTotalQuestions(test) {
+    let total = 0
+    for (let i = 1; i <= 4; i++) {
+      if (test[`part${i}`] && Array.isArray(test[`part${i}`])) {
+        total += test[`part${i}`].length
+      }
+    }
+    return total
+  }
+
+  // Chuyển đổi parts sang định dạng phù hợp với database
   for (let i = 1; i <= 4; i++) {
     if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
-      normalizedTest.parts.push({
+      const partData = {
         part_number: i,
-        questions: testData[`part${i}`].map((question) => ({
-          question_type: question.type,
-          content: JSON.stringify(question.content),
-          correct_answers: JSON.stringify(question.correctAnswers),
-        })),
-      })
+        instructions: testData[`part${i}Instructions`] || `Hướng dẫn cho phần ${i}`,
+        audio_file: null, // Sẽ được cập nhật sau khi upload file âm thanh
+        questions: testData[`part${i}`].map((question) => {
+          // Map question_type string sang type_id
+          const typeId = getQuestionTypeId(question.type)
+
+          return {
+            question_type: typeId,
+            content: JSON.stringify({
+              text: Array.isArray(question.content) && question.content.length > 0 ? question.content[0] : "",
+              options: Array.isArray(question.content) ? question.content.slice(1) : [],
+              metadata: {
+                difficulty: question.difficulty || "medium",
+                points: question.points || 1,
+              },
+            }),
+            correct_answers: JSON.stringify(question.correctAnswers),
+          }
+        }),
+      }
+
+      normalizedTest.parts.push(partData)
     }
+  }
+
+  // Hàm map question_type string sang type_id
+  function getQuestionTypeId(typeString) {
+    const typeMap = {
+      "Một đáp án": 1,
+      "Nhiều đáp án": 2,
+      "Ghép nối": 3,
+      "Ghi nhãn Bản đồ/Sơ đồ": 4,
+      "Hoàn thành ghi chú": 5,
+      "Hoàn thành bảng/biểu mẫu": 6,
+      "Hoàn thành lưu đồ": 7,
+    }
+
+    return typeMap[typeString] || 1 // Mặc định là type 1 nếu không tìm thấy
   }
 
   return normalizedTest
@@ -293,9 +346,29 @@ async function saveTestToServer(testData) {
       }
     }
 
+    // Thêm thông tin version nếu chưa có
+    if (!globalTest.version) {
+      globalTest.version = 1
+    } else if (globalTest.isNewVersion) {
+      // Nếu đây là phiên bản mới của bài test đã tồn tại
+      globalTest.version = (Number.parseInt(globalTest.version) || 1) + 1
+    }
+
     // Normalize data before sending
     const normalizedData = normalizeTestData(globalTest)
     console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
+
+    // Validate normalized data
+    if (!normalizedData.title) {
+      throw new Error("Tiêu đề bài kiểm tra không được để trống")
+    }
+
+    if (!normalizedData.parts || normalizedData.parts.length === 0) {
+      throw new Error("Bài kiểm tra phải có ít nhất một phần với câu hỏi")
+    }
+
+    // Hiển thị thông báo đang lưu
+    showNotification("Đang lưu bài kiểm tra...", "info")
 
     // Make API request
     const response = await fetchWithAuth(`${API_URL}/tests`, {
@@ -311,18 +384,85 @@ async function saveTestToServer(testData) {
       throw new Error(errorData.message || "Không thể lưu bài kiểm tra")
     }
 
-    showNotification("Bài kiểm tra đã được lưu thành công!", "success")
-    return await response.json()
+    const result = await response.json()
+    showNotification(
+      `Bài kiểm tra "${normalizedData.vietnamese_name || normalizedData.title}" đã được lưu thành công!`,
+      "success",
+    )
+
+    // Cập nhật ID cho bài test nếu là bài mới
+    if (result.testId && !globalTest.id) {
+      globalTest.id = result.testId
+      window.test = globalTest
+    }
+
+    return result
   } catch (error) {
     console.error("Lỗi khi lưu bài kiểm tra lên máy chủ:", error)
-    showNotification(`Lỗi: ${error.message}`, "error")
 
-    // If there's a network error or server is down, provide a fallback
+    // Lưu log lỗi chi tiết
+    logError("save_test_error", {
+      message: error.message,
+      testData: JSON.stringify(testData),
+      timestamp: new Date().toISOString(),
+    })
+
+    // Lưu bản nháp offline nếu có lỗi kết nối
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-      throw new Error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn.")
+      saveTestOffline(testData)
+      showNotification("Không thể kết nối đến máy chủ. Bài kiểm tra đã được lưu offline.", "warning")
+    } else {
+      showNotification(`Lỗi: ${error.message}`, "error")
     }
 
     throw error
+  }
+}
+
+// Hàm lưu bài kiểm tra offline
+function saveTestOffline(testData) {
+  try {
+    const timestamp = new Date().toISOString()
+    const offlineKey = `offline_test_${timestamp}`
+    const offlineData = {
+      test: testData,
+      timestamp: timestamp,
+      synced: false,
+    }
+
+    localStorage.setItem(offlineKey, JSON.stringify(offlineData))
+
+    // Lưu danh sách các bài test offline
+    const offlineTests = JSON.parse(localStorage.getItem("offline_tests") || "[]")
+    offlineTests.push(offlineKey)
+    localStorage.setItem("offline_tests", JSON.stringify(offlineTests))
+
+    console.log("Đã lưu bài kiểm tra offline:", offlineKey)
+    return offlineKey
+  } catch (error) {
+    console.error("Lỗi khi lưu bài kiểm tra offline:", error)
+    return null
+  }
+}
+
+// Hàm ghi log lỗi
+function logError(type, data) {
+  try {
+    const errorLogs = JSON.parse(localStorage.getItem("error_logs") || "[]")
+    errorLogs.push({
+      type,
+      data,
+      timestamp: new Date().toISOString(),
+    })
+
+    // Giới hạn số lượng log lỗi
+    if (errorLogs.length > 100) {
+      errorLogs.shift() // Xóa log cũ nhất
+    }
+
+    localStorage.setItem("error_logs", JSON.stringify(errorLogs))
+  } catch (error) {
+    console.error("Lỗi khi ghi log:", error)
   }
 }
 
@@ -739,6 +879,283 @@ async function deleteTest(testId) {
   }
 }
 
+// Thêm hàm đồng bộ hóa dữ liệu offline
+async function syncOfflineTests() {
+  try {
+    // Kiểm tra kết nối internet
+    if (!navigator.onLine) {
+      console.log("Không có kết nối internet, bỏ qua đồng bộ hóa")
+      return { success: false, message: "Không có kết nối internet" }
+    }
+
+    // Lấy danh sách bài test offline
+    const offlineTests = JSON.parse(localStorage.getItem("offline_tests") || "[]")
+    if (offlineTests.length === 0) {
+      console.log("Không có bài test offline cần đồng bộ")
+      return { success: true, message: "Không có bài test offline" }
+    }
+
+    console.log(`Tìm thấy ${offlineTests.length} bài test offline cần đồng bộ`)
+    showNotification(`Đang đồng bộ ${offlineTests.length} bài test offline...`, "info")
+
+    let syncedCount = 0
+    let failedCount = 0
+
+    // Đồng bộ từng bài test
+    for (const offlineKey of offlineTests) {
+      try {
+        const offlineData = JSON.parse(localStorage.getItem(offlineKey) || "null")
+        if (!offlineData || offlineData.synced) continue
+
+        console.log(`Đang đồng bộ bài test: ${offlineKey}`)
+
+        // Gửi bài test lên server
+        const result = await saveTestToServer(offlineData.test)
+
+        if (result && result.testId) {
+          // Đánh dấu đã đồng bộ
+          offlineData.synced = true
+          offlineData.syncedAt = new Date().toISOString()
+          offlineData.serverId = result.testId
+          localStorage.setItem(offlineKey, JSON.stringify(offlineData))
+          syncedCount++
+        } else {
+          failedCount++
+        }
+      } catch (error) {
+        console.error(`Lỗi khi đồng bộ bài test ${offlineKey}:`, error)
+        failedCount++
+      }
+    }
+
+    // Cập nhật danh sách bài test offline
+    const updatedOfflineTests = offlineTests.filter((key) => {
+      const data = JSON.parse(localStorage.getItem(key) || "null")
+      return data && !data.synced
+    })
+    localStorage.setItem("offline_tests", JSON.stringify(updatedOfflineTests))
+
+    // Hiển thị thông báo kết quả
+    if (syncedCount > 0) {
+      showNotification(`Đã đồng bộ thành công ${syncedCount} bài test offline`, "success")
+    }
+
+    if (failedCount > 0) {
+      showNotification(`Không thể đồng bộ ${failedCount} bài test offline`, "warning")
+    }
+
+    return {
+      success: true,
+      syncedCount,
+      failedCount,
+      remaining: updatedOfflineTests.length,
+    }
+  } catch (error) {
+    console.error("Lỗi khi đồng bộ bài test offline:", error)
+    showNotification("Lỗi khi đồng bộ bài test offline", "error")
+    return { success: false, error: error.message }
+  }
+}
+
+// Thêm hàm kiểm tra và đồng bộ tự động
+function setupAutoSync() {
+  // Đồng bộ khi có kết nối internet trở lại
+  window.addEventListener("online", () => {
+    console.log("Kết nối internet đã trở lại, bắt đầu đồng bộ")
+    showNotification("Đã kết nối lại internet, đang đồng bộ dữ liệu...", "info")
+    syncOfflineTests()
+  })
+
+  // Kiểm tra và đồng bộ khi tải trang
+  if (navigator.onLine) {
+    // Đợi 5 giây sau khi tải trang để đồng bộ
+    setTimeout(() => {
+      syncOfflineTests()
+    }, 5000)
+  }
+}
+
+// Gọi hàm thiết lập đồng bộ tự động
+setupAutoSync()
+
+// Thêm hàm xử lý upload file âm thanh
+async function uploadAudioFile(file, partNumber) {
+  try {
+    if (!file) {
+      throw new Error("Không có file âm thanh được chọn")
+    }
+
+    // Kiểm tra loại file
+    if (!file.type.startsWith("audio/")) {
+      throw new Error("File không phải là file âm thanh hợp lệ")
+    }
+
+    // Kiểm tra kích thước file (giới hạn 50MB)
+    const MAX_SIZE = 50 * 1024 * 1024 // 50MB
+    if (file.size > MAX_SIZE) {
+      throw new Error("Kích thước file vượt quá giới hạn 50MB")
+    }
+
+    // Hiển thị thông báo đang tải lên
+    showNotification(`Đang tải lên file âm thanh cho phần ${partNumber}...`, "info")
+
+    // Tạo FormData
+    const formData = new FormData()
+    formData.append("audio", file)
+    formData.append("partNumber", partNumber)
+
+    // Gửi request
+    const response = await fetchWithAuth(`${API_URL}/upload/audio`, {
+      method: "POST",
+      body: formData,
+      // Không cần set Content-Type, browser sẽ tự set khi dùng FormData
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Không thể tải lên file âm thanh")
+    }
+
+    const result = await response.json()
+
+    // Hiển thị thông báo thành công
+    showNotification(`Đã tải lên file âm thanh cho phần ${partNumber} thành công`, "success")
+
+    // Trả về URL của file âm thanh
+    return result.audioUrl
+  } catch (error) {
+    console.error("Lỗi khi tải lên file âm thanh:", error)
+    showNotification(`Lỗi khi tải lên file âm thanh: ${error.message}`, "error")
+
+    // Lưu log lỗi
+    logError("upload_audio_error", {
+      message: error.message,
+      partNumber,
+      timestamp: new Date().toISOString(),
+    })
+
+    throw error
+  }
+}
+
+// Thêm hàm xử lý upload file hình ảnh cho câu hỏi
+async function uploadImageFile(file, partNumber, questionIndex) {
+  try {
+    if (!file) {
+      throw new Error("Không có file hình ảnh được chọn")
+    }
+
+    // Kiểm tra loại file
+    if (!file.type.startsWith("image/")) {
+      throw new Error("File không phải là file hình ảnh hợp lệ")
+    }
+
+    // Kiểm tra kích thước file (giới hạn 10MB)
+    const MAX_SIZE = 10 * 1024 * 1024 // 10MB
+    if (file.size > MAX_SIZE) {
+      throw new Error("Kích thước file vượt quá giới hạn 10MB")
+    }
+
+    // Hiển thị thông báo đang tải lên
+    showNotification(`Đang tải lên hình ảnh cho câu hỏi ${questionIndex + 1} phần ${partNumber}...`, "info")
+
+    // Tạo FormData
+    const formData = new FormData()
+    formData.append("image", file)
+    formData.append("partNumber", partNumber)
+    formData.append("questionIndex", questionIndex)
+
+    // Gửi request
+    const response = await fetchWithAuth(`${API_URL}/upload/image`, {
+      method: "POST",
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.message || "Không thể tải lên hình ảnh")
+    }
+
+    const result = await response.json()
+
+    // Hiển thị thông báo thành công
+    showNotification(`Đã tải lên hình ảnh thành công`, "success")
+
+    // Trả về URL của hình ảnh
+    return result.imageUrl
+  } catch (error) {
+    console.error("Lỗi khi tải lên hình ảnh:", error)
+    showNotification(`Lỗi khi tải lên hình ảnh: ${error.message}`, "error")
+
+    // Lưu log lỗi
+    logError("upload_image_error", {
+      message: error.message,
+      partNumber,
+      questionIndex,
+      timestamp: new Date().toISOString(),
+    })
+
+    throw error
+  }
+}
+
+// Thêm hàm xử lý vấn đề third-party cookies
+function handleThirdPartyCookies() {
+  // Kiểm tra xem cookies có bị chặn không
+  function checkCookiesEnabled() {
+    try {
+      // Thử set một cookie test
+      document.cookie = "testcookie=1; SameSite=None; Secure"
+      const cookieEnabled = document.cookie.indexOf("testcookie") !== -1
+
+      // Xóa cookie test
+      document.cookie = "testcookie=; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure"
+
+      return cookieEnabled
+    } catch (e) {
+      return false
+    }
+  }
+
+  // Nếu cookies bị chặn, hiển thị cảnh báo
+  if (!checkCookiesEnabled()) {
+    console.warn("Cookies bị chặn, có thể gây ra vấn đề với xác thực")
+
+    // Tạo banner cảnh báo
+    const warningBanner = document.createElement("div")
+    warningBanner.style.position = "fixed"
+    warningBanner.style.top = "0"
+    warningBanner.style.left = "0"
+    warningBanner.style.width = "100%"
+    warningBanner.style.padding = "10px"
+    warningBanner.style.backgroundColor = "#fff3cd"
+    warningBanner.style.color = "#856404"
+    warningBanner.style.textAlign = "center"
+    warningBanner.style.zIndex = "9999"
+    warningBanner.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)"
+
+    warningBanner.innerHTML = `
+      <strong>Cảnh báo:</strong> Cookies của bên thứ ba đang bị chặn. 
+      Điều này có thể gây ra vấn đề với đăng nhập và lưu bài kiểm tra. 
+      Vui lòng cho phép cookies trong cài đặt trình duyệt của bạn.
+      <button id="dismiss-cookie-warning" style="margin-left: 10px; padding: 2px 8px; cursor: pointer;">Đóng</button>
+    `
+
+    document.body.appendChild(warningBanner)
+
+    // Xử lý nút đóng
+    document.getElementById("dismiss-cookie-warning").addEventListener("click", () => {
+      warningBanner.style.display = "none"
+    })
+
+    // Sử dụng localStorage thay thế
+    console.log("Đang sử dụng localStorage thay thế cho cookies")
+  }
+}
+
+// Gọi hàm xử lý third-party cookies
+handleThirdPartyCookies()
+
 // Xuất các hàm để sử dụng trong các file khác
 window.saveToken = saveToken
 window.getToken = getToken
@@ -752,3 +1169,6 @@ window.getTests = getTests
 window.getTestById = getTestById
 window.updateTest = updateTest
 window.deleteTest = deleteTest
+window.uploadAudioFile = uploadAudioFile
+window.uploadImageFile = uploadImageFile
+window.syncOfflineTests = syncOfflineTests
