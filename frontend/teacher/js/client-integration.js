@@ -1,5 +1,8 @@
 // Tích hợp frontend với backend API
-const API_URL = "http://localhost:3000/api"
+if (typeof window.API_URL === "undefined") {
+  window.API_URL = "http://localhost:3000/api"
+}
+
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_DELAY = 1000 // 1 giây
 
@@ -8,6 +11,37 @@ const RETRY_DELAY = 1000 // 1 giây
 function showNotification(message, type) {
   // Implement your notification logic here, e.g., using an alert or a library
   console.log(`${type}: ${message}`) // Placeholder implementation
+
+  // Hiển thị thông báo trên giao diện
+  const notificationContainer = document.createElement("div")
+  notificationContainer.className = `notification ${type}`
+  notificationContainer.innerHTML = `
+    <div class="notification-content">
+      <span class="notification-message">${message}</span>
+      <button class="notification-close">&times;</button>
+    </div>
+  `
+
+  document.body.appendChild(notificationContainer)
+
+  // Tự động đóng thông báo sau 5 giây
+  setTimeout(() => {
+    notificationContainer.classList.add("notification-hide")
+    setTimeout(() => {
+      document.body.removeChild(notificationContainer)
+    }, 500)
+  }, 5000)
+
+  // Xử lý nút đóng
+  const closeButton = notificationContainer.querySelector(".notification-close")
+  if (closeButton) {
+    closeButton.addEventListener("click", () => {
+      notificationContainer.classList.add("notification-hide")
+      setTimeout(() => {
+        document.body.removeChild(notificationContainer)
+      }, 500)
+    })
+  }
 }
 
 // Lưu token vào localStorage
@@ -37,7 +71,7 @@ async function getCurrentUser() {
       return { id: 1, username: "teacher", role: "teacher" } // Trả về người dùng mặc định nếu chưa đăng nhập
     }
 
-    const response = await fetchWithAuth(`${API_URL}/users/me`)
+    const response = await fetchWithAuth(`${window.API_URL}/users/me`)
     if (!response.ok) {
       throw new Error("Không thể lấy thông tin người dùng")
     }
@@ -51,7 +85,7 @@ async function getCurrentUser() {
 // Đăng nhập
 async function login(username, password) {
   try {
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const response = await fetch(`${window.API_URL}/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -80,7 +114,7 @@ async function login(username, password) {
 // Đăng ký
 async function register(username, password, role = "teacher") {
   try {
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const response = await fetch(`${window.API_URL}/auth/register`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -251,8 +285,8 @@ async function checkServerBeforeRequest() {
   }
 
   // Kiểm tra server có đang chạy không
-  if (typeof isServerRunning === "function") {
-    const serverRunning = await isServerRunning()
+  if (typeof window.isServerRunning === "function") {
+    const serverRunning = await window.isServerRunning()
     if (!serverRunning) {
       console.log("Server không hoạt động, lưu dữ liệu offline")
       return false
@@ -265,17 +299,16 @@ async function checkServerBeforeRequest() {
 // Cải thiện hàm saveTestToServer với xử lý lỗi chi tiết
 async function saveTestToServer(testData) {
   try {
-    // Chuẩn hóa dữ liệu
-    const normalizedData = normalizeTestData(testData)
-
     // Kiểm tra server trước khi gửi request
     const serverAvailable = await checkServerBeforeRequest()
     if (!serverAvailable) {
       // Lưu dữ liệu offline
-      saveTestOffline(normalizedData)
+      const offlineKey = saveTestOffline(testData)
+      showNotification("Server không khả dụng, đã lưu dữ liệu offline", "warning")
       return {
         success: false,
         offline: true,
+        offlineKey,
         message: "Server không khả dụng, đã lưu dữ liệu offline",
       }
     }
@@ -432,7 +465,7 @@ async function saveTestToServer(testData) {
     }
 
     // Make API request
-    const response = await fetchWithAuth(`${API_URL}/tests`, {
+    const response = await fetchWithAuth(`${window.API_URL}/tests`, {
       method: globalTest.id ? "PUT" : "POST", // Sử dụng PUT nếu đã có ID, ngược lại sử dụng POST
       headers: {
         "Content-Type": "application/json",
@@ -882,7 +915,7 @@ function defaultQuestionData(type) {
 // Lấy danh sách bài kiểm tra
 async function getTests() {
   try {
-    const response = await fetchWithAuth(`${API_URL}/tests`)
+    const response = await fetchWithAuth(`${window.API_URL}/tests`)
 
     if (!response.ok) {
       throw new Error("Không thể lấy danh sách bài kiểm tra")
@@ -898,7 +931,7 @@ async function getTests() {
 // Lấy chi tiết bài kiểm tra theo ID
 async function getTestById(testId) {
   try {
-    const response = await fetchWithAuth(`${API_URL}/tests/${testId}`)
+    const response = await fetchWithAuth(`${window.API_URL}/tests/${testId}`)
 
     if (!response.ok) {
       throw new Error("Không thể lấy thông tin bài kiểm tra")
@@ -917,7 +950,7 @@ async function updateTest(testId, testData) {
     // Chuẩn hóa dữ liệu trước khi gửi
     const normalizedData = normalizeTestData(testData)
 
-    const response = await fetchWithAuth(`${API_URL}/tests/${testId}`, {
+    const response = await fetchWithAuth(`${window.API_URL}/tests/${testId}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
@@ -940,7 +973,7 @@ async function updateTest(testId, testData) {
 // Xóa bài kiểm tra
 async function deleteTest(testId) {
   try {
-    const response = await fetchWithAuth(`${API_URL}/tests/${testId}`, {
+    const response = await fetchWithAuth(`${window.API_URL}/tests/${testId}`, {
       method: "DELETE",
     })
 
@@ -1147,7 +1180,7 @@ async function uploadAudioFile(file, partNumber) {
       })
 
       // Gửi request
-      xhr.open("POST", `${API_URL}/upload/audio`)
+      xhr.open("POST", `${window.API_URL}/upload/audio`)
 
       // Thêm token xác thực nếu có
       const token = getToken()
@@ -1200,7 +1233,7 @@ async function uploadImageFile(file, partNumber, questionIndex) {
     formData.append("questionIndex", questionIndex)
 
     // Gửi request
-    const response = await fetchWithAuth(`${API_URL}/upload/image`, {
+    const response = await fetchWithAuth(`${window.API_URL}/upload/image`, {
       method: "POST",
       body: formData,
     })

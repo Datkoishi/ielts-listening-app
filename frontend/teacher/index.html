@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="../teacher/css/api-integration.css">
 <!-- Thêm file debug.js đầu tiên để sửa lỗi -->
 <script src="../teacher/js/debug.js"></script>
+<!-- Thêm file global-variables.js để khởi tạo các biến toàn cục -->
+<script src="../teacher/js/global-variables.js"></script>
 </head>
 <body>
 <div class="selection-page" id="selectionPage">
@@ -189,6 +191,14 @@
     console.log('Kiểm tra các hàm quan trọng:');
     console.log('showTroubleshooter:', typeof window.showTroubleshooter === 'function' ? 'Đã định nghĩa' : 'Chưa định nghĩa');
     console.log('showServerConfigUI:', typeof window.showServerConfigUI === 'function' ? 'Đã định nghĩa' : 'Chưa định nghĩa');
+    
+    // Kiểm tra lại các biến toàn cục
+    console.log('=== KIỂM TRA LẠI CÁC BIẾN TOÀN CỤC ===');
+    console.log('API_URL:', typeof window.API_URL !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
+    console.log('test:', typeof window.test !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
+    console.log('currentPart:', typeof window.currentPart !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
+    console.log('selectedTypes:', typeof window.selectedTypes !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
+    console.log('audioFile:', typeof window.audioFile !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
   });
 </script>
 </body>
