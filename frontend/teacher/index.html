@@ -74,6 +74,26 @@
             <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
         </div>
     </div>
+     <!-- Thêm nút cấu hình server vào menu -->
+     <button id="serverConfigBtn" class="server-config-button" onclick="showServerConfigUI('serverConfigContainer')">
+        <i class="fas fa-cog"></i> Cấu hình Server
+      </button>
+      <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
+      <button id="troubleshooterBtn" class="troubleshooter-button" onclick="showTroubleshooter('troubleshooterContainer')">
+        <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
+      </button>
+  </div>
+</div>
+
+<!-- Thêm div để hiển thị trạng thái API -->
+<div id="apiStatus" class="api-status-container"></div>
+
+<!-- Thêm container cho cấu hình server -->
+<div id="serverConfigContainer"></div>
+
+<!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
+<div id="troubleshooterContainer"></div>
+
     <!-- Tải script theo thứ tự đúng -->
 
             <script src="../teacher/js/client-integration.js"></script>
