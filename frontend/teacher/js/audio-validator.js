@@ -138,7 +138,7 @@ const SUPPORTED_AUDIO_FORMATS = [
       if (!validation.isValid) {
         container.innerHTML = `
           <div class="audio-info audio-info-error">
-            <div class="audio-info-title">File không hợp lệ</div>
+            <div class="audio-info-title">File không hợp l���</div>
             <ul class="audio-info-errors">
               ${validation.errors.map((error) => `<li>${error}</li>`).join("")}
             </ul>

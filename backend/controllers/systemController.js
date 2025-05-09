@@ -1,44 +1,31 @@
-/**
- * Controller cho các chức năng hệ thống
- */
-
-const pool = require("../config/database")
+const db = require("../config/database")
 
 // Kiểm tra kết nối database
 exports.checkDatabaseConnection = async (req, res) => {
   try {
-    // Lấy kết nối từ pool
-    const connection = await pool.getConnection()
+    // Thử kết nối đến database
+    await db.query("SELECT 1")
 
-    // Thực hiện truy vấn đơn giản để kiểm tra kết nối
-    const [result] = await connection.execute("SELECT 1 as dbConnected")
-
-    // Trả về kết nối
-    connection.release()
-
-    // Trả về thông tin chi tiết về kết nối database
-    res.json({
+    return res.status(200).json({
       success: true,
-      message: "Kết nối database thành công",
+      message: "Kết nối đến database thành công",
       details: {
-        connected: true,
         host: process.env.DB_HOST,
         database: process.env.DB_NAME,
-        result: result[0],
+        user: process.env.DB_USER,
       },
     })
   } catch (error) {
-    console.error("Lỗi kiểm tra kết nối database:", error.message)
+    console.error("Lỗi kết nối database:", error)
 
-    // Trả về thông tin lỗi
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Kết nối database thất bại",
+      message: "Không thể kết nối đến database",
       error: error.message,
       details: {
-        connected: false,
         host: process.env.DB_HOST,
         database: process.env.DB_NAME,
+        user: process.env.DB_USER,
       },
     })
   }
@@ -47,54 +34,32 @@ exports.checkDatabaseConnection = async (req, res) => {
 // Kiểm tra cấu trúc database
 exports.checkDatabaseStructure = async (req, res) => {
   try {
-    // Lấy kết nối từ pool
-    const connection = await pool.getConnection()
-
-    // Lấy danh sách các bảng trong database
-    const [tables] = await connection.execute(
-      `
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = ?
-    `,
-      [process.env.DB_NAME],
-    )
-
-    // Lấy thông tin chi tiết về cấu trúc của mỗi bảng
-    const tableStructures = {}
+    // Kiểm tra các bảng cần thiết
+    const tables = ["tests", "users", "audio_files"]
+    const results = {}
 
     for (const table of tables) {
-      const tableName = table.table_name || table.TABLE_NAME
-
-      // Lấy thông tin về các cột trong bảng
-      const [columns] = await connection.execute(
-        `
-        SELECT column_name, data_type, is_nullable, column_key
-        FROM information_schema.columns
-        WHERE table_schema = ? AND table_name = ?
-      `,
-        [process.env.DB_NAME, tableName],
-      )
-
-      tableStructures[tableName] = columns
+      try {
+        await db.query(`SELECT 1 FROM ${table} LIMIT 1`)
+        results[table] = true
+      } catch (error) {
+        results[table] = false
+      }
     }
 
-    // Trả về kết nối
-    connection.release()
+    const allTablesExist = Object.values(results).every((result) => result === true)
 
-    // Trả về thông tin về cấu trúc database
-    res.json({
-      success: true,
-      message: "Lấy cấu trúc database thành công",
-      tables: tables.map((t) => t.table_name || t.TABLE_NAME),
-      structures: tableStructures,
+    return res.status(200).json({
+      success: allTablesExist,
+      message: allTablesExist ? "Tất cả các bảng đều tồn tại" : "Một số bảng không tồn tại",
+      details: results,
     })
   } catch (error) {
-    console.error("Lỗi kiểm tra cấu trúc database:", error.message)
+    console.error("Lỗi kiểm tra cấu trúc database:", error)
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Lấy cấu trúc database thất bại",
+      message: "Không thể kiểm tra cấu trúc database",
       error: error.message,
     })
   }
@@ -105,34 +70,34 @@ exports.checkDatabasePerformance = async (req, res) => {
   try {
     const startTime = Date.now()
 
-    // Lấy kết nối từ pool
-    const connection = await pool.getConnection()
-
-    // Thực hiện một số truy vấn để kiểm tra hiệu suất
-    await connection.execute("SELECT 1")
-    await connection.execute("SHOW TABLES")
-
-    // Trả về kết nối
-    connection.release()
+    // Thực hiện một truy vấn đơn giản
+    await db.query("SELECT 1")
 
     const endTime = Date.now()
     const responseTime = endTime - startTime
 
-    // Trả về thông tin về hiệu suất database
-    res.json({
+    let performance = "Tốt"
+    if (responseTime > 500) {
+      performance = "Trung bình"
+    }
+    if (responseTime > 1000) {
+      performance = "Kém"
+    }
+
+    return res.status(200).json({
       success: true,
-      message: "Kiểm tra hiệu suất database thành công",
+      message: `Hiệu suất database: ${performance}`,
       details: {
         responseTime: `${responseTime}ms`,
-        status: responseTime < 500 ? "Tốt" : responseTime < 1000 ? "Trung bình" : "Kém",
+        performance,
       },
     })
   } catch (error) {
-    console.error("Lỗi kiểm tra hiệu suất database:", error.message)
+    console.error("Lỗi kiểm tra hiệu suất database:", error)
 
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: "Kiểm tra hiệu suất database thất bại",
+      message: "Không thể kiểm tra hiệu suất database",
       error: error.message,
     })
   }
@@ -140,18 +105,19 @@ exports.checkDatabasePerformance = async (req, res) => {
 
 // Kiểm tra sức khỏe API
 exports.checkApiHealth = (req, res) => {
-  res.json({
-    status: "ok",
+  return res.status(200).json({
+    success: true,
+    message: "API đang hoạt động",
+    version: "1.0.0",
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
   })
 }
 
 // Kiểm tra CORS
 exports.checkCors = (req, res) => {
-  res.json({
+  return res.status(200).json({
     success: true,
-    message: "CORS hoạt động bình thường",
-    origin: req.headers.origin || "unknown",
+    message: "CORS đang hoạt động đúng",
+    origin: req.headers.origin || "Unknown",
   })
 }
