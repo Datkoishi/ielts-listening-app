@@ -158,8 +158,8 @@ function normalizeQuestionData(question) {
 function normalizeTestData(testData) {
   const normalizedTest = {
     title: testData.title || "",
-    description: testData.description || "",
     vietnamese_name: testData.vietnameseName || "",
+    description: testData.description || "",
     version: testData.version || 1,
     created_by: testData.createdBy || 1, // Mặc định là user ID 1 nếu không có
     content: JSON.stringify({
@@ -191,22 +191,28 @@ function normalizeTestData(testData) {
       const partData = {
         part_number: i,
         instructions: testData[`part${i}Instructions`] || `Hướng dẫn cho phần ${i}`,
-        audio_file: null, // Sẽ được cập nhật sau khi upload file âm thanh
+        audio_url: testData[`part${i}AudioUrl`] || null, // Thêm audio_url từ dữ liệu
         questions: testData[`part${i}`].map((question) => {
           // Map question_type string sang type_id
           const typeId = getQuestionTypeId(question.type)
 
+          // Đảm bảo content là một mảng
+          const content = Array.isArray(question.content) ? question.content : [question.content || ""]
+
+          // Đảm bảo correctAnswers tồn tại
+          const correctAnswers = question.correctAnswers || []
+
           return {
             question_type: typeId,
             content: JSON.stringify({
-              text: Array.isArray(question.content) && question.content.length > 0 ? question.content[0] : "",
-              options: Array.isArray(question.content) ? question.content.slice(1) : [],
+              text: content.length > 0 ? content[0] : "",
+              options: content.length > 1 ? content.slice(1) : [],
               metadata: {
                 difficulty: question.difficulty || "medium",
                 points: question.points || 1,
               },
             }),
-            correct_answers: JSON.stringify(question.correctAnswers),
+            correct_answers: JSON.stringify(correctAnswers),
           }
         }),
       }
@@ -233,9 +239,20 @@ function normalizeTestData(testData) {
   return normalizedTest
 }
 
-// Lưu bài kiểm tra lên server
+// Cải thiện hàm saveTestToServer với xử lý lỗi chi tiết
 async function saveTestToServer(testData) {
   try {
+    // Kiểm tra kết nối internet
+    if (!navigator.onLine) {
+      console.log("Không có kết nối internet, lưu offline")
+      const offlineKey = saveTestOffline(testData)
+      showNotification(
+        "Không có kết nối internet. Bài kiểm tra đã được lưu offline và sẽ được đồng bộ khi có kết nối.",
+        "warning",
+      )
+      return { success: false, offlineKey, message: "Đã lưu offline" }
+    }
+
     // Show loading notification
     showNotification("Đang kết nối với máy chủ...", "info")
 
@@ -370,17 +387,38 @@ async function saveTestToServer(testData) {
     // Hiển thị thông báo đang lưu
     showNotification("Đang lưu bài kiểm tra...", "info")
 
+    // Kiểm tra token xác thực
+    const token = getToken()
+    if (!token) {
+      console.warn("Không tìm thấy token xác thực, tiếp tục mà không có xác thực")
+    }
+
     // Make API request
     const response = await fetchWithAuth(`${API_URL}/tests`, {
-      method: "POST",
+      method: globalTest.id ? "PUT" : "POST", // Sử dụng PUT nếu đã có ID, ngược lại sử dụng POST
       headers: {
         "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
       },
       body: JSON.stringify(normalizedData),
     })
 
+    // Kiểm tra lỗi HTTP
     if (!response.ok) {
-      const errorData = await response.json()
+      const errorData = await response.json().catch(() => ({ message: "Không thể phân tích phản hồi từ server" }))
+
+      // Xử lý các mã lỗi cụ thể
+      if (response.status === 401) {
+        removeToken() // Xóa token không hợp lệ
+        throw new Error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
+      } else if (response.status === 403) {
+        throw new Error("Bạn không có quyền thực hiện thao tác này.")
+      } else if (response.status === 404) {
+        throw new Error("Không tìm thấy tài nguyên yêu cầu.")
+      } else if (response.status === 500) {
+        throw new Error("Lỗi máy chủ: " + (errorData.message || "Không xác định"))
+      }
+
       throw new Error(errorData.message || "Không thể lưu bài kiểm tra")
     }
 
@@ -396,7 +434,7 @@ async function saveTestToServer(testData) {
       window.test = globalTest
     }
 
-    return result
+    return { success: true, ...result }
   } catch (error) {
     console.error("Lỗi khi lưu bài kiểm tra lên máy chủ:", error)
 
@@ -409,8 +447,9 @@ async function saveTestToServer(testData) {
 
     // Lưu bản nháp offline nếu có lỗi kết nối
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-      saveTestOffline(testData)
+      const offlineKey = saveTestOffline(testData)
       showNotification("Không thể kết nối đến máy chủ. Bài kiểm tra đã được lưu offline.", "warning")
+      return { success: false, offlineKey, message: "Đã lưu offline" }
     } else {
       showNotification(`Lỗi: ${error.message}`, "error")
     }
@@ -999,30 +1038,87 @@ async function uploadAudioFile(file, partNumber) {
     // Hiển thị thông báo đang tải lên
     showNotification(`Đang tải lên file âm thanh cho phần ${partNumber}...`, "info")
 
+    // Hiển thị thanh tiến trình
+    const progressContainer = document.createElement("div")
+    progressContainer.className = "upload-progress-container"
+    progressContainer.innerHTML = `
+      <div class="upload-progress-label">Đang tải lên: ${file.name}</div>
+      <div class="upload-progress-bar-container">
+        <div class="upload-progress-bar" style="width: 0%"></div>
+      </div>
+      <div class="upload-progress-percentage">0%</div>
+    `
+    document.body.appendChild(progressContainer)
+
     // Tạo FormData
     const formData = new FormData()
     formData.append("audio", file)
     formData.append("partNumber", partNumber)
 
-    // Gửi request
-    const response = await fetchWithAuth(`${API_URL}/upload/audio`, {
-      method: "POST",
-      body: formData,
-      // Không cần set Content-Type, browser sẽ tự set khi dùng FormData
+    // Tạo XMLHttpRequest để theo dõi tiến trình
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest()
+
+      // Xử lý sự kiện tiến trình
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = Math.round((event.loaded / event.total) * 100)
+          const progressBar = progressContainer.querySelector(".upload-progress-bar")
+          const progressPercentage = progressContainer.querySelector(".upload-progress-percentage")
+
+          progressBar.style.width = percentComplete + "%"
+          progressPercentage.textContent = percentComplete + "%"
+        }
+      })
+
+      // Xử lý khi hoàn thành
+      xhr.addEventListener("load", () => {
+        // Xóa thanh tiến trình
+        document.body.removeChild(progressContainer)
+
+        if (xhr.status >= 200 && xhr.status < 300) {
+          // Thành công
+          const response = JSON.parse(xhr.responseText)
+          showNotification(`Đã tải lên file âm thanh cho phần ${partNumber} thành công`, "success")
+          resolve(response.audioUrl)
+        } else {
+          // Lỗi HTTP
+          let errorMessage = "Không thể tải lên file âm thanh"
+          try {
+            const errorResponse = JSON.parse(xhr.responseText)
+            errorMessage = errorResponse.message || errorMessage
+          } catch (e) {
+            // Không thể phân tích phản hồi JSON
+          }
+          reject(new Error(errorMessage))
+        }
+      })
+
+      // Xử lý lỗi
+      xhr.addEventListener("error", () => {
+        // Xóa thanh tiến trình
+        document.body.removeChild(progressContainer)
+        reject(new Error("Lỗi kết nối khi tải lên file"))
+      })
+
+      // Xử lý hủy
+      xhr.addEventListener("abort", () => {
+        // Xóa thanh tiến trình
+        document.body.removeChild(progressContainer)
+        reject(new Error("Quá trình tải lên đã bị hủy"))
+      })
+
+      // Gửi request
+      xhr.open("POST", `${API_URL}/upload/audio`)
+
+      // Thêm token xác thực nếu có
+      const token = getToken()
+      if (token) {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`)
+      }
+
+      xhr.send(formData)
     })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || "Không thể tải lên file âm thanh")
-    }
-
-    const result = await response.json()
-
-    // Hiển thị thông báo thành công
-    showNotification(`Đã tải lên file âm thanh cho phần ${partNumber} thành công`, "success")
-
-    // Trả về URL của file âm thanh
-    return result.audioUrl
   } catch (error) {
     console.error("Lỗi khi tải lên file âm thanh:", error)
     showNotification(`Lỗi khi tải lên file âm thanh: ${error.message}`, "error")
@@ -1137,8 +1233,16 @@ function handleThirdPartyCookies() {
     warningBanner.innerHTML = `
       <strong>Cảnh báo:</strong> Cookies của bên thứ ba đang bị chặn. 
       Điều này có thể gây ra vấn đề với đăng nhập và lưu bài kiểm tra. 
-      Vui lòng cho phép cookies trong cài đặt trình duyệt của bạn.
+      <div style="margin-top: 5px;">
+        <strong>Cách khắc phục:</strong>
+        <ul style="text-align: left; display: inline-block; margin: 5px 0;">
+          <li>Chrome: Cài đặt > Quyền riêng tư và bảo mật > Cookies > Cho phép tất cả cookies</li>
+          <li>Firefox: Cài đặt > Quyền riêng tư & Bảo mật > Cookies > Chấp nhận cookies từ các trang web</li>
+          <li>Safari: Tùy chọn > Quyền riêng tư > Cookies và dữ liệu trang web > Luôn cho phép</li>
+        </ul>
+      </div>
       <button id="dismiss-cookie-warning" style="margin-left: 10px; padding: 2px 8px; cursor: pointer;">Đóng</button>
+      <button id="use-local-storage" style="margin-left: 10px; padding: 2px 8px; cursor: pointer;">Sử dụng localStorage</button>
     `
 
     document.body.appendChild(warningBanner)
@@ -1148,8 +1252,17 @@ function handleThirdPartyCookies() {
       warningBanner.style.display = "none"
     })
 
-    // Sử dụng localStorage thay thế
-    console.log("Đang sử dụng localStorage thay thế cho cookies")
+    // Xử lý nút sử dụng localStorage
+    document.getElementById("use-local-storage").addEventListener("click", () => {
+      localStorage.setItem("use_local_storage", "true")
+      warningBanner.style.display = "none"
+      showNotification("Đã chuyển sang sử dụng localStorage thay thế cho cookies", "info")
+    })
+
+    // Sử dụng localStorage thay thế nếu đã được chọn trước đó
+    if (localStorage.getItem("use_local_storage") === "true") {
+      console.log("Đang sử dụng localStorage thay thế cho cookies")
+    }
   }
 }
 

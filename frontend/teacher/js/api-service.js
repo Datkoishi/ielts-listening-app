@@ -159,28 +159,40 @@ export function validateQuestion(question) {
 
   // Kiểm tra theo loại câu hỏi
   switch (question.type) {
-    case "multiple-choice":
+    case "Một đáp án":
       if (!Array.isArray(question.options) || question.options.length < 2) {
         errors.push("Câu hỏi trắc nghiệm phải có ít nhất 2 lựa chọn")
       }
       if (!question.correctAnswer) {
         errors.push("Câu trả lời đúng không được để trống")
+      } else if (Array.isArray(question.options) && !question.options.includes(question.correctAnswer)) {
+        errors.push("Câu trả lời đúng phải là một trong các lựa chọn")
       }
       break
 
-    case "fill-in-the-blank":
-      if (!Array.isArray(question.answers) || question.answers.length === 0) {
-        errors.push("Câu hỏi điền vào chỗ trống phải có ít nhất 1 câu trả lời")
+    case "Nhiều đáp án":
+      if (!Array.isArray(question.options) || question.options.length < 2) {
+        errors.push("Câu hỏi trắc nghiệm phải có ít nhất 2 lựa chọn")
+      }
+      if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length === 0) {
+        errors.push("Câu hỏi nhiều đáp án phải có ít nhất 1 câu trả lời đúng")
+      } else if (Array.isArray(question.options) && Array.isArray(question.correctAnswers)) {
+        // Kiểm tra xem tất cả các đáp án đúng có nằm trong danh sách lựa chọn không
+        for (const answer of question.correctAnswers) {
+          if (!question.options.includes(answer)) {
+            errors.push(`Đáp án "${answer}" không có trong danh sách lựa chọn`)
+          }
+        }
       }
       break
 
-    case "matching":
+    case "Ghép nối":
       if (!Array.isArray(question.pairs) || question.pairs.length < 2) {
         errors.push("Câu hỏi ghép đôi phải có ít nhất 2 cặp")
       }
       break
 
-    case "plan-map-diagram":
+    case "Ghi nhãn Bản đồ/Sơ đồ":
       if (!question.imageUrl) {
         errors.push("Câu hỏi bản đồ/sơ đồ phải có hình ảnh")
       }
@@ -199,6 +211,53 @@ export function validateQuestion(question) {
             errors.push(`Vị trí #${index + 1} phải có câu trả lời`)
           }
         })
+      }
+      break
+
+    case "Hoàn thành ghi chú":
+      if (!Array.isArray(question.answers) || question.answers.length === 0) {
+        errors.push("Câu hỏi điền vào chỗ trống phải có ít nhất 1 câu trả lời")
+      }
+      if (!question.noteText || question.noteText.trim() === "") {
+        errors.push("Nội dung ghi chú không được để trống")
+      } else {
+        // Kiểm tra xem có đủ chỗ trống trong nội dung không
+        const blankCount = (question.noteText.match(/\[BLANK\]/g) || []).length
+        if (Array.isArray(question.answers) && blankCount !== question.answers.length) {
+          errors.push(
+            `Số lượng chỗ trống (${blankCount}) không khớp với số lượng câu trả lời (${question.answers.length})`,
+          )
+        }
+      }
+      break
+
+    case "Hoàn thành bảng/biểu mẫu":
+      if (!Array.isArray(question.answers) || question.answers.length === 0) {
+        errors.push("Câu hỏi hoàn thành bảng/biểu mẫu phải có ít nhất 1 câu trả lời")
+      }
+      if (!question.tableContent || question.tableContent.trim() === "") {
+        errors.push("Nội dung bảng/biểu mẫu không được để trống")
+      }
+      break
+
+    case "Hoàn thành lưu đồ":
+      if (!Array.isArray(question.answers) || question.answers.length === 0) {
+        errors.push("Câu hỏi hoàn thành lưu đồ phải có ít nhất 1 câu trả lời")
+      }
+      if (!Array.isArray(question.flowItems) || question.flowItems.length === 0) {
+        errors.push("Câu hỏi hoàn thành lưu đồ phải có ít nhất 1 mục")
+      } else {
+        // Kiểm tra xem có đủ chỗ trống trong các mục không
+        let blankCount = 0
+        question.flowItems.forEach((item) => {
+          blankCount += (item.match(/___/g) || []).length
+        })
+
+        if (Array.isArray(question.answers) && blankCount !== question.answers.length) {
+          errors.push(
+            `Số lượng chỗ trống (${blankCount}) không khớp với số lượng câu trả lời (${question.answers.length})`,
+          )
+        }
       }
       break
   }
