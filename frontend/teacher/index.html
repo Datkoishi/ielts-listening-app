@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="../teacher/css/styles.css">
 <!-- Thêm CSS mới -->
 <link rel="stylesheet" href="../teacher/css/api-integration.css">
+<!-- Thêm file debug.js đầu tiên để sửa lỗi -->
+<script src="../teacher/js/debug.js"></script>
 </head>
 <body>
 <div class="selection-page" id="selectionPage">
@@ -75,11 +77,11 @@
         <button id="showTestListBtn"><i class="fas fa-list"></i> Danh sách</button>
         <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
         <!-- Thêm nút cấu hình server vào menu -->
-        <button id="serverConfigBtn" class="server-config-button" onclick="showServerConfigUI('serverConfigContainer')">
+        <button id="serverConfigBtn" class="server-config-button">
           <i class="fas fa-cog"></i> Cấu hình Server
         </button>
         <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
-        <button id="troubleshooterBtn" class="troubleshooter-button" onclick="showTroubleshooter('troubleshooterContainer')">
+        <button id="troubleshooterBtn" class="troubleshooter-button">
           <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
         </button>
     </div>
@@ -97,7 +99,14 @@
 <!-- Thêm container cho trạng thái server -->
 <div id="serverStatusContainer" class="server-status-container"></div>
 
-<!-- Tải script theo thứ tự đúng -->
+<!-- Tải các file JavaScript cần thiết trước -->
+<script src="../teacher/js/api-utils.js"></script>
+<script src="../teacher/js/server-config.js"></script>
+<script src="../teacher/js/troubleshooter.js"></script>
+<script src="../teacher/js/audio-validator.js"></script>
+<script src="../teacher/js/server-status.js"></script>
+
+<!-- Sau đó tải các file JavaScript chính -->
 <script src="../teacher/js/form-handlers.js"></script>
 <script src="../teacher/js/index.js"></script>
 <script src="../teacher/js/test-management.js"></script>
@@ -105,25 +114,26 @@
 <script src="../teacher/js/main.js"></script>
 <script src="../teacher/js/question-types.js"></script>
 
-<!-- Thêm các file JavaScript mới -->
-<script src="../teacher/js/api-utils.js"></script>
-<script src="../teacher/js/server-config.js"></script>
-
-<!-- Thêm các file JavaScript mới -->
-<script src="../teacher/js/audio-validator.js"></script>
-<script src="../teacher/js/troubleshooter.js"></script>
-
-<!-- Thêm script server-status.js vào danh sách script -->
-<script src="../teacher/js/server-status.js"></script>
-
 <!-- Thêm script để khởi tạo các tính năng mới -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Kiểm tra và sửa các hàm bị thiếu
+    if (typeof fixShowTroubleshooter === 'function') {
+      fixShowTroubleshooter();
+    }
+    if (typeof fixShowServerConfigUI === 'function') {
+      fixShowServerConfigUI();
+    }
+    
     // Hiển thị trạng thái API
-    displayApiStatus('apiStatus');
+    if (typeof displayApiStatus === 'function') {
+      displayApiStatus('apiStatus');
+    }
     
     // Bắt đầu kiểm tra trạng thái server
-    startServerStatusCheck('serverStatusContainer');
+    if (typeof startServerStatusCheck === 'function') {
+      startServerStatusCheck('serverStatusContainer');
+    }
     
     // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
     if (navigator.onLine && typeof syncOfflineTests === 'function') {
@@ -134,15 +144,51 @@
     
     // Thêm sự kiện lắng nghe kết nối internet
     window.addEventListener('online', () => {
-      displayApiStatus('apiStatus');
+      if (typeof displayApiStatus === 'function') {
+        displayApiStatus('apiStatus');
+      }
       if (typeof syncOfflineTests === 'function') {
         syncOfflineTests();
       }
     });
     
     window.addEventListener('offline', () => {
-      displayApiStatus('apiStatus');
+      if (typeof displayApiStatus === 'function') {
+        displayApiStatus('apiStatus');
+      }
     });
+
+    // Thêm sự kiện cho các nút
+    const serverConfigBtn = document.getElementById('serverConfigBtn');
+    if (serverConfigBtn) {
+      serverConfigBtn.addEventListener('click', function() {
+        console.log('Nút cấu hình server được nhấp');
+        if (typeof window.showServerConfigUI === 'function') {
+          window.showServerConfigUI('serverConfigContainer');
+        } else {
+          console.error('Hàm showServerConfigUI chưa được định nghĩa');
+          alert('Chức năng cấu hình server chưa được cài đặt đầy đủ.');
+        }
+      });
+    }
+
+    const troubleshooterBtn = document.getElementById('troubleshooterBtn');
+    if (troubleshooterBtn) {
+      troubleshooterBtn.addEventListener('click', function() {
+        console.log('Nút kiểm tra và sửa lỗi được nhấp');
+        if (typeof window.showTroubleshooter === 'function') {
+          window.showTroubleshooter('troubleshooterContainer');
+        } else {
+          console.error('Hàm showTroubleshooter chưa được định nghĩa');
+          alert('Chức năng kiểm tra và sửa lỗi chưa được cài đặt đầy đủ.');
+        }
+      });
+    }
+    
+    // Kiểm tra các hàm quan trọng
+    console.log('Kiểm tra các hàm quan trọng:');
+    console.log('showTroubleshooter:', typeof window.showTroubleshooter === 'function' ? 'Đã định nghĩa' : 'Chưa định nghĩa');
+    console.log('showServerConfigUI:', typeof window.showServerConfigUI === 'function' ? 'Đã định nghĩa' : 'Chưa định nghĩa');
   });
 </script>
 </body>

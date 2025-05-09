@@ -5,6 +5,14 @@
 // Khai báo biến API_URL (hoặc import nếu cần)
 const API_URL = window.API_URL || "http://localhost:3000/api" // Thay đổi URL này nếu cần
 
+// Đảm bảo hàm showServerConfigUI được định nghĩa
+if (typeof window.showServerConfigUI !== "function") {
+  window.showServerConfigUI = (containerId) => {
+    console.log("Hàm showServerConfigUI được gọi với containerId:", containerId)
+    alert("Chức năng cấu hình server chưa được cài đặt đầy đủ.")
+  }
+}
+
 // Danh sách các bước kiểm tra
 const TROUBLESHOOTING_STEPS = [
   {
@@ -116,9 +124,14 @@ async function runAllChecks() {
  * Hiển thị giao diện kiểm tra và sửa lỗi
  * @param {string} containerId - ID của phần tử HTML để hiển thị giao diện
  */
-async function showTroubleshooter(containerId) {
+function showTroubleshooter(containerId) {
+  console.log("Hàm showTroubleshooter được gọi với containerId:", containerId)
+
   const container = document.getElementById(containerId)
-  if (!container) return
+  if (!container) {
+    console.error("Không tìm thấy container với ID:", containerId)
+    return
+  }
 
   // Hiển thị giao diện ban đầu
   container.innerHTML = `
@@ -216,89 +229,123 @@ async function showTroubleshooter(containerId) {
   document.head.appendChild(style)
 
   // Chạy kiểm tra
-  const results = await runAllChecks()
+  runAllChecks()
+    .then((results) => {
+      // Cập nhật trạng thái
+      const statusElement = container.querySelector(".troubleshooter-status")
+      const stepsElement = container.querySelector(".troubleshooter-steps")
+      const runChecksBtn = document.getElementById("runChecksBtn")
+      const fixAllBtn = document.getElementById("fixAllBtn")
 
-  // Cập nhật trạng thái
-  const statusElement = container.querySelector(".troubleshooter-status")
-  const stepsElement = container.querySelector(".troubleshooter-steps")
-  const runChecksBtn = document.getElementById("runChecksBtn")
-  const fixAllBtn = document.getElementById("fixAllBtn")
+      // Đếm số lượng kiểm tra đã qua
+      const passedCount = results.filter((result) => result.passed).length
 
-  // Đếm số lượng kiểm tra đã qua
-  const passedCount = results.filter((result) => result.passed).length
-
-  // Cập nhật trạng thái tổng quan
-  if (passedCount === results.length) {
-    statusElement.textContent = "✅ Tất cả kiểm tra đã thành công! Kết nối API hoạt động bình thường."
-    statusElement.style.backgroundColor = "#d4edda"
-    statusElement.style.color = "#155724"
-  } else {
-    statusElement.textContent = `❌ Đã phát hiện ${results.length - passedCount} vấn đề. Vui lòng xem chi tiết bên dưới.`
-    statusElement.style.backgroundColor = "#f8d7da"
-    statusElement.style.color = "#721c24"
-  }
-
-  // Hiển thị kết quả từng bước
-  stepsElement.innerHTML = results
-    .map(
-      (result) => `
-    <div class="troubleshooter-step ${result.passed ? "step-passed" : "step-failed"}">
-      <div class="step-icon">${result.passed ? "✅" : "❌"}</div>
-      <div class="step-content">
-        <div class="step-title">${result.title}</div>
-        ${result.passed ? "" : `<div class="step-fix">${result.fix}</div>`}
-      </div>
-    </div>
-  `,
-    )
-    .join("")
-
-  // Kích hoạt các nút
-  runChecksBtn.disabled = false
-  fixAllBtn.disabled = passedCount === results.length
-
-  // Xử lý sự kiện nút
-  runChecksBtn.addEventListener("click", () => {
-    showTroubleshooter(containerId)
-  })
-
-  fixAllBtn.addEventListener("click", async () => {
-    // Thực hiện các hành động sửa lỗi
-    const failedSteps = results.filter((result) => !result.passed)
-
-    for (const step of failedSteps) {
-      if (step.id === "internet") {
-        alert("Vui lòng kiểm tra kết nối internet của bạn và thử lại.")
-      } else if (step.id === "server") {
-        // Khai báo hoặc import hàm showServerConfigUI
-        if (typeof showServerConfigUI === "function") {
-          showServerConfigUI("serverConfigContainer")
-        } else {
-          alert("Hàm showServerConfigUI không được định nghĩa.")
-        }
-      } else if (step.id === "auth") {
-        if (confirm("Token xác thực không hợp lệ hoặc đã hết hạn. Bạn có muốn đăng nhập lại không?")) {
-          // Xóa token hiện tại
-          localStorage.removeItem("token")
-          // Chuyển hướng đến trang đăng nhập
-          // window.location.href = "login.html";
-          alert("Vui lòng đăng nhập lại để tiếp tục.")
-        }
-      } else if (step.id === "cookies") {
-        if (confirm("Cookies bị chặn trong trình duyệt của bạn. Bạn có muốn sử dụng localStorage thay thế không?")) {
-          localStorage.setItem("use_local_storage", "true")
-          alert("Đã chuyển sang sử dụng localStorage thay thế cho cookies.")
-        }
+      // Cập nhật trạng thái tổng quan
+      if (passedCount === results.length) {
+        statusElement.textContent = "✅ Tất cả kiểm tra đã thành công! Kết nối API hoạt động bình thường."
+        statusElement.style.backgroundColor = "#d4edda"
+        statusElement.style.color = "#155724"
+      } else {
+        statusElement.textContent = `❌ Đã phát hiện ${results.length - passedCount} vấn đề. Vui lòng xem chi tiết bên dưới.`
+        statusElement.style.backgroundColor = "#f8d7da"
+        statusElement.style.color = "#721c24"
       }
-    }
 
-    // Chạy lại kiểm tra
-    setTimeout(() => {
-      showTroubleshooter(containerId)
-    }, 1000)
-  })
+      // Hiển thị kết quả từng bước
+      stepsElement.innerHTML = results
+        .map(
+          (result) => `
+      <div class="troubleshooter-step ${result.passed ? "step-passed" : "step-failed"}">
+        <div class="step-icon">${result.passed ? "✅" : "❌"}</div>
+        <div class="step-content">
+          <div class="step-title">${result.title}</div>
+          ${result.passed ? "" : `<div class="step-fix">${result.fix}</div>`}
+        </div>
+      </div>
+    `,
+        )
+        .join("")
+
+      // Kích hoạt các nút
+      runChecksBtn.disabled = false
+      fixAllBtn.disabled = passedCount === results.length
+
+      // Xử lý sự kiện nút
+      runChecksBtn.addEventListener("click", () => {
+        showTroubleshooter(containerId)
+      })
+
+      fixAllBtn.addEventListener("click", async () => {
+        // Thực hiện các hành động sửa lỗi
+        const failedSteps = results.filter((result) => !result.passed)
+
+        for (const step of failedSteps) {
+          if (step.id === "internet") {
+            alert("Vui lòng kiểm tra kết nối internet của bạn và thử lại.")
+          } else if (step.id === "server") {
+            // Khai báo hoặc import hàm showServerConfigUI
+            if (typeof window.showServerConfigUI === "function") {
+              window.showServerConfigUI("serverConfigContainer")
+            } else {
+              alert("Hàm showServerConfigUI không được định nghĩa.")
+            }
+          } else if (step.id === "auth") {
+            if (confirm("Token xác thực không hợp lệ hoặc đã hết hạn. Bạn có muốn đăng nhập lại không?")) {
+              // Xóa token hiện tại
+              localStorage.removeItem("token")
+              // Chuyển hướng đến trang đăng nhập
+              // window.location.href = "login.html";
+              alert("Vui lòng đăng nhập lại để tiếp tục.")
+            }
+          } else if (step.id === "cookies") {
+            if (
+              confirm("Cookies bị chặn trong trình duyệt của bạn. Bạn có muốn sử dụng localStorage thay thế không?")
+            ) {
+              localStorage.setItem("use_local_storage", "true")
+              alert("Đã chuyển sang sử dụng localStorage thay thế cho cookies.")
+            }
+          }
+        }
+
+        // Chạy lại kiểm tra
+        setTimeout(() => {
+          showTroubleshooter(containerId)
+        }, 1000)
+      })
+    })
+    .catch((error) => {
+      console.error("Lỗi khi chạy kiểm tra:", error)
+      const container = document.getElementById(containerId)
+      if (container) {
+        container.innerHTML = `
+        <div class="troubleshooter">
+          <h3>Công cụ kiểm tra và sửa lỗi kết nối API</h3>
+          <div class="troubleshooter-status" style="background-color: #f8d7da; color: #721c24;">
+            ❌ Đã xảy ra lỗi khi chạy kiểm tra: ${error.message || "Lỗi không xác định"}
+          </div>
+          <div class="troubleshooter-actions">
+            <button onclick="showTroubleshooter('${containerId}')">Thử lại</button>
+          </div>
+        </div>
+      `
+      }
+    })
 }
 
 // Xuất các hàm để sử dụng trong các file khác
 window.runAllChecks = runAllChecks
 window.showTroubleshooter = showTroubleshooter
+
+// Đảm bảo hàm được định nghĩa toàn cục
+if (typeof window !== "undefined") {
+  window.showTroubleshooter = showTroubleshooter
+  console.log("Hàm showTroubleshooter đã được định nghĩa toàn cục")
+}
+
+// Thêm sự kiện DOMContentLoaded để đảm bảo hàm được định nghĩa khi trang tải xong
+document.addEventListener("DOMContentLoaded", () => {
+  console.log(
+    "DOMContentLoaded: Kiểm tra hàm showTroubleshooter:",
+    typeof window.showTroubleshooter === "function" ? "Đã định nghĩa" : "Chưa định nghĩa",
+  )
+})
