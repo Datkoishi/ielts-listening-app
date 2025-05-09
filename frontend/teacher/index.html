@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="../teacher/css/styles.css">
 <!-- Thêm CSS mới -->
-<link rel="stylesheet" href="css/api-integration.css">
+<link rel="stylesheet" href="../teacher/css/api-integration.css">
 </head>
 <body>
 <div class="selection-page" id="selectionPage">
@@ -94,6 +94,8 @@
 <!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
 <div id="troubleshooterContainer"></div>
 
+<!-- Thêm container cho trạng thái server -->
+<div id="serverStatusContainer" class="server-status-container"></div>
 
 <!-- Tải script theo thứ tự đúng -->
 <script src="../teacher/js/form-handlers.js"></script>
@@ -111,11 +113,17 @@
 <script src="../teacher/js/audio-validator.js"></script>
 <script src="../teacher/js/troubleshooter.js"></script>
 
+<!-- Thêm script server-status.js vào danh sách script -->
+<script src="../teacher/js/server-status.js"></script>
+
 <!-- Thêm script để khởi tạo các tính năng mới -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Hiển thị trạng thái API
     displayApiStatus('apiStatus');
+    
+    // Bắt đầu kiểm tra trạng thái server
+    startServerStatusCheck('serverStatusContainer');
     
     // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
     if (navigator.onLine && typeof syncOfflineTests === 'function') {
