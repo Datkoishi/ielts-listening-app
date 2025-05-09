@@ -15,8 +15,10 @@ app.use(express.static(path.join(__dirname, "../frontend")))
 
 // Cấu hình routes API
 const testRoutes = require("./routes/testRoutes")
+const healthRoutes = require("./routes/healthRoutes")
 
 app.use("/api/tests", testRoutes)
+app.use("/api/health", healthRoutes)
 
 // Route mặc định trả về trang index.html chính
 app.get("/", (req, res) => {
