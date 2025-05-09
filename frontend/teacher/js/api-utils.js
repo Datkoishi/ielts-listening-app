@@ -15,12 +15,23 @@ async function checkApiConnection() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), CONNECTION_TIMEOUT)
 
+    // Thử kết nối đến endpoint health
     const response = await fetch(`${API_URL}/health`, {
       method: "GET",
       signal: controller.signal,
     })
 
     clearTimeout(timeoutId)
+
+    // Nếu endpoint health không tồn tại, thử kết nối đến root API
+    if (response.status === 404) {
+      console.log("Endpoint /health không tồn tại, thử kết nối đến root API")
+      const rootResponse = await fetch(`${API_URL}`, {
+        method: "GET",
+      })
+      return rootResponse.ok || rootResponse.status === 404 // Nếu server trả về 404, vẫn coi là kết nối được
+    }
+
     return response.ok
   } catch (error) {
     console.error("Lỗi khi kiểm tra kết nối API:", error)

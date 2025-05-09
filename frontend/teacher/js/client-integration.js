@@ -239,9 +239,47 @@ function normalizeTestData(testData) {
   return normalizedTest
 }
 
+/**
+ * Kiểm tra server trước khi gửi request
+ * @returns {Promise<boolean>} Kết quả kiểm tra
+ */
+async function checkServerBeforeRequest() {
+  // Kiểm tra kết nối internet
+  if (!navigator.onLine) {
+    console.log("Không có kết nối internet, lưu dữ liệu offline")
+    return false
+  }
+
+  // Kiểm tra server có đang chạy không
+  if (typeof isServerRunning === "function") {
+    const serverRunning = await isServerRunning()
+    if (!serverRunning) {
+      console.log("Server không hoạt động, lưu dữ liệu offline")
+      return false
+    }
+  }
+
+  return true
+}
+
 // Cải thiện hàm saveTestToServer với xử lý lỗi chi tiết
 async function saveTestToServer(testData) {
   try {
+    // Chuẩn hóa dữ liệu
+    const normalizedData = normalizeTestData(testData)
+
+    // Kiểm tra server trước khi gửi request
+    const serverAvailable = await checkServerBeforeRequest()
+    if (!serverAvailable) {
+      // Lưu dữ liệu offline
+      saveTestOffline(normalizedData)
+      return {
+        success: false,
+        offline: true,
+        message: "Server không khả dụng, đã lưu dữ liệu offline",
+      }
+    }
+
     // Kiểm tra kết nối internet
     if (!navigator.onLine) {
       console.log("Không có kết nối internet, lưu offline")
@@ -372,15 +410,15 @@ async function saveTestToServer(testData) {
     }
 
     // Normalize data before sending
-    const normalizedData = normalizeTestData(globalTest)
-    console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
+    const normalizedDataToSend = normalizeTestData(globalTest)
+    console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedDataToSend)
 
     // Validate normalized data
-    if (!normalizedData.title) {
+    if (!normalizedDataToSend.title) {
       throw new Error("Tiêu đề bài kiểm tra không được để trống")
     }
 
-    if (!normalizedData.parts || normalizedData.parts.length === 0) {
+    if (!normalizedDataToSend.parts || normalizedDataToSend.parts.length === 0) {
       throw new Error("Bài kiểm tra phải có ít nhất một phần với câu hỏi")
     }
 
@@ -400,7 +438,7 @@ async function saveTestToServer(testData) {
         "Content-Type": "application/json",
         Authorization: token ? `Bearer ${token}` : "",
       },
-      body: JSON.stringify(normalizedData),
+      body: JSON.stringify(normalizedDataToSend),
     })
 
     // Kiểm tra lỗi HTTP
@@ -424,7 +462,7 @@ async function saveTestToServer(testData) {
 
     const result = await response.json()
     showNotification(
-      `Bài kiểm tra "${normalizedData.vietnamese_name || normalizedData.title}" đã được lưu thành công!`,
+      `Bài kiểm tra "${normalizedDataToSend.vietnamese_name || normalizedDataToSend.title}" đã được lưu thành công!`,
       "success",
     )
 
@@ -1268,110 +1306,6 @@ function handleThirdPartyCookies() {
 
 // Gọi hàm xử lý third-party cookies
 handleThirdPartyCookies()
-
-/**
- * Hàm kiểm tra kết nối đến API
- * @returns {Promise<boolean>} Kết quả kiểm tra
- */
-async function checkApiConnection() {
-  try {
-    const response = await fetch(`${API_URL}/system/health`, {
-      method: "GET",
-      timeout: 5000,
-    })
-    return response.ok
-  } catch (error) {
-    console.error("Lỗi kiểm tra kết nối API:", error.message)
-    return false
-  }
-}
-
-/**
- * Hàm kiểm tra kết nối đến database
- * @returns {Promise<Object>} Kết quả kiểm tra
- */
-async function checkDatabaseConnection() {
-  try {
-    const response = await fetch(`${API_URL}/system/db-check`, {
-      method: "GET",
-      timeout: 5000,
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const data = await response.json()
-    return {
-      success: data.success,
-      message: data.message,
-      details: data.details,
-    }
-  } catch (error) {
-    console.error("Lỗi kiểm tra kết nối database:", error.message)
-    return {
-      success: false,
-      message: "Kết nối database thất bại",
-      error: error.message,
-    }
-  }
-}
-
-/**
- * Hàm hiển thị trạng thái API
- * @param {string} containerId - ID của phần tử HTML để hiển thị trạng thái
- */
-async function displayApiStatus(containerId) {
-  const container = document.getElementById(containerId)
-  if (!container) return
-
-  // Kiểm tra kết nối internet
-  if (!navigator.onLine) {
-    container.className = "api-status-container api-status-offline"
-    container.innerHTML = `<i class="fas fa-wifi"></i> Offline - Không có kết nối internet`
-    return
-  }
-
-  // Kiểm tra kết nối API
-  const apiConnected = await checkApiConnection()
-
-  if (!apiConnected) {
-    container.className = "api-status-container api-status-offline"
-    container.innerHTML = `<i class="fas fa-server"></i> API không khả dụng`
-    return
-  }
-
-  // Kiểm tra kết nối database
-  const dbStatus = await checkDatabaseConnection()
-
-  if (!dbStatus.success) {
-    container.className = "api-status-container api-status-offline"
-    container.innerHTML = `<i class="fas fa-database"></i> Database không khả dụng`
-    return
-  }
-
-  // Kiểm tra dữ liệu offline cần đồng bộ
-  const offlineData = localStorage.getItem("offlineTests")
-
-  if (offlineData) {
-    const offlineTests = JSON.parse(offlineData)
-
-    if (offlineTests && offlineTests.length > 0) {
-      container.className = "api-status-container api-status-syncing"
-      container.innerHTML = `<i class="fas fa-sync"></i> Đang đồng bộ ${offlineTests.length} bài kiểm tra`
-      return
-    }
-  }
-
-  // Tất cả đều ổn
-  container.className = "api-status-container api-status-online"
-  container.innerHTML = `<i class="fas fa-check-circle"></i> Kết nối đầy đủ`
-}
-
-// Xuất các hàm để sử dụng trong các file khác
-window.checkApiConnection = checkApiConnection
-window.checkDatabaseConnection = checkDatabaseConnection
-window.displayApiStatus = displayApiStatus
 
 // Xuất các hàm để sử dụng trong các file khác
 window.saveToken = saveToken

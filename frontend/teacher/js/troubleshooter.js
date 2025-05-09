@@ -5,13 +5,6 @@
 // Khai báo biến API_URL (hoặc import nếu cần)
 const API_URL = window.API_URL || "http://localhost:3000/api" // Thay đổi URL này nếu cần
 
-// Khai báo biến showServerConfigUI nếu chưa tồn tại
-if (typeof window.showServerConfigUI !== "function") {
-  window.showServerConfigUI = (containerId) => {
-    alert("Chức năng cấu hình server chưa được tải. Vui lòng tải lại trang.")
-  }
-}
-
 // Danh sách các bước kiểm tra
 const TROUBLESHOOTING_STEPS = [
   {
@@ -278,8 +271,8 @@ async function showTroubleshooter(containerId) {
         alert("Vui lòng kiểm tra kết nối internet của bạn và thử lại.")
       } else if (step.id === "server") {
         // Khai báo hoặc import hàm showServerConfigUI
-        if (typeof window.showServerConfigUI === "function") {
-          window.showServerConfigUI("serverConfigContainer")
+        if (typeof showServerConfigUI === "function") {
+          showServerConfigUI("serverConfigContainer")
         } else {
           alert("Hàm showServerConfigUI không được định nghĩa.")
         }
@@ -309,14 +302,3 @@ async function showTroubleshooter(containerId) {
 // Xuất các hàm để sử dụng trong các file khác
 window.runAllChecks = runAllChecks
 window.showTroubleshooter = showTroubleshooter
-
-// Đảm bảo hàm được xuất đúng cách
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    runAllChecks,
-    showTroubleshooter,
-  }
-}
-
-// Thông báo khi file được tải thành công
-console.log("troubleshooter.js đã được tải thành công")

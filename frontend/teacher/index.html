@@ -6,7 +6,8 @@
 <title>IELTS Listening Test Creator</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="../teacher/css/styles.css">
-<link rel="stylesheet" href="../teacher/css/api-integration.css">
+<!-- Thêm CSS mới -->
+<link rel="stylesheet" href="css/api-integration.css">
 </head>
 <body>
 <div class="selection-page" id="selectionPage">
@@ -74,16 +75,12 @@
         <button id="showTestListBtn"><i class="fas fa-list"></i> Danh sách</button>
         <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
         <!-- Thêm nút cấu hình server vào menu -->
-        <button id="serverConfigBtn" class="server-config-button">
+        <button id="serverConfigBtn" class="server-config-button" onclick="showServerConfigUI('serverConfigContainer')">
           <i class="fas fa-cog"></i> Cấu hình Server
         </button>
         <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
-        <button id="troubleshooterBtn" class="troubleshooter-button">
-          <i class="fas fa-wrench"></i> Kiểm tra API
-        </button>
-        <!-- Thêm nút kiểm tra kết nối database -->
-        <button id="dbCheckerBtn" class="db-checker-button">
-          <i class="fas fa-database"></i> Kiểm tra Database
+        <button id="troubleshooterBtn" class="troubleshooter-button" onclick="showTroubleshooter('troubleshooterContainer')">
+          <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
         </button>
     </div>
 </div>
@@ -97,17 +94,15 @@
 <!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
 <div id="troubleshooterContainer"></div>
 
-<!-- Thêm container cho công cụ kiểm tra database -->
-<div id="dbCheckerContainer"></div>
 
 <!-- Tải script theo thứ tự đúng -->
-    <!-- Tải script theo thứ tự đúng -->
-    <script src="../teacher/js/client-integration.js"></script>
-    <script src="../teacher/js/form-handlers.js"></script>
-    <script src="../teacher/js/index.js"></script>
-    <script src="../teacher/js/main.js"></script>
-    <script src="../teacher/js/question-types.js"></script>
-    <script src="../teacher/js/test-management.js"></script>
+<script src="../teacher/js/form-handlers.js"></script>
+<script src="../teacher/js/index.js"></script>
+<script src="../teacher/js/test-management.js"></script>
+<script src="../teacher/js/client-integration.js"></script>
+<script src="../teacher/js/main.js"></script>
+<script src="../teacher/js/question-types.js"></script>
+
 <!-- Thêm các file JavaScript mới -->
 <script src="../teacher/js/api-utils.js"></script>
 <script src="../teacher/js/server-config.js"></script>
@@ -116,16 +111,11 @@
 <script src="../teacher/js/audio-validator.js"></script>
 <script src="../teacher/js/troubleshooter.js"></script>
 
-<!-- Thêm các file JavaScript mới -->
-<script src="../teacher/js/db-checker.js"></script>
-
 <!-- Thêm script để khởi tạo các tính năng mới -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Hiển thị trạng thái API
-    if (typeof displayApiStatus === 'function') {
-      displayApiStatus('apiStatus');
-    }
+    displayApiStatus('apiStatus');
     
     // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
     if (navigator.onLine && typeof syncOfflineTests === 'function') {
@@ -136,43 +126,14 @@
     
     // Thêm sự kiện lắng nghe kết nối internet
     window.addEventListener('online', () => {
-      if (typeof displayApiStatus === 'function') {
-        displayApiStatus('apiStatus');
-      }
+      displayApiStatus('apiStatus');
       if (typeof syncOfflineTests === 'function') {
         syncOfflineTests();
       }
     });
     
     window.addEventListener('offline', () => {
-      if (typeof displayApiStatus === 'function') {
-        displayApiStatus('apiStatus');
-      }
-    });
-    
-    // Thêm sự kiện cho các nút kiểm tra
-    document.getElementById('serverConfigBtn').addEventListener('click', function() {
-      if (typeof showServerConfigUI === 'function') {
-        showServerConfigUI('serverConfigContainer');
-      } else {
-        alert('Chức năng cấu hình server chưa được tải. Vui lòng tải lại trang.');
-      }
-    });
-    
-    document.getElementById('troubleshooterBtn').addEventListener('click', function() {
-      if (typeof showTroubleshooter === 'function') {
-        showTroubleshooter('troubleshooterContainer');
-      } else {
-        alert('Chức năng kiểm tra API chưa được tải. Vui lòng tải lại trang.');
-      }
-    });
-    
-    document.getElementById('dbCheckerBtn').addEventListener('click', function() {
-      if (typeof showDbChecker === 'function') {
-        showDbChecker('dbCheckerContainer');
-      } else {
-        alert('Chức năng kiểm tra database chưa được tải. Vui lòng tải lại trang.');
-      }
+      displayApiStatus('apiStatus');
     });
   });
 </script>

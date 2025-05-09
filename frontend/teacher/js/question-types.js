@@ -902,6 +902,7 @@ window.displayExistingQuestions = displayExistingQuestions
 window.fetchQuestionTypes = fetchQuestionTypes
 window.updateQuestionCount = updateQuestionCount
 window.renumberQuestions = renumberQuestions
+
 // Dummy showNotification function
 function showNotification(message, type) {
   alert(message)

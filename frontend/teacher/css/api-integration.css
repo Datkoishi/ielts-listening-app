@@ -1,344 +1,157 @@
-/* CSS cho trạng thái API */
-.api-status-container {
+/* CSS cho các thành phần API Integration */
+
+/* Thanh tiến trình upload */
+.upload-progress-container {
     position: fixed;
-    bottom: 10px;
-    right: 10px;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
+    bottom: 20px;
+    right: 20px;
+    width: 300px;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
   
-  .api-status-online {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-  
-  .api-status-offline {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
-  
-  .api-status-syncing {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
-  }
-  
-  /* CSS cho nút cấu hình server */
-  .server-config-button {
-    background-color: #6c757d !important;
-  }
-  
-  .server-config-button:hover {
-    background-color: #5a6268 !important;
-  }
-  
-  /* CSS cho nút kiểm tra và sửa lỗi */
-  .troubleshooter-button {
-    background-color: #17a2b8 !important;
-  }
-  
-  .troubleshooter-button:hover {
-    background-color: #138496 !important;
-  }
-  
-  /* CSS cho nút kiểm tra database */
-  .db-checker-button {
-    background-color: #28a745 !important;
-  }
-  
-  .db-checker-button:hover {
-    background-color: #218838 !important;
-  }
-  
-  /* CSS cho thanh tiến trình tải lên */
-  .upload-progress-container {
-    width: 100%;
-    height: 20px;
-    background-color: #f0f0f0;
-    border-radius: 10px;
-    margin: 10px 0;
+  .upload-progress-label {
+    font-size: 14px;
+    margin-bottom: 5px;
+    white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  
+  .upload-progress-bar-container {
+    height: 10px;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 5px;
   }
   
   .upload-progress-bar {
     height: 100%;
-    background-color: #4caf50;
+    background-color: #003366;
     width: 0%;
     transition: width 0.3s ease;
-    text-align: center;
-    line-height: 20px;
-    color: white;
+  }
+  
+  .upload-progress-percentage {
+    text-align: right;
     font-size: 12px;
   }
   
-  /* CSS cho thông báo lỗi */
-  .error-message {
-    color: #721c24;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-  }
-  
-  /* CSS cho thông báo thành công */
-  .success-message {
-    color: #155724;
-    background-color: #d4edda;
-    border: 1px solid #c3e6cb;
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-  }
-  
-  /* CSS cho thông báo cảnh báo */
-  .warning-message {
-    color: #856404;
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
-  }
-  
-  /* CSS cho modal */
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0, 0, 0, 0.4);
-  }
-  
-  .modal-content {
-    background-color: #fefefe;
-    margin: 15% auto;
-    padding: 20px;
-    border: 1px solid #888;
-    width: 80%;
-    max-width: 600px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  }
-  
-  .close-button {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  
-  .close-button:hover,
-  .close-button:focus {
-    color: black;
-    text-decoration: none;
-  }
-  
-  /* CSS cho form cấu hình */
-  .config-form {
-    margin-top: 15px;
-  }
-  
-  .config-form .form-group {
-    margin-bottom: 15px;
-  }
-  
-  .config-form label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
-  }
-  
-  .config-form input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-  }
-  
-  .config-form button {
-    padding: 8px 12px;
-    background-color: #003366;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  .config-form button:hover {
-    background-color: #004080;
-  }
-  
-  /* CSS cho công cụ kiểm tra và sửa lỗi */
-  .troubleshooter {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 10px 0;
-    background-color: #f9f9f9;
-  }
-  
-  .troubleshooter h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-  }
-  
-  .troubleshooter-status {
-    margin-bottom: 15px;
+  /* Trạng thái API */
+  .api-status-checking {
     padding: 10px;
     background-color: #e2e3e5;
     color: #383d41;
     border-radius: 5px;
+    margin: 10px 0;
   }
   
-  .troubleshooter-steps {
-    margin-bottom: 15px;
-  }
-  
-  .troubleshooter-step {
-    display: flex;
-    align-items: center;
+  .api-status-ok {
     padding: 10px;
-    border: 1px solid #ddd;
+    background-color: #d4edda;
+    color: #155724;
     border-radius: 5px;
+    margin: 10px 0;
+  }
+  
+  .api-status-warning {
+    padding: 10px;
+    background-color: #fff3cd;
+    color: #856404;
+    border-radius: 5px;
+    margin: 10px 0;
+  }
+  
+  .api-status-error {
+    padding: 10px;
+    background-color: #f8d7da;
+    color: #721c24;
+    border-radius: 5px;
+    margin: 10px 0;
+  }
+  
+  /* Thông báo lỗi */
+  .error-message {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 5px;
+    padding: 10px;
+    margin: 10px 0;
+  }
+  
+  .error-message-title {
+    font-weight: bold;
     margin-bottom: 5px;
   }
   
-  .step-icon {
-    margin-right: 10px;
-    font-size: 18px;
-  }
-  
-  .step-passed {
-    background-color: #d4edda;
-    border-color: #c3e6cb;
-  }
-  
-  .step-passed .step-icon {
-    color: #28a745;
-  }
-  
-  .step-failed {
-    background-color: #f8d7da;
-    border-color: #f5c6cb;
-  }
-  
-  .step-failed .step-icon {
-    color: #dc3545;
-  }
-  
-  .step-content {
-    flex: 1;
-  }
-  
-  .step-title {
-    font-weight: bold;
-  }
-  
-  .step-fix {
+  .error-message-details {
+    font-family: monospace;
+    background-color: #f8f9fa;
+    padding: 5px;
+    border-radius: 3px;
     margin-top: 5px;
-    font-size: 14px;
+    white-space: pre-wrap;
+    font-size: 12px;
   }
   
-  .troubleshooter-actions {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .troubleshooter-actions button {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  /* Nút đồng bộ hóa */
+  .sync-button {
+    display: inline-flex;
+    align-items: center;
     background-color: #003366;
     color: white;
+    border: none;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 5px 0;
   }
   
-  .troubleshooter-actions button:hover {
+  .sync-button:hover {
     background-color: #004080;
   }
   
-  .troubleshooter-actions button:disabled {
+  .sync-button i {
+    margin-right: 5px;
+  }
+  
+  .sync-button.syncing {
     background-color: #6c757d;
     cursor: not-allowed;
   }
   
-  /* CSS cho công cụ kiểm tra database */
-  .db-checker {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 10px 0;
-    background-color: #f9f9f9;
-  }
-  
-  .db-checker h3 {
-    margin-top: 0;
-    margin-bottom: 15px;
-  }
-  
-  .db-checker-status {
-    margin-bottom: 15px;
-    padding: 10px;
-    background-color: #e2e3e5;
-    color: #383d41;
-    border-radius: 5px;
-  }
-  
-  .db-checker-steps {
-    margin-bottom: 15px;
-  }
-  
-  .db-checker-step {
-    display: flex;
-    align-items: flex-start;
-    padding: 10px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    margin-bottom: 5px;
-  }
-  
-  .db-checker-actions {
-    display: flex;
-    gap: 10px;
-  }
-  
-  .db-checker-actions button {
-    padding: 8px 12px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    background-color: #003366;
-    color: white;
-  }
-  
-  .step-details {
+  /* Thông tin đồng bộ hóa */
+  .sync-info {
+    font-size: 12px;
+    color: #6c757d;
     margin-top: 5px;
-    font-size: 14px;
-    background-color: #f8f9fa;
-    padding: 5px;
-    border-radius: 3px;
-    white-space: pre-wrap;
-    overflow-x: auto;
   }
   
-  .db-config-form {
-    margin-top: 15px;
-    padding: 10px;
-    background-color: #f8f9fa;
+  .sync-count {
+    font-weight: bold;
+    color: #003366;
+  }
+  
+  /* Cấu hình server */
+  .server-config-button {
+    background-color: #6c757d;
+    color: white;
+    border: none;
     border-radius: 5px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 10px;
+  }
+  
+  .server-config-button:hover {
+    background-color: #5a6268;
   }
   
