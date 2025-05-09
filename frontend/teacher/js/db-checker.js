@@ -443,3 +443,14 @@ async function showDbChecker(containerId) {
 // Xuất các hàm để sử dụng trong các file khác
 window.runAllDbChecks = runAllDbChecks
 window.showDbChecker = showDbChecker
+
+// Đảm bảo hàm được xuất đúng cách
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    runAllDbChecks,
+    showDbChecker,
+  }
+}
+
+// Thông báo khi file được tải thành công
+console.log("db-checker.js đã được tải thành công")

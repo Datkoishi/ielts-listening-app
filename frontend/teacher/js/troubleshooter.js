@@ -3,10 +3,13 @@
  */
 
 // Khai báo biến API_URL (hoặc import nếu cần)
-let API_URL = "http://localhost:3000/api" // Giá trị mặc định
-// Lấy API_URL từ window nếu có
-if (window.API_URL) {
-  API_URL = window.API_URL
+const API_URL = window.API_URL || "http://localhost:3000/api" // Thay đổi URL này nếu cần
+
+// Khai báo biến showServerConfigUI nếu chưa tồn tại
+if (typeof window.showServerConfigUI !== "function") {
+  window.showServerConfigUI = (containerId) => {
+    alert("Chức năng cấu hình server chưa được tải. Vui lòng tải lại trang.")
+  }
 }
 
 // Danh sách các bước kiểm tra
@@ -274,14 +277,11 @@ async function showTroubleshooter(containerId) {
       if (step.id === "internet") {
         alert("Vui lòng kiểm tra kết nối internet của bạn và thử lại.")
       } else if (step.id === "server") {
-        // Kiểm tra hàm showServerConfigUI từ window
+        // Khai báo hoặc import hàm showServerConfigUI
         if (typeof window.showServerConfigUI === "function") {
           window.showServerConfigUI("serverConfigContainer")
-        } else if (typeof window.loadServerConfig === "function") {
-          // Hiển thị thông báo cấu hình thủ công
-          alert("Vui lòng kiểm tra URL API và cấu hình server trong phần cài đặt.")
         } else {
-          alert("Công cụ cấu hình server chưa được tải. Vui lòng tải lại trang.")
+          alert("Hàm showServerConfigUI không được định nghĩa.")
         }
       } else if (step.id === "auth") {
         if (confirm("Token xác thực không hợp lệ hoặc đã hết hạn. Bạn có muốn đăng nhập lại không?")) {
@@ -310,5 +310,13 @@ async function showTroubleshooter(containerId) {
 window.runAllChecks = runAllChecks
 window.showTroubleshooter = showTroubleshooter
 
-// Đảm bảo hàm được xuất ngay khi file được tải
-console.log("Troubleshooter đã được tải thành công")
+// Đảm bảo hàm được xuất đúng cách
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    runAllChecks,
+    showTroubleshooter,
+  }
+}
+
+// Thông báo khi file được tải thành công
+console.log("troubleshooter.js đã được tải thành công")

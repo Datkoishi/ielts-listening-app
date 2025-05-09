@@ -931,7 +931,7 @@ async function syncOfflineTests() {
     const offlineTests = JSON.parse(localStorage.getItem("offline_tests") || "[]")
     if (offlineTests.length === 0) {
       console.log("Không có bài test offline cần đồng bộ")
-      return { success: true, message: "Không có b��i test offline" }
+      return { success: true, message: "Không có bài test offline" }
     }
 
     console.log(`Tìm thấy ${offlineTests.length} bài test offline cần đồng bộ`)
