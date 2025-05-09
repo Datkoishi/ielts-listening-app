@@ -3,7 +3,11 @@
  */
 
 // Khai báo biến API_URL (hoặc import nếu cần)
-const API_URL = window.API_URL || "http://localhost:3000/api" // Thay đổi URL này nếu cần
+let API_URL = "http://localhost:3000/api" // Giá trị mặc định
+// Lấy API_URL từ window nếu có
+if (window.API_URL) {
+  API_URL = window.API_URL
+}
 
 // Danh sách các bước kiểm tra
 const TROUBLESHOOTING_STEPS = [
@@ -270,11 +274,14 @@ async function showTroubleshooter(containerId) {
       if (step.id === "internet") {
         alert("Vui lòng kiểm tra kết nối internet của bạn và thử lại.")
       } else if (step.id === "server") {
-        // Khai báo hoặc import hàm showServerConfigUI
-        if (typeof showServerConfigUI === "function") {
-          showServerConfigUI("serverConfigContainer")
+        // Kiểm tra hàm showServerConfigUI từ window
+        if (typeof window.showServerConfigUI === "function") {
+          window.showServerConfigUI("serverConfigContainer")
+        } else if (typeof window.loadServerConfig === "function") {
+          // Hiển thị thông báo cấu hình thủ công
+          alert("Vui lòng kiểm tra URL API và cấu hình server trong phần cài đặt.")
         } else {
-          alert("Hàm showServerConfigUI không được định nghĩa.")
+          alert("Công cụ cấu hình server chưa được tải. Vui lòng tải lại trang.")
         }
       } else if (step.id === "auth") {
         if (confirm("Token xác thực không hợp lệ hoặc đã hết hạn. Bạn có muốn đăng nhập lại không?")) {
@@ -302,3 +309,6 @@ async function showTroubleshooter(containerId) {
 // Xuất các hàm để sử dụng trong các file khác
 window.runAllChecks = runAllChecks
 window.showTroubleshooter = showTroubleshooter
+
+// Đảm bảo hàm được xuất ngay khi file được tải
+console.log("Troubleshooter đã được tải thành công")
