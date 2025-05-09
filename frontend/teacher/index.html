@@ -5,13 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>IELTS Listening Test Creator</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-<link rel="stylesheet" href="../teacher/css/styles.css">
-<!-- Thêm CSS mới -->
-<link rel="stylesheet" href="../teacher/css/api-integration.css">
-<!-- Thêm file debug.js đầu tiên để sửa lỗi -->
-<script src="../teacher/js/debug.js"></script>
-<!-- Thêm file global-variables.js để khởi tạo các biến toàn cục -->
-<script src="../teacher/js/global-variables.js"></script>
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <div class="selection-page" id="selectionPage">
@@ -78,128 +72,15 @@
         <button id="importTestBtn"><i class="fas fa-file-import"></i> Nhập</button>
         <button id="showTestListBtn"><i class="fas fa-list"></i> Danh sách</button>
         <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
-        <!-- Thêm nút cấu hình server vào menu -->
-        <button id="serverConfigBtn" class="server-config-button">
-          <i class="fas fa-cog"></i> Cấu hình Server
-        </button>
-        <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
-        <button id="troubleshooterBtn" class="troubleshooter-button">
-          <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
-        </button>
     </div>
 </div>
 
-<!-- Thêm div để hiển thị trạng thái API -->
-<div id="apiStatus" class="api-status-container"></div>
-
-<!-- Thêm container cho cấu hình server -->
-<div id="serverConfigContainer"></div>
-
-<!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
-<div id="troubleshooterContainer"></div>
-
-<!-- Thêm container cho trạng thái server -->
-<div id="serverStatusContainer" class="server-status-container"></div>
-
-<!-- Tải các file JavaScript cần thiết trước -->
-<script src="../teacher/js/api-utils.js"></script>
-<script src="../teacher/js/server-config.js"></script>
-<script src="../teacher/js/troubleshooter.js"></script>
-<script src="../teacher/js/audio-validator.js"></script>
-<script src="../teacher/js/server-status.js"></script>
-
-<!-- Sau đó tải các file JavaScript chính -->
+<!-- Tải script theo thứ tự đúng -->
 <script src="../teacher/js/form-handlers.js"></script>
 <script src="../teacher/js/index.js"></script>
 <script src="../teacher/js/test-management.js"></script>
 <script src="../teacher/js/client-integration.js"></script>
 <script src="../teacher/js/main.js"></script>
 <script src="../teacher/js/question-types.js"></script>
-
-<!-- Thêm script để khởi tạo các tính năng mới -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Kiểm tra và sửa các hàm bị thiếu
-    if (typeof fixShowTroubleshooter === 'function') {
-      fixShowTroubleshooter();
-    }
-    if (typeof fixShowServerConfigUI === 'function') {
-      fixShowServerConfigUI();
-    }
-    
-    // Hiển thị trạng thái API
-    if (typeof displayApiStatus === 'function') {
-      displayApiStatus('apiStatus');
-    }
-    
-    // Bắt đầu kiểm tra trạng thái server
-    if (typeof startServerStatusCheck === 'function') {
-      startServerStatusCheck('serverStatusContainer');
-    }
-    
-    // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
-    if (navigator.onLine && typeof syncOfflineTests === 'function') {
-      setTimeout(() => {
-        syncOfflineTests();
-      }, 3000);
-    }
-    
-    // Thêm sự kiện lắng nghe kết nối internet
-    window.addEventListener('online', () => {
-      if (typeof displayApiStatus === 'function') {
-        displayApiStatus('apiStatus');
-      }
-      if (typeof syncOfflineTests === 'function') {
-        syncOfflineTests();
-      }
-    });
-    
-    window.addEventListener('offline', () => {
-      if (typeof displayApiStatus === 'function') {
-        displayApiStatus('apiStatus');
-      }
-    });
-
-    // Thêm sự kiện cho các nút
-    const serverConfigBtn = document.getElementById('serverConfigBtn');
-    if (serverConfigBtn) {
-      serverConfigBtn.addEventListener('click', function() {
-        console.log('Nút cấu hình server được nhấp');
-        if (typeof window.showServerConfigUI === 'function') {
-          window.showServerConfigUI('serverConfigContainer');
-        } else {
-          console.error('Hàm showServerConfigUI chưa được định nghĩa');
-          alert('Chức năng cấu hình server chưa được cài đặt đầy đủ.');
-        }
-      });
-    }
-
-    const troubleshooterBtn = document.getElementById('troubleshooterBtn');
-    if (troubleshooterBtn) {
-      troubleshooterBtn.addEventListener('click', function() {
-        console.log('Nút kiểm tra và sửa lỗi được nhấp');
-        if (typeof window.showTroubleshooter === 'function') {
-          window.showTroubleshooter('troubleshooterContainer');
-        } else {
-          console.error('Hàm showTroubleshooter chưa được định nghĩa');
-          alert('Chức năng kiểm tra và sửa lỗi chưa được cài đặt đầy đủ.');
-        }
-      });
-    }
-    
-    // Kiểm tra các hàm quan trọng
-    console.log('Kiểm tra các hàm quan trọng:');
-    console.log('showTroubleshooter:', typeof window.showTroubleshooter === 'function' ? 'Đã định nghĩa' : 'Chưa định nghĩa');
-    console.log('showServerConfigUI:', typeof window.showServerConfigUI === 'function' ? 'Đã định nghĩa' : 'Chưa định nghĩa');
-    
-    // Kiểm tra lại các biến toàn cục
-    console.log('=== KIỂM TRA LẠI CÁC BIẾN TOÀN CỤC ===');
-    console.log('API_URL:', typeof window.API_URL !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
-    console.log('test:', typeof window.test !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
-    console.log('currentPart:', typeof window.currentPart !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
-    console.log('selectedTypes:', typeof window.selectedTypes !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
-    console.log('audioFile:', typeof window.audioFile !== 'undefined' ? '✅ Đã định nghĩa' : '❌ Chưa định nghĩa');
-  });
-</script>
 </body>
 </html>

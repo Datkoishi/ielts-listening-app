@@ -683,161 +683,6 @@ function validateTestData(testData) {
   }
 }
 
-// Thêm hàm kiểm tra tính hợp lệ của câu hỏi
-function validateQuestion(question, partNumber, questionIndex) {
-  const errors = []
-
-  // Kiểm tra các trường cơ bản
-  if (!question.type) {
-    errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có loại`)
-  }
-
-  if (!question.content || !Array.isArray(question.content) || question.content.length === 0) {
-    errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có nội dung`)
-  }
-
-  if (!question.correctAnswers) {
-    errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có đáp án đúng`)
-  }
-
-  // Kiểm tra theo loại câu hỏi
-  switch (question.type) {
-    case "Một đáp án":
-      if (question.content.length < 2) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một lựa chọn`)
-      }
-      break
-
-    case "Nhiều đáp án":
-      if (question.content.length < 2) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một lựa chọn`)
-      }
-
-      if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length === 0) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một đáp án đúng`)
-      }
-      break
-
-    case "Ghép nối":
-      // Kiểm tra số lượng mục và lựa chọn
-      const midPoint = Math.ceil(question.content.length / 2)
-      if (midPoint <= 1) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một cặp ghép nối`)
-      }
-
-      // Kiểm tra đáp án
-      if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length < midPoint - 1) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} thiếu đáp án cho một số mục`)
-      }
-      break
-
-    case "Ghi nhãn Bản đồ/Sơ đồ":
-      // Kiểm tra hình ảnh
-      if (!question.content[2] || question.content[2].trim() === "") {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có hình ảnh`)
-      }
-
-      // Kiểm tra số lượng nhãn và đáp án
-      if (question.content.length < 4) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một nhãn`)
-      }
-
-      if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length < question.content.length - 3) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} thiếu đáp án cho một số nhãn`)
-      }
-      break
-
-    case "Hoàn thành ghi chú":
-      // Kiểm tra hướng dẫn và chủ đề
-      if (!question.content[0] || question.content[0].trim() === "") {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có hướng dẫn`)
-      }
-
-      if (!question.content[1] || question.content[1].trim() === "") {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có chủ đề`)
-      }
-
-      // Kiểm tra số lượng câu hỏi và đáp án
-      if (question.content.length < 3) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một câu hỏi`)
-      }
-
-      if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length < question.content.length - 2) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} thiếu đáp án cho một số câu hỏi`)
-      }
-      break
-
-    case "Hoàn thành bảng/biểu mẫu":
-    case "Hoàn thành lưu đồ":
-      // Kiểm tra hướng dẫn
-      if (!question.content[0] || question.content[0].trim() === "") {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có hướng dẫn`)
-      }
-
-      // Kiểm tra số lượng mục và đáp án
-      if (question.content.length < 2) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} phải có ít nhất một mục`)
-      }
-
-      if (!Array.isArray(question.correctAnswers) || question.correctAnswers.length === 0) {
-        errors.push(`Câu hỏi ${questionIndex + 1} trong Phần ${partNumber} không có đáp án`)
-      }
-      break
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors: errors,
-  }
-}
-
-// Cập nhật hàm validateTest để sử dụng validateQuestion
-function validateTestFunc() {
-  const errors = []
-  const warnings = []
-
-  // Kiểm tra metadata
-  if (!test.title) {
-    errors.push("Bài kiểm tra chưa có tiêu đề")
-  }
-
-  // Kiểm tra số lượng câu hỏi
-  let totalQuestionCount = 0
-  for (let i = 1; i <= 4; i++) {
-    const partQuestions = test[`part${i}`]?.length || 0
-    totalQuestionCount += partQuestions
-
-    if (partQuestions === 0) {
-      warnings.push(`Phần ${i} không có câu hỏi nào`)
-    }
-  }
-
-  if (totalQuestionCount === 0) {
-    errors.push("Bài kiểm tra không có câu hỏi nào")
-  }
-
-  if (totalQuestionCount > MAX_QUESTIONS) {
-    errors.push(`Bài kiểm tra có quá nhiều câu hỏi (${totalQuestionCount}/${MAX_QUESTIONS})`)
-  }
-
-  // Kiểm tra từng câu hỏi
-  for (let i = 1; i <= 4; i++) {
-    const partQuestions = test[`part${i}`] || []
-
-    partQuestions.forEach((question, index) => {
-      // Sử dụng hàm validateQuestion để kiểm tra chi tiết
-      const validation = validateQuestion(question, i, index)
-      if (!validation.isValid) {
-        validation.errors.forEach((error) => {
-          errors.push(error)
-        })
-      }
-    })
-  }
-
-  return { errors, warnings, isValid: errors.length === 0 }
-}
-
 // Update the saveTest function to use the global test object
 function saveTest() {
   try {
@@ -1869,8 +1714,66 @@ function renderQuestionForPDF(question) {
 }
 
 // Xác thực bài kiểm tra
+function validateTest() {
+  const errors = []
+  const warnings = []
+
+  // Kiểm tra metadata
+  if (!test.title) {
+    errors.push("Bài kiểm tra chưa có tiêu đề")
+  }
+
+  // Kiểm tra số lượng câu hỏi
+  let totalQuestionCount = 0
+  for (let i = 1; i <= 4; i++) {
+    const partQuestions = test[`part${i}`]?.length || 0
+    totalQuestionCount += partQuestions
+
+    if (partQuestions === 0) {
+      warnings.push(`Phần ${i} không có câu hỏi nào`)
+    }
+  }
+
+  if (totalQuestionCount === 0) {
+    errors.push("Bài kiểm tra không có câu hỏi nào")
+  }
+
+  if (totalQuestionCount > MAX_QUESTIONS) {
+    errors.push(`Bài kiểm tra có quá nhiều câu hỏi (${totalQuestionCount}/${MAX_QUESTIONS})`)
+  }
+
+  // Kiểm tra từng câu hỏi
+  for (let i = 1; i <= 4; i++) {
+    const partQuestions = test[`part${i}`] || []
+
+    partQuestions.forEach((question, index) => {
+      // Kiểm tra loại câu hỏi
+      if (!question.type) {
+        errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có loại`)
+      }
+
+      // Kiểm tra nội dung
+      if (!question.content || question.content.length === 0) {
+        errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có nội dung`)
+      }
+
+      // Kiểm tra đáp án
+      if (
+        !question.correctAnswers ||
+        (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0) ||
+        (typeof question.correctAnswers === "string" && question.correctAnswers.trim() === "")
+      ) {
+        errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có đáp án đúng`)
+      }
+    })
+  }
+
+  return { errors, warnings, isValid: errors.length === 0 }
+}
+
+// Hiển thị kết quả xác thực
 function showValidationResults() {
-  const { errors, warnings, isValid } = validateTestFunc()
+  const { errors, warnings, isValid } = validateTest()
 
   let message = ""
 
