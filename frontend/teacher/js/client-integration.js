@@ -160,7 +160,29 @@ function normalizeTestData(testData) {
     title: testData.title || "",
     description: testData.description || "",
     vietnamese_name: testData.vietnameseName || "",
+    // Thêm trường content để lưu thông tin bổ sung
+    content: JSON.stringify({
+      difficulty: "medium", // Mặc định là trung bình
+      total_questions: calculateTotalQuestions(testData),
+      type: "listening",
+      version: "1.0", // Phiên bản mặc định
+    }),
+    // Thêm trường version để theo dõi phiên bản
+    version: "1.0",
+    // Thêm trường status nếu cần
+    status: "active",
     parts: [],
+  }
+
+  // Tính tổng số câu hỏi
+  function calculateTotalQuestions(data) {
+    let total = 0
+    for (let i = 1; i <= 4; i++) {
+      if (data[`part${i}`] && Array.isArray(data[`part${i}`])) {
+        total += data[`part${i}`].length
+      }
+    }
+    return total
   }
 
   // Convert parts to the format expected by the backend
@@ -168,11 +190,37 @@ function normalizeTestData(testData) {
     if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
       normalizedTest.parts.push({
         part_number: i,
-        questions: testData[`part${i}`].map((question) => ({
-          question_type: question.type,
-          content: JSON.stringify(question.content),
-          correct_answers: JSON.stringify(question.correctAnswers),
-        })),
+        // Thêm instructions cho mỗi phần
+        instructions: `Instructions for Part ${i}`,
+        // Thêm content để lưu thông tin bổ sung
+        content: JSON.stringify({
+          title: `Part ${i}`,
+          description: `Description for Part ${i}`,
+          question_count: testData[`part${i}`].length,
+        }),
+        questions: testData[`part${i}`].map((question) => {
+          // Map question_type string sang type_id (giả định)
+          const typeIdMap = {
+            "Một đáp án": 1,
+            "Nhiều đáp án": 2,
+            "Ghép nối": 3,
+            "Ghi nhãn Bản đồ/Sơ đồ": 4,
+            "Hoàn thành ghi chú": 5,
+            "Hoàn thành bảng/biểu mẫu": 6,
+            "Hoàn thành lưu đồ": 7,
+          }
+
+          return {
+            question_type: question.type,
+            // Thêm type_id để liên kết với bảng question_types
+            type_id: typeIdMap[question.type] || 1,
+            content: JSON.stringify(question.content),
+            correct_answers: JSON.stringify(question.correctAnswers),
+            // Thêm các trường bổ sung nếu cần
+            difficulty: "medium",
+            points: 1,
+          }
+        }),
       })
     }
   }
@@ -289,6 +337,9 @@ async function saveTestToServer(testData) {
             question.correctAnswers = ["Missing answer"]
             console.warn(`Đã sửa câu trả lời bị thiếu cho câu hỏi ${index} trong phần ${i}`)
           }
+
+          // Validate specific question types
+          validateQuestionByType(question, i, index)
         })
       }
     }
@@ -297,6 +348,14 @@ async function saveTestToServer(testData) {
     const normalizedData = normalizeTestData(globalTest)
     console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
 
+    // Thêm xử lý offline
+    if (!navigator.onLine) {
+      // Lưu dữ liệu vào localStorage để đồng bộ sau
+      saveTestOffline(normalizedData)
+      showNotification("Đang offline: Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối", "warning")
+      return { success: true, offline: true, message: "Đã lưu offline" }
+    }
+
     // Make API request
     const response = await fetchWithAuth(`${API_URL}/tests`, {
       method: "POST",
@@ -304,6 +363,8 @@ async function saveTestToServer(testData) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(normalizedData),
+      // Thêm credentials để xử lý vấn đề cookie
+      credentials: "include",
     })
 
     if (!response.ok) {
@@ -311,20 +372,149 @@ async function saveTestToServer(testData) {
       throw new Error(errorData.message || "Không thể lưu bài kiểm tra")
     }
 
+    const result = await response.json()
     showNotification("Bài kiểm tra đã được lưu thành công!", "success")
-    return await response.json()
+
+    // Lưu ID bài kiểm tra để sử dụng sau này
+    if (result.testId) {
+      localStorage.setItem("lastSavedTestId", result.testId)
+    }
+
+    return result
   } catch (error) {
     console.error("Lỗi khi lưu bài kiểm tra lên máy chủ:", error)
     showNotification(`Lỗi: ${error.message}`, "error")
 
     // If there's a network error or server is down, provide a fallback
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-      throw new Error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối internet của bạn.")
+      // Lưu offline nếu không kết nối được
+      saveTestOffline(normalizeTestData(window.test || testData))
+      showNotification("Không thể kết nối đến máy chủ. Bài kiểm tra đã được lưu cục bộ.", "warning")
+      return { success: false, offline: true, message: "Đã lưu offline do lỗi kết nối" }
     }
 
     throw error
   }
 }
+
+// Thêm hàm lưu offline
+function saveTestOffline(testData) {
+  try {
+    // Tạo ID tạm thời
+    const tempId = `offline_${Date.now()}`
+
+    // Lưu vào localStorage
+    const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
+    offlineTests.push({
+      id: tempId,
+      data: testData,
+      timestamp: Date.now(),
+    })
+
+    localStorage.setItem("offlineTests", JSON.stringify(offlineTests))
+    console.log("Đã lưu bài kiểm tra offline:", tempId)
+
+    return tempId
+  } catch (error) {
+    console.error("Lỗi khi lưu offline:", error)
+    return null
+  }
+}
+
+// Thêm hàm đồng bộ các bài kiểm tra offline
+async function syncOfflineTests() {
+  try {
+    const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
+
+    if (offlineTests.length === 0) {
+      return { success: true, synced: 0 }
+    }
+
+    let syncedCount = 0
+    const failedTests = []
+
+    for (const test of offlineTests) {
+      try {
+        // Gửi lên server
+        const response = await fetchWithAuth(`${API_URL}/tests`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(test.data),
+          credentials: "include",
+        })
+
+        if (response.ok) {
+          syncedCount++
+        } else {
+          failedTests.push(test)
+        }
+      } catch (error) {
+        console.error("Lỗi khi đồng bộ bài kiểm tra:", error)
+        failedTests.push(test)
+      }
+    }
+
+    // Cập nhật lại danh sách các bài kiểm tra chưa đồng bộ được
+    localStorage.setItem("offlineTests", JSON.stringify(failedTests))
+
+    return {
+      success: true,
+      synced: syncedCount,
+      failed: failedTests.length,
+    }
+  } catch (error) {
+    console.error("Lỗi khi đồng bộ các bài kiểm tra offline:", error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Thêm hàm validate câu hỏi theo loại
+function validateQuestionByType(question, partIndex, questionIndex) {
+  switch (question.type) {
+    case "Một đáp án":
+      if (question.content.length < 2) {
+        console.warn(`Câu hỏi ${questionIndex} trong Phần ${partIndex} thiếu lựa chọn`)
+        question.content.push("Lựa chọn mặc định")
+      }
+      break
+
+    case "Nhiều đáp án":
+      if (question.content.length < 2) {
+        console.warn(`Câu hỏi ${questionIndex} trong Phần ${partIndex} thiếu lựa chọn`)
+        question.content.push("Lựa chọn mặc định 1")
+        question.content.push("Lựa chọn mặc định 2")
+      }
+      if (!Array.isArray(question.correctAnswers)) {
+        console.warn(`Câu hỏi ${questionIndex} trong Phần ${partIndex} có đáp án không đúng định dạng`)
+        question.correctAnswers = [question.correctAnswers]
+      }
+      break
+
+    case "Ghi nhãn Bản đồ/Sơ đồ":
+      // Kiểm tra có hình ảnh không
+      if (!question.content[2] || !question.content[2].includes("/")) {
+        console.warn(`Câu hỏi ${questionIndex} trong Phần ${partIndex} thiếu hình ảnh`)
+        question.content[2] = "/placeholder.svg?height=300&width=400"
+      }
+      break
+  }
+}
+
+// Thêm event listener để đồng bộ khi online trở lại
+window.addEventListener("online", async () => {
+  console.log("Kết nối internet đã được khôi phục, đang đồng bộ dữ liệu...")
+  const result = await syncOfflineTests()
+
+  if (result.synced > 0) {
+    showNotification(`Đã đồng bộ ${result.synced} bài kiểm tra lên máy chủ.`, "success")
+  }
+
+  if (result.failed > 0) {
+    showNotification(`Không thể đồng bộ ${result.failed} bài kiểm tra. Sẽ thử lại sau.`, "warning")
+  }
+})
 
 // Helper functions to extract question data from DOM elements
 function extractOneAnswerDataFromDOM(questionElement) {
@@ -738,6 +928,23 @@ async function deleteTest(testId) {
     throw error
   }
 }
+
+// Thêm event listener để đồng bộ khi online trở lại
+window.addEventListener("online", async () => {
+  console.log("Kết nối internet đã được khôi phục, đang đồng bộ dữ liệu...")
+  const result = await syncOfflineTests()
+
+  if (result.synced > 0) {
+    showNotification(`Đã đồng bộ ${result.synced} bài kiểm tra lên máy chủ.`, "success")
+  }
+
+  if (result.failed > 0) {
+    showNotification(`Không thể đồng bộ ${result.failed} bài kiểm tra. Sẽ thử lại sau.`, "warning")
+  }
+})
+
+// Thêm các hàm mới vào window object
+window.syncOfflineTests = syncOfflineTests
 
 // Xuất các hàm để sử dụng trong các file khác
 window.saveToken = saveToken

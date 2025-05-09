@@ -628,60 +628,60 @@ function nextPart() {
 }
 
 // Kiểm tra tính hợp lệ của dữ liệu trước khi gửi
-function validateTestData(testData) {
-  const errors = []
+// function validateTestData(testData) {
+//   const errors = []
 
-  // Kiểm tra các trường bắt buộc
-  if (!testData.title) {
-    errors.push("Tiêu đề bài kiểm tra không được để trống")
-  }
+//   // Kiểm tra các trường bắt buộc
+//   if (!testData.title) {
+//     errors.push("Tiêu đề bài kiểm tra không được để trống")
+//   }
 
-  // Kiểm tra có ít nhất một câu hỏi
-  let hasQuestions = false
-  for (let i = 1; i <= 4; i++) {
-    if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
-      hasQuestions = true
-      break
-    }
-  }
+//   // Kiểm tra có ít nhất một câu hỏi
+//   let hasQuestions = false
+//   for (let i = 1; i <= 4; i++) {
+//     if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
+//       hasQuestions = true
+//       break
+//     }
+//   }
 
-  if (!hasQuestions) {
-    errors.push("Bài kiểm tra phải có ít nhất một câu hỏi")
-  }
+//   if (!hasQuestions) {
+//     errors.push("Bài kiểm tra phải có ít nhất một câu hỏi")
+//   }
 
-  // Kiểm tra từng câu hỏi
-  for (let i = 1; i <= 4; i++) {
-    if (testData[`part${i}`]) {
-      testData[`part${i}`].forEach((question, index) => {
-        if (!question.type) {
-          errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có loại`)
-        }
-        if (!question.content || question.content.length === 0) {
-          errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có nội dung`)
-        }
-        if (
-          !question.correctAnswers ||
-          (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0) ||
-          (typeof question.correctAnswers === "string" && question.correctAnswers.trim() === "")
-        ) {
-          errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có đáp án đúng`)
-        }
+//   // Kiểm tra từng câu hỏi
+//   for (let i = 1; i <= 4; i++) {
+//     if (testData[`part${i}`]) {
+//       testData[`part${i}`].forEach((question, index) => {
+//         if (!question.type) {
+//           errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có loại`)
+//         }
+//         if (!question.content || question.content.length === 0) {
+//           errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có nội dung`)
+//         }
+//         if (
+//           !question.correctAnswers ||
+//           (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0) ||
+//           (typeof question.correctAnswers === "string" && question.correctAnswers.trim() === "")
+//         ) {
+//           errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có đáp án đúng`)
+//         }
 
-        // Kiểm tra đặc biệt cho từng loại câu hỏi
-        if (question.type === "Ghi nhãn Bản đồ/Sơ đồ") {
-          if (!question.content[2] || question.content[2].trim() === "") {
-            errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có hình ảnh`)
-          }
-        }
-      })
-    }
-  }
+//         // Kiểm tra đặc biệt cho từng loại câu hỏi
+//         if (question.type === "Ghi nhãn Bản đồ/Sơ đồ") {
+//           if (!question.content[2] || question.content[2].trim() === "") {
+//             errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có hình ảnh`)
+//           }
+//         }
+//       })
+//     }
+//   }
 
-  return {
-    isValid: errors.length === 0,
-    errors,
-  }
-}
+//   return {
+//     isValid: errors.length === 0,
+//     errors,
+//   }
+// }
 
 // Update the saveTest function to use the global test object
 function saveTest() {
@@ -706,7 +706,7 @@ function saveTest() {
 
     // Validate test metadata
     if (!globalTest.title) {
-      showNotification("Please enter a test title", "error")
+      showNotification("Vui lòng nhập tiêu đề bài kiểm tra", "error")
       return
     }
 
@@ -795,27 +795,222 @@ function saveTest() {
     console.log("Test to be saved:", globalTest)
     console.log(`Total questions: ${totalQuestions}, Updated: ${questionsUpdated}`)
 
+    // Validate test data
+    const validationResult = validateTestData(globalTest)
+    if (!validationResult.isValid) {
+      // Show validation errors
+      let errorMessage = "Vui lòng sửa các lỗi sau trước khi lưu:<ul>"
+      validationResult.errors.forEach((error) => {
+        errorMessage += `<li>${error}</li>`
+      })
+      errorMessage += "</ul>"
+
+      showNotification(errorMessage, "error")
+
+      // Nếu có cảnh báo, hiển thị nhưng vẫn cho phép lưu
+      if (validationResult.warnings.length > 0) {
+        let warningMessage = "Cảnh báo:<ul>"
+        validationResult.warnings.forEach((warning) => {
+          warningMessage += `<li>${warning}</li>`
+        })
+        warningMessage += "</ul>"
+
+        // Hiển thị cảnh báo sau 1 giây để không bị che bởi thông báo lỗi
+        setTimeout(() => {
+          showNotification(warningMessage, "warning")
+        }, 1000)
+      }
+
+      return
+    } else if (validationResult.warnings.length > 0) {
+      // Nếu chỉ có cảnh báo, hiển thị và hỏi người dùng có muốn tiếp tục không
+      let warningMessage = "Cảnh báo:<ul>"
+      validationResult.warnings.forEach((warning) => {
+        warningMessage += `<li>${warning}</li>`
+      })
+      warningMessage += "</ul>Bạn có muốn tiếp tục lưu không?"
+
+      if (!confirm(warningMessage)) {
+        return
+      }
+    }
+
     // Show saving notification
-    showNotification("Saving test data...", "info")
+    showNotification("Đang lưu bài kiểm tra...", "info")
+
+    // Thêm progress indicator
+    const progressIndicator = document.createElement("div")
+    progressIndicator.className = "progress-indicator"
+    progressIndicator.innerHTML = `
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="progress-text">Đang lưu... 0%</div>
+    `
+    document.body.appendChild(progressIndicator)
+
+    // Animate progress
+    let progress = 0
+    const progressInterval = setInterval(() => {
+      progress += 5
+      if (progress > 90) {
+        clearInterval(progressInterval)
+      }
+      const progressFill = progressIndicator.querySelector(".progress-fill")
+      const progressText = progressIndicator.querySelector(".progress-text")
+      if (progressFill && progressText) {
+        progressFill.style.width = `${progress}%`
+        progressText.textContent = `Đang lưu... ${progress}%`
+      }
+    }, 200)
 
     // Save to server using the client-integration.js function
     if (typeof saveTestToServer === "function") {
       saveTestToServer(globalTest)
         .then((response) => {
           console.log("Test saved successfully:", response)
-          showNotification(`Test "${globalTest.vietnameseName || globalTest.title}" saved successfully!`, "success")
+
+          // Complete progress
+          clearInterval(progressInterval)
+          const progressFill = progressIndicator.querySelector(".progress-fill")
+          const progressText = progressIndicator.querySelector(".progress-text")
+          if (progressFill && progressText) {
+            progressFill.style.width = "100%"
+            progressText.textContent = "Hoàn thành 100%"
+          }
+
+          // Remove progress indicator after a delay
+          setTimeout(() => {
+            if (progressIndicator.parentNode) {
+              progressIndicator.parentNode.removeChild(progressIndicator)
+            }
+          }, 1000)
+
+          showNotification(
+            `Bài kiểm tra "${globalTest.vietnameseName || globalTest.title}" đã được lưu thành công!`,
+            "success",
+          )
+
+          // Nếu lưu offline, hiển thị thông báo bổ sung
+          if (response.offline) {
+            setTimeout(() => {
+              showNotification("Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối internet.", "info")
+            }, 1000)
+          }
         })
         .catch((error) => {
           console.error("Error saving test:", error)
-          showNotification(`Error saving test: ${error.message || "Unknown error"}`, "error")
+
+          // Remove progress indicator
+          if (progressIndicator.parentNode) {
+            progressIndicator.parentNode.removeChild(progressIndicator)
+          }
+
+          showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message || "Lỗi không xác định"}`, "error")
+
+          // Hiển thị tùy chọn lưu offline nếu lỗi kết nối
+          if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+            setTimeout(() => {
+              if (confirm("Không thể kết nối đến máy chủ. Bạn có muốn lưu bài kiểm tra cục bộ không?")) {
+                // Lưu offline
+                const offlineId = saveTestOffline(normalizeTestData(globalTest))
+                if (offlineId) {
+                  showNotification(
+                    "Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối internet.",
+                    "success",
+                  )
+                } else {
+                  showNotification("Không thể lưu bài kiểm tra cục bộ.", "error")
+                }
+              }
+            }, 1000)
+          }
         })
     } else {
       console.warn("saveTestToServer function not available")
-      showNotification("Test data prepared but server save function not available", "warning")
+
+      // Remove progress indicator
+      if (progressIndicator.parentNode) {
+        progressIndicator.parentNode.removeChild(progressIndicator)
+      }
+
+      showNotification("Hàm lưu bài kiểm tra không khả dụng", "warning")
     }
   } catch (error) {
     console.error("Error in saveTest function:", error)
-    showNotification(`Error: ${error.message || "Unknown error"}`, "error")
+    showNotification(`Lỗi: ${error.message || "Lỗi không xác định"}`, "error")
+  }
+}
+
+// Cập nhật hàm validateTestData để kiểm tra kỹ hơn
+function validateTestData(testData) {
+  const errors = []
+  const warnings = []
+
+  // Kiểm tra các trường bắt buộc
+  if (!testData.title) {
+    errors.push("Tiêu đề bài kiểm tra không được để trống")
+  }
+
+  // Kiểm tra có ít nhất một câu hỏi
+  let hasQuestions = false
+  let totalQuestions = 0
+  for (let i = 1; i <= 4; i++) {
+    if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
+      hasQuestions = true
+      totalQuestions += testData[`part${i}`].length
+    } else {
+      warnings.push(`Phần ${i} không có câu hỏi nào`)
+    }
+  }
+
+  if (!hasQuestions) {
+    errors.push("Bài kiểm tra phải có ít nhất một câu hỏi")
+  }
+
+  // Kiểm tra từng câu hỏi
+  for (let i = 1; i <= 4; i++) {
+    if (testData[`part${i}`]) {
+      testData[`part${i}`].forEach((question, index) => {
+        if (!question.type) {
+          errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có loại`)
+        }
+        if (!question.content || question.content.length === 0) {
+          errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có nội dung`)
+        }
+        if (
+          !question.correctAnswers ||
+          (Array.isArray(question.correctAnswers) && question.correctAnswers.length === 0) ||
+          (typeof question.correctAnswers === "string" && question.correctAnswers.trim() === "")
+        ) {
+          errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có đáp án đúng`)
+        }
+
+        // Kiểm tra đặc biệt cho từng loại câu hỏi
+        if (question.type === "Ghi nhãn Bản đồ/Sơ đồ") {
+          if (!question.content[2] || question.content[2].trim() === "") {
+            errors.push(`Câu hỏi ${index + 1} trong Phần ${i} không có hình ảnh`)
+          }
+        } else if (question.type === "Một đáp án") {
+          if (question.content.length < 2) {
+            errors.push(`Câu hỏi ${index + 1} trong Phần ${i} phải có ít nhất một lựa chọn`)
+          }
+        } else if (question.type === "Nhiều đáp án") {
+          if (question.content.length < 2) {
+            errors.push(`Câu hỏi ${index + 1} trong Phần ${i} phải có ít nhất một lựa chọn`)
+          }
+          if (!Array.isArray(question.correctAnswers)) {
+            errors.push(`Câu hỏi ${index + 1} trong Phần ${i} phải có đáp án dạng mảng`)
+          }
+        }
+      })
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
   }
 }
 
@@ -1420,16 +1615,15 @@ function renderQuestionPreview(question) {
             .map((_, rowIdx) => {
               const startIdx = 1 + rowIdx * 3
               return `
-              <tr>
-                <td>${question.content[startIdx] || ""}</td>
-                <td>${question.content[startIdx + 1] || ""}</td>
-                <td>${question.content[startIdx + 2] || ""}</td>
-              </tr>
-            `
+            <tr>
+              <td>${question.content[startIdx] || ""}</td>
+              <td>${question.content[startIdx + 1] || ""}</td>
+              <td>${question.content[startIdx + 2] || ""}</td>
+            </tr>
+          `
             })
             .join("")}
         </table>
-        <p><strong>Đáp án đúng:</strong> ${question.correctAnswers.join(", ")}</p>
       `
     case "Hoàn thành lưu đồ":
       const flowItemCount = Math.floor(question.content.length / 2)
@@ -2545,4 +2739,49 @@ async function getTestById(testId) {
       resolve(testData)
     }, 500)
   })
+}
+
+/**
+ * Saves the test data offline using local storage.
+ * @param {object} testData - The test data to be saved.
+ * @returns {string|null} - The ID of the saved test, or null if saving fails.
+ */
+function saveTestOffline(testData) {
+  try {
+    // Generate a unique ID for the test
+    const testId = `offline_${Date.now()}`
+
+    // Store the test data in local storage
+    localStorage.setItem(testId, JSON.stringify(testData))
+
+    console.log(`Test saved offline with ID: ${testId}`)
+    return testId
+  } catch (error) {
+    console.error("Error saving test offline:", error)
+    return null
+  }
+}
+
+/**
+ * Normalizes test data to ensure consistency before saving offline.
+ * @param {object} testData - The test data to be normalized.
+ * @returns {object} - The normalized test data.
+ */
+function normalizeTestData(testData) {
+  const normalizedData = { ...testData }
+
+  for (let i = 1; i <= 4; i++) {
+    if (normalizedData[`part${i}`]) {
+      normalizedData[`part${i}`] = normalizedData[`part${i}`].map((question) => ({
+        ...question,
+        content: typeof question.content === "string" ? question.content : JSON.stringify(question.content),
+        correctAnswers:
+          typeof question.correctAnswers === "string"
+            ? question.correctAnswers
+            : JSON.stringify(question.correctAnswers),
+      }))
+    }
+  }
+
+  return normalizedData
 }
