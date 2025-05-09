@@ -1,19 +1,16 @@
-/* Trạng thái API */
+/* CSS cho trạng thái API */
 .api-status-container {
     position: fixed;
     bottom: 10px;
     right: 10px;
-    z-index: 1000;
-    font-size: 12px;
-  }
-  
-  .api-status {
-    padding: 5px 10px;
+    padding: 8px 12px;
     border-radius: 4px;
+    font-size: 14px;
+    z-index: 1000;
     display: flex;
     align-items: center;
-    gap: 5px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    gap: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   }
   
   .api-status-online {
@@ -28,111 +25,164 @@
     border: 1px solid #f5c6cb;
   }
   
-  .api-status i {
-    font-size: 10px;
+  .api-status-syncing {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeeba;
   }
   
-  .api-status-online i {
-    color: #28a745;
+  /* CSS cho nút cấu hình server */
+  .server-config-button {
+    background-color: #6c757d !important;
   }
   
-  .api-status-offline i {
-    color: #dc3545;
+  .server-config-button:hover {
+    background-color: #5a6268 !important;
   }
   
-  /* Cấu hình Server */
-  .server-config-button,
+  /* CSS cho nút kiểm tra và sửa lỗi */
   .troubleshooter-button {
-    background-color: #f8f9fa !important;
-    color: #212529 !important;
-    border: 1px solid #dee2e6 !important;
+    background-color: #17a2b8 !important;
   }
   
-  .server-config-button:hover,
   .troubleshooter-button:hover {
-    background-color: #e9ecef !important;
+    background-color: #138496 !important;
   }
   
-  .server-config-panel {
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    padding: 15px;
+  /* CSS cho nút kiểm tra database */
+  .db-checker-button {
+    background-color: #28a745 !important;
+  }
+  
+  .db-checker-button:hover {
+    background-color: #218838 !important;
+  }
+  
+  /* CSS cho thanh tiến trình tải lên */
+  .upload-progress-container {
+    width: 100%;
+    height: 20px;
+    background-color: #f0f0f0;
+    border-radius: 10px;
     margin: 10px 0;
-    background-color: #f9f9f9;
+    overflow: hidden;
   }
   
+  .upload-progress-bar {
+    height: 100%;
+    background-color: #4caf50;
+    width: 0%;
+    transition: width 0.3s ease;
+    text-align: center;
+    line-height: 20px;
+    color: white;
+    font-size: 12px;
+  }
+  
+  /* CSS cho thông báo lỗi */
+  .error-message {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  
+  /* CSS cho thông báo thành công */
+  .success-message {
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  
+  /* CSS cho thông báo cảnh báo */
+  .warning-message {
+    color: #856404;
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+  }
+  
+  /* CSS cho modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+  
+  .modal-content {
+    background-color: #fefefe;
+    margin: 15% auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  
+  .close-button:hover,
+  .close-button:focus {
+    color: black;
+    text-decoration: none;
+  }
+  
+  /* CSS cho form cấu hình */
   .config-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    margin-top: 15px;
+  }
+  
+  .config-form .form-group {
     margin-bottom: 15px;
   }
   
-  .form-group {
-    margin-bottom: 10px;
-  }
-  
-  .form-group label {
+  .config-form label {
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
   }
   
-  .form-group input {
+  .config-form input {
     width: 100%;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
   }
   
-  .config-actions {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 15px;
-  }
-  
-  .config-actions button {
+  .config-form button {
     padding: 8px 12px;
+    background-color: #003366;
+    color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    background-color: #003366;
-    color: white;
   }
   
-  .config-actions button:hover {
+  .config-form button:hover {
     background-color: #004080;
   }
   
-  #resetConfig {
-    background-color: #6c757d;
-  }
-  
-  .connection-status {
-    padding: 10px;
-    border-radius: 4px;
-    margin-top: 10px;
-  }
-  
-  .status-success {
-    background-color: #d4edda;
-    color: #155724;
-    border: 1px solid #c3e6cb;
-  }
-  
-  .status-error {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-  }
-  
-  .status-warning {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
-  }
-  
-  /* Công cụ kiểm tra và sửa lỗi */
+  /* CSS cho công cụ kiểm tra và sửa lỗi */
   .troubleshooter {
     border: 1px solid #ddd;
     border-radius: 8px;
@@ -224,5 +274,71 @@
   .troubleshooter-actions button:disabled {
     background-color: #6c757d;
     cursor: not-allowed;
+  }
+  
+  /* CSS cho công cụ kiểm tra database */
+  .db-checker {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+    background-color: #f9f9f9;
+  }
+  
+  .db-checker h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+  
+  .db-checker-status {
+    margin-bottom: 15px;
+    padding: 10px;
+    background-color: #e2e3e5;
+    color: #383d41;
+    border-radius: 5px;
+  }
+  
+  .db-checker-steps {
+    margin-bottom: 15px;
+  }
+  
+  .db-checker-step {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 5px;
+  }
+  
+  .db-checker-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .db-checker-actions button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #003366;
+    color: white;
+  }
+  
+  .step-details {
+    margin-top: 5px;
+    font-size: 14px;
+    background-color: #f8f9fa;
+    padding: 5px;
+    border-radius: 3px;
+    white-space: pre-wrap;
+    overflow-x: auto;
+  }
+  
+  .db-config-form {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
   }
   

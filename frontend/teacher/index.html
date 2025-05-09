@@ -6,6 +6,7 @@
     <title>IELTS Listening Test Creator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../teacher/css/styles.css">
+    <link rel="stylesheet" href="../teacher/css/api-integration.css">
 </head>
 <body>
     <div class="selection-page" id="selectionPage">
@@ -77,8 +78,12 @@
               <i class="fas fa-cog"></i> Cấu hình Server
             </button>
             <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
-            <button id="troubleshooterBtn" class="troubleshooter-button">
-              <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
+            <button id="troubleshooterBtn" class="troubleshooter-button" onclick="showTroubleshooter('troubleshooterContainer')">
+              <i class="fas fa-wrench"></i> Kiểm tra API
+            </button>
+            <!-- Thêm nút kiểm tra kết nối database -->
+            <button id="dbCheckerBtn" class="db-checker-button" onclick="showDbChecker('dbCheckerContainer')">
+              <i class="fas fa-database"></i> Kiểm tra Database
             </button>
         </div>
     </div>
@@ -92,8 +97,10 @@
     <!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
     <div id="troubleshooterContainer"></div>
     
+    <!-- Thêm container cho công cụ kiểm tra database -->
+    <div id="dbCheckerContainer"></div>
+    
     <!-- Tải script theo thứ tự đúng -->
-
             <script src="../teacher/js/client-integration.js"></script>
             <script src="../teacher/js/form-handlers.js"></script>
             <script src="../teacher/js/index.js"></script>
@@ -109,44 +116,34 @@
 <script src="../teacher/js/troubleshooter.js"></script>
 
 <!-- Thêm các file JavaScript mới -->
-
-<!-- Thêm các file JavaScript mới -->
+<script src="../teacher/js/db-checker.js"></script>
 
 <!-- Thêm script để khởi tạo các tính năng mới -->
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Hiển thị trạng thái API
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hiển thị trạng thái API
+    displayApiStatus('apiStatus');
+    
+    // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
+    if (navigator.onLine && typeof syncOfflineTests === 'function') {
+      setTimeout(() => {
+        syncOfflineTests();
+      }, 3000);
+    }
+    
+    // Thêm sự kiện lắng nghe kết nối internet
+    window.addEventListener('online', () => {
       displayApiStatus('apiStatus');
-      
-      // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
-      if (navigator.onLine && typeof syncOfflineTests === 'function') {
-        setTimeout(() => {
-          syncOfflineTests();
-        }, 3000);
+      if (typeof syncOfflineTests === 'function') {
+        syncOfflineTests();
       }
-      
-      // Thêm sự kiện lắng nghe kết nối internet
-      window.addEventListener('online', () => {
-        displayApiStatus('apiStatus');
-        if (typeof syncOfflineTests === 'function') {
-          syncOfflineTests();
-        }
-      });
-      
-      window.addEventListener('offline', () => {
-        displayApiStatus('apiStatus');
-      });
-  
-      // Thêm sự kiện cho nút kiểm tra và sửa lỗi
-      document.getElementById('troubleshooterBtn').addEventListener('click', function() {
-        if (typeof window.showTroubleshooter === 'function') {
-          window.showTroubleshooter('troubleshooterContainer');
-        } else {
-          alert('Chức năng kiểm tra và sửa lỗi chưa được tải. Vui lòng tải lại trang.');
-        }
-      });
     });
-  </script>
+    
+    window.addEventListener('offline', () => {
+      displayApiStatus('apiStatus');
+    });
+  });
+</script>
 </body>
 </html>
 
