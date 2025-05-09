@@ -72,28 +72,26 @@
             <button id="importTestBtn"><i class="fas fa-file-import"></i> Nhập</button>
             <button id="showTestListBtn"><i class="fas fa-list"></i> Danh sách</button>
             <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
+            <!-- Thêm nút cấu hình server vào menu -->
+            <button id="serverConfigBtn" class="server-config-button" onclick="showServerConfigUI('serverConfigContainer')">
+              <i class="fas fa-cog"></i> Cấu hình Server
+            </button>
+            <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
+            <button id="troubleshooterBtn" class="troubleshooter-button">
+              <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
+            </button>
         </div>
     </div>
-     <!-- Thêm nút cấu hình server vào menu -->
-     <button id="serverConfigBtn" class="server-config-button" onclick="showServerConfigUI('serverConfigContainer')">
-        <i class="fas fa-cog"></i> Cấu hình Server
-      </button>
-      <!-- Thêm nút kiểm tra và sửa lỗi vào menu -->
-      <button id="troubleshooterBtn" class="troubleshooter-button" onclick="showTroubleshooter('troubleshooterContainer')">
-        <i class="fas fa-wrench"></i> Kiểm tra và sửa lỗi
-      </button>
-  </div>
-</div>
-
-<!-- Thêm div để hiển thị trạng thái API -->
-<div id="apiStatus" class="api-status-container"></div>
-
-<!-- Thêm container cho cấu hình server -->
-<div id="serverConfigContainer"></div>
-
-<!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
-<div id="troubleshooterContainer"></div>
-
+    
+    <!-- Thêm div để hiển thị trạng thái API -->
+    <div id="apiStatus" class="api-status-container"></div>
+    
+    <!-- Thêm container cho cấu hình server -->
+    <div id="serverConfigContainer"></div>
+    
+    <!-- Thêm container cho công cụ kiểm tra và sửa lỗi -->
+    <div id="troubleshooterContainer"></div>
+    
     <!-- Tải script theo thứ tự đúng -->
 
             <script src="../teacher/js/client-integration.js"></script>
@@ -110,32 +108,45 @@
 <script src="../teacher/js/audio-validator.js"></script>
 <script src="../teacher/js/troubleshooter.js"></script>
 
+<!-- Thêm các file JavaScript mới -->
+
+<!-- Thêm các file JavaScript mới -->
+
 <!-- Thêm script để khởi tạo các tính năng mới -->
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Hiển thị trạng thái API
-    displayApiStatus('apiStatus');
-    
-    // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
-    if (navigator.onLine && typeof syncOfflineTests === 'function') {
-      setTimeout(() => {
-        syncOfflineTests();
-      }, 3000);
-    }
-    
-    // Thêm sự kiện lắng nghe kết nối internet
-    window.addEventListener('online', () => {
+    document.addEventListener('DOMContentLoaded', function() {
+      // Hiển thị trạng thái API
       displayApiStatus('apiStatus');
-      if (typeof syncOfflineTests === 'function') {
-        syncOfflineTests();
+      
+      // Kiểm tra và đồng bộ hóa dữ liệu offline khi tải trang
+      if (navigator.onLine && typeof syncOfflineTests === 'function') {
+        setTimeout(() => {
+          syncOfflineTests();
+        }, 3000);
       }
+      
+      // Thêm sự kiện lắng nghe kết nối internet
+      window.addEventListener('online', () => {
+        displayApiStatus('apiStatus');
+        if (typeof syncOfflineTests === 'function') {
+          syncOfflineTests();
+        }
+      });
+      
+      window.addEventListener('offline', () => {
+        displayApiStatus('apiStatus');
+      });
+  
+      // Thêm sự kiện cho nút kiểm tra và sửa lỗi
+      document.getElementById('troubleshooterBtn').addEventListener('click', function() {
+        if (typeof window.showTroubleshooter === 'function') {
+          window.showTroubleshooter('troubleshooterContainer');
+        } else {
+          alert('Chức năng kiểm tra và sửa lỗi chưa được tải. Vui lòng tải lại trang.');
+        }
+      });
     });
-    
-    window.addEventListener('offline', () => {
-      displayApiStatus('apiStatus');
-    });
-  });
-</script>
+  </script>
 </body>
 </html>
 
