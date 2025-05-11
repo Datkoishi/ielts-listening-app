@@ -74,7 +74,24 @@
             <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
         </div>
     </div>
+    <button onclick="checkAndDisplaySaveStatus()">Kiểm tra trạng thái lưu</button>
 
+    <script>
+    function checkAndDisplaySaveStatus() {
+      const testTitle = document.getElementById('test-title').value;
+      checkTestSaveStatus(testTitle)
+        .then(status => {
+          if (status.saved) {
+            alert(`Bài kiểm tra đã được lưu tại: ${status.location}\nThời gian: ${status.timestamp}`);
+          } else {
+            alert(`Bài kiểm tra chưa được lưu: ${status.reason}`);
+          }
+        })
+        .catch(error => {
+          alert(`Lỗi khi kiểm tra: ${error.message}`);
+        });
+    }
+    </script>
     <!-- Tải script theo thứ tự đúng -->
 
             <script src="../teacher/js/client-integration.js"></script>

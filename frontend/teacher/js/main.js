@@ -532,6 +532,47 @@ function displayExistingQuestions(part) {
   console.warn("displayExistingQuestions function is a placeholder.")
 }
 
+// Thêm vào file main.js hoặc index.js
+function updateSaveStatus() {
+  const testTitle = document.getElementById('test-title').value;
+  const saveStatusElement = document.getElementById('save-status');
+  
+  if (!saveStatusElement) {
+    // Tạo phần tử hiển thị trạng thái nếu chưa có
+    const statusDiv = document.createElement('div');
+    statusDiv.id = 'save-status';
+    statusDiv.className = 'save-status';
+    document.querySelector('.test-header').appendChild(statusDiv);
+  }
+  
+  // Hiển thị đang kiểm tra
+  saveStatusElement.innerHTML = '<span class="checking">Đang kiểm tra trạng thái lưu...</span>';
+  
+  // Kiểm tra trạng thái lưu
+  checkTestSaveStatus(testTitle)
+    .then(status => {
+      if (status.saved) {
+        saveStatusElement.innerHTML = `
+          <span class="saved">Đã lưu</span>
+          <span class="details">Vị trí: ${status.location === 'database' ? 'Cơ sở dữ liệu' : 'Offline'}</span>
+          <span class="details">Thời gian: ${status.timestamp}</span>
+        `;
+      } else {
+        saveStatusElement.innerHTML = `
+          <span class="not-saved">Chưa lưu</span>
+          <span class="details">${status.reason || 'Bài kiểm tra chưa được lưu'}</span>
+        `;
+      }
+    })
+    .catch(error => {
+      saveStatusElement.innerHTML = `
+        <span class="error">Lỗi kiểm tra</span>
+        <span class="details">${error.message}</span>
+      `;
+    });
+}
+
+// Gọi hàm này sau khi tạo bài kiểm tra hoặc khi cần kiểm tra
 // Make sure these functions are exposed to the global window object
 window.previousPart = previousPart
 window.nextPart = nextPart
