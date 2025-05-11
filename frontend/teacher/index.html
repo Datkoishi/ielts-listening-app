@@ -76,23 +76,28 @@
     </div>
     <button onclick="checkAndDisplaySaveStatus()">Kiểm tra trạng thái lưu</button>
 
-    <script>
-    function checkAndDisplaySaveStatus() {
-      const testTitle = document.getElementById('test-title').value;
-      checkTestSaveStatus(testTitle)
-        .then(status => {
-          if (status.saved) {
-            alert(`Bài kiểm tra đã được lưu tại: ${status.location}\nThời gian: ${status.timestamp}`);
-          } else {
-            alert(`Bài kiểm tra chưa được lưu: ${status.reason}`);
-          }
-        })
-        .catch(error => {
-          alert(`Lỗi khi kiểm tra: ${error.message}`);
-        });
-    }
-    </script>
-    <!-- Tải script theo thứ tự đúng -->
+<script>
+function checkAndDisplaySaveStatus() {
+  const testTitle = document.getElementById('testTitle').value;
+  
+  if (!testTitle) {
+    alert("Vui lòng nhập tiêu đề bài kiểm tra trước khi kiểm tra trạng thái lưu");
+    return;
+  }
+  
+  checkTestSaveStatus(testTitle)
+    .then(status => {
+      if (status.saved) {
+        alert(`Bài kiểm tra đã được lưu tại: ${status.location}\nThời gian: ${status.timestamp}`);
+      } else {
+        alert(`Bài kiểm tra chưa được lưu: ${status.reason}`);
+      }
+    })
+    .catch(error => {
+      alert(`Lỗi khi kiểm tra: ${error.message}`);
+    });
+}
+</script>
 
             <script src="../teacher/js/client-integration.js"></script>
             <script src="../teacher/js/form-handlers.js"></script>
