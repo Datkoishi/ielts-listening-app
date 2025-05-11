@@ -1042,7 +1042,69 @@ window.addEventListener("online", async () => {
 window.syncOfflineTests = syncOfflineTests
 window.checkServerConnection = checkServerConnection
 
-// Xuất các hàm để sử dụng trong các file khác
+// Thêm hàm kiểm tra trạng thái lưu của bài kiểm tra
+async function checkTestSaveStatus(testTitle) {
+  try {
+    // Kiểm tra kết nối server
+    const isServerConnected = await checkServerConnection()
+    if (!isServerConnected) {
+      console.log("Không thể kết nối đến server để kiểm tra")
+
+      // Kiểm tra trong localStorage
+      const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
+      const offlineTest = offlineTests.find((test) => test.data.title === testTitle)
+
+      if (offlineTest) {
+        return {
+          saved: true,
+          location: "offline",
+          id: offlineTest.id,
+          timestamp: new Date(offlineTest.timestamp).toLocaleString(),
+        }
+      }
+
+      return { saved: false, reason: "Không thể kết nối đến server" }
+    }
+
+    // Lấy danh sách bài kiểm tra từ server
+    const tests = await getTests()
+
+    // Tìm bài kiểm tra theo tiêu đề
+    const test = tests.find((test) => test.title === testTitle)
+
+    if (test) {
+      return {
+        saved: true,
+        location: "database",
+        id: test.id,
+        timestamp: new Date(test.created_at).toLocaleString(),
+      }
+    }
+
+    // Kiểm tra trong localStorage nếu không tìm thấy trên server
+    const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
+    const offlineTest = offlineTests.find((test) => test.data.title === testTitle)
+
+    if (offlineTest) {
+      return {
+        saved: true,
+        location: "offline",
+        id: offlineTest.id,
+        timestamp: new Date(offlineTest.timestamp).toLocaleString(),
+      }
+    }
+
+    return { saved: false, reason: "Không tìm thấy bài kiểm tra" }
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra trạng thái lưu:", error)
+    return { saved: false, error: error.message }
+  }
+}
+
+// Thêm hàm vào window object
+window.checkTestSaveStatus = checkTestSaveStatus
+
+// Thêm các hàm mới vào window object
 window.saveToken = saveToken
 window.getToken = getToken
 window.removeToken = removeToken
