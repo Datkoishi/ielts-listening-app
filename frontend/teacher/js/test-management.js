@@ -683,7 +683,30 @@ function nextPart() {
 //   }
 // }
 
-// Update the saveTest function to use the global test object
+// Thêm hàm kiểm tra kết nối server trước khi lưu
+async function checkServerBeforeSave() {
+  try {
+    // Hiển thị thông báo đang kiểm tra
+    showNotification("Đang kiểm tra kết nối server...", "info")
+
+    // Kiểm tra kết nối
+    const isConnected = await window.checkServerConnection()
+
+    if (isConnected) {
+      showNotification("Kết nối server thành công, đang lưu bài kiểm tra...", "info")
+      return true
+    } else {
+      showNotification("Không thể kết nối đến server. Bài kiểm tra sẽ được lưu cục bộ.", "warning")
+      return false
+    }
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra kết nối server:", error)
+    showNotification("Lỗi khi kiểm tra kết nối server. Bài kiểm tra sẽ được lưu cục bộ.", "warning")
+    return false
+  }
+}
+
+// Cập nhật hàm saveTest để kiểm tra kết nối trước khi lưu
 function saveTest() {
   try {
     console.log("Saving test data from test-management.js...")
@@ -864,81 +887,122 @@ function saveTest() {
       }
     }, 200)
 
-    // Save to server using the client-integration.js function
-    if (typeof saveTestToServer === "function") {
-      saveTestToServer(globalTest)
-        .then((response) => {
-          console.log("Test saved successfully:", response)
+    // Kiểm tra kết nối server trước khi lưu
+    checkServerBeforeSave().then((isConnected) => {
+      // Save to server using the client-integration.js function
+      if (typeof saveTestToServer === "function") {
+        saveTestToServer(globalTest)
+          .then((response) => {
+            console.log("Test saved successfully:", response)
 
-          // Complete progress
-          clearInterval(progressInterval)
-          const progressFill = progressIndicator.querySelector(".progress-fill")
-          const progressText = progressIndicator.querySelector(".progress-text")
-          if (progressFill && progressText) {
-            progressFill.style.width = "100%"
-            progressText.textContent = "Hoàn thành 100%"
-          }
+            // Complete progress
+            clearInterval(progressInterval)
+            const progressFill = progressIndicator.querySelector(".progress-fill")
+            const progressText = progressIndicator.querySelector(".progress-text")
+            if (progressFill && progressText) {
+              progressFill.style.width = "100%"
+              progressText.textContent = "Hoàn thành 100%"
+            }
 
-          // Remove progress indicator after a delay
-          setTimeout(() => {
+            // Remove progress indicator after a delay
+            setTimeout(() => {
+              if (progressIndicator.parentNode) {
+                progressIndicator.parentNode.removeChild(progressIndicator)
+              }
+            }, 1000)
+
+            showNotification(
+              `Bài kiểm tra "${globalTest.vietnameseName || globalTest.title}" đã được lưu thành công!`,
+              "success",
+            )
+
+            // Nếu lưu offline, hiển thị thông báo bổ sung
+            if (response.offline) {
+              setTimeout(() => {
+                showNotification("Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối internet.", "info")
+              }, 1000)
+            }
+          })
+          .catch((error) => {
+            console.error("Error saving test:", error)
+
+            // Remove progress indicator
             if (progressIndicator.parentNode) {
               progressIndicator.parentNode.removeChild(progressIndicator)
             }
-          }, 1000)
 
-          showNotification(
-            `Bài kiểm tra "${globalTest.vietnameseName || globalTest.title}" đã được lưu thành công!`,
-            "success",
-          )
+            // Hiển thị thông báo lỗi chi tiết
+            let errorMessage = error.message || "Lỗi không xác định"
+            if (error.response) {
+              errorMessage = `Lỗi server (${error.response.status}): ${error.response.statusText}`
+            } else if (error.request) {
+              errorMessage = "Không nhận được phản hồi từ server. Vui lòng kiểm tra kết nối mạng."
+            }
 
-          // Nếu lưu offline, hiển thị thông báo bổ sung
-          if (response.offline) {
-            setTimeout(() => {
-              showNotification("Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối internet.", "info")
-            }, 1000)
-          }
-        })
-        .catch((error) => {
-          console.error("Error saving test:", error)
+            showNotification(`Lỗi khi lưu bài kiểm tra: ${errorMessage}`, "error")
 
-          // Remove progress indicator
-          if (progressIndicator.parentNode) {
-            progressIndicator.parentNode.removeChild(progressIndicator)
-          }
-
-          showNotification(`Lỗi khi lưu bài kiểm tra: ${error.message || "Lỗi không xác định"}`, "error")
-
-          // Hiển thị tùy chọn lưu offline nếu lỗi kết nối
-          if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
-            setTimeout(() => {
-              if (confirm("Không thể kết nối đến máy chủ. Bạn có muốn lưu bài kiểm tra cục bộ không?")) {
-                // Lưu offline
-                const offlineId = saveTestOffline(normalizeTestData(globalTest))
-                if (offlineId) {
-                  showNotification(
-                    "Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối internet.",
-                    "success",
-                  )
-                } else {
-                  showNotification("Không thể lưu bài kiểm tra cục bộ.", "error")
+            // Hiển thị tùy chọn lưu offline nếu lỗi kết nối
+            if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+              setTimeout(() => {
+                if (confirm("Không thể kết nối đến máy chủ. Bạn có muốn lưu bài kiểm tra cục bộ không?")) {
+                  // Lưu offline
+                  const offlineId = saveTestOfflineFn(normalizeTestData(globalTest))
+                  if (offlineId) {
+                    showNotification(
+                      "Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối internet.",
+                      "success",
+                    )
+                  } else {
+                    showNotification("Không thể lưu bài kiểm tra cục bộ.", "error")
+                  }
                 }
-              }
-            }, 1000)
-          }
-        })
-    } else {
-      console.warn("saveTestToServer function not available")
+              }, 1000)
+            }
+          })
+      } else {
+        console.warn("saveTestToServer function not available")
 
-      // Remove progress indicator
-      if (progressIndicator.parentNode) {
-        progressIndicator.parentNode.removeChild(progressIndicator)
+        // Remove progress indicator
+        if (progressIndicator.parentNode) {
+          progressIndicator.parentNode.removeChild(progressIndicator)
+        }
+
+        showNotification("Hàm lưu bài kiểm tra không khả dụng", "warning")
+
+        // Lưu offline nếu hàm saveTestToServer không khả dụng
+        const offlineId = saveTestOfflineFn(globalTest)
+        if (offlineId) {
+          showNotification("Bài kiểm tra đã được lưu cục bộ.", "success")
+        }
       }
-
-      showNotification("Hàm lưu bài kiểm tra không khả dụng", "warning")
-    }
+    })
   } catch (error) {
     console.error("Error in saveTest function:", error)
     showNotification(`Lỗi: ${error.message || "Lỗi không xác định"}`, "error")
+  }
+}
+
+// Thêm hàm lưu offline
+function saveTestOfflineFn(testData) {
+  try {
+    // Tạo ID tạm thời
+    const tempId = `offline_${Date.now()}`
+
+    // Lưu vào localStorage
+    const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
+    offlineTests.push({
+      id: tempId,
+      data: testData,
+      timestamp: Date.now(),
+    })
+
+    localStorage.setItem("offlineTests", JSON.stringify(offlineTests))
+    console.log("Đã lưu bài kiểm tra offline:", tempId)
+
+    return tempId
+  } catch (error) {
+    console.error("Lỗi khi lưu offline:", error)
+    return null
   }
 }
 
@@ -2739,27 +2803,6 @@ async function getTestById(testId) {
       resolve(testData)
     }, 500)
   })
-}
-
-/**
- * Saves the test data offline using local storage.
- * @param {object} testData - The test data to be saved.
- * @returns {string|null} - The ID of the saved test, or null if saving fails.
- */
-function saveTestOffline(testData) {
-  try {
-    // Generate a unique ID for the test
-    const testId = `offline_${Date.now()}`
-
-    // Store the test data in local storage
-    localStorage.setItem(testId, JSON.stringify(testData))
-
-    console.log(`Test saved offline with ID: ${testId}`)
-    return testId
-  } catch (error) {
-    console.error("Error saving test offline:", error)
-    return null
-  }
 }
 
 /**

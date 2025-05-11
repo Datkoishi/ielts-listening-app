@@ -154,23 +154,34 @@ function normalizeQuestionData(question) {
   return normalizedQuestion
 }
 
-// Chuẩn hóa dữ liệu bài kiểm tra trước khi gửi đến server
+// Cập nhật hàm normalizeTestData để đảm bảo dữ liệu khớp với schema cơ sở dữ liệu
 function normalizeTestData(testData) {
+  // Kiểm tra dữ liệu đầu vào
+  if (!testData) {
+    console.error("Dữ liệu bài kiểm tra không hợp lệ:", testData)
+    throw new Error("Dữ liệu bài kiểm tra không hợp lệ")
+  }
+
+  // Log dữ liệu đầu vào để debug
+  console.log("Dữ liệu đầu vào của normalizeTestData:", JSON.stringify(testData, null, 2))
+
+  // Chuẩn bị dữ liệu cơ bản
   const normalizedTest = {
     title: testData.title || "",
-    description: testData.description || "",
     vietnamese_name: testData.vietnameseName || "",
+    description: testData.description || "",
     // Thêm trường content để lưu thông tin bổ sung
     content: JSON.stringify({
       difficulty: "medium", // Mặc định là trung bình
       total_questions: calculateTotalQuestions(testData),
       type: "listening",
-      version: "1.0", // Phiên bản mặc định
+      version: testData.version || "1.0", // Phiên bản mặc định
     }),
     // Thêm trường version để theo dõi phiên bản
-    version: "1.0",
+    version: testData.version || "1.0",
     // Thêm trường status nếu cần
     status: "active",
+    // Cấu trúc parts theo đúng schema
     parts: [],
   }
 
@@ -185,9 +196,45 @@ function normalizeTestData(testData) {
     return total
   }
 
-  // Convert parts to the format expected by the backend
+  // Chuyển đổi parts theo đúng cấu trúc schema
   for (let i = 1; i <= 4; i++) {
     if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
+      const partQuestions = testData[`part${i}`].map((question, qIndex) => {
+        // Map question_type string sang type_id (theo schema)
+        const typeIdMap = {
+          "Một đáp án": 1,
+          "Nhiều đáp án": 2,
+          "Ghép nối": 3,
+          "Ghi nhãn Bản đồ/Sơ đồ": 4,
+          "Hoàn thành ghi chú": 5,
+          "Hoàn thành bảng/biểu mẫu": 6,
+          "Hoàn thành lưu đồ": 7,
+        }
+
+        // Đảm bảo content và correctAnswers là chuỗi JSON
+        let contentStr = question.content
+        if (typeof contentStr !== "string") {
+          contentStr = JSON.stringify(contentStr)
+        }
+
+        let correctAnswersStr = question.correctAnswers
+        if (typeof correctAnswersStr !== "string") {
+          correctAnswersStr = JSON.stringify(correctAnswersStr)
+        }
+
+        return {
+          question_type: question.type,
+          // Thêm type_id để liên kết với bảng question_types
+          type_id: typeIdMap[question.type] || 1,
+          content: contentStr,
+          correct_answers: correctAnswersStr,
+          // Thêm các trường bổ sung theo schema
+          difficulty: "medium",
+          points: 1,
+          position: qIndex + 1, // Vị trí câu hỏi trong phần
+        }
+      })
+
       normalizedTest.parts.push({
         part_number: i,
         // Thêm instructions cho mỗi phần
@@ -198,43 +245,26 @@ function normalizeTestData(testData) {
           description: `Description for Part ${i}`,
           question_count: testData[`part${i}`].length,
         }),
-        questions: testData[`part${i}`].map((question) => {
-          // Map question_type string sang type_id (giả định)
-          const typeIdMap = {
-            "Một đáp án": 1,
-            "Nhiều đáp án": 2,
-            "Ghép nối": 3,
-            "Ghi nhãn Bản đồ/Sơ đồ": 4,
-            "Hoàn thành ghi chú": 5,
-            "Hoàn thành bảng/biểu mẫu": 6,
-            "Hoàn thành lưu đồ": 7,
-          }
-
-          return {
-            question_type: question.type,
-            // Thêm type_id để liên kết với bảng question_types
-            type_id: typeIdMap[question.type] || 1,
-            content: JSON.stringify(question.content),
-            correct_answers: JSON.stringify(question.correctAnswers),
-            // Thêm các trường bổ sung nếu cần
-            difficulty: "medium",
-            points: 1,
-          }
-        }),
+        questions: partQuestions,
       })
     }
   }
+
+  // Log dữ liệu đã chuẩn hóa để debug
+  console.log("Dữ liệu đã chuẩn hóa:", JSON.stringify(normalizedTest, null, 2))
 
   return normalizedTest
 }
 
 // Lưu bài kiểm tra lên server
+// Cập nhật hàm saveTestToServer để cải thiện xử lý lỗi
 async function saveTestToServer(testData) {
   try {
     // Show loading notification
     showNotification("Đang kết nối với máy chủ...", "info")
 
     // Make sure we're using the global test object
+    // Declare globalTest to avoid the error
     const globalTest = window.test || testData
 
     console.log("Test data received by saveTestToServer:", testData)
@@ -344,56 +374,121 @@ async function saveTestToServer(testData) {
       }
     }
 
+    // Kiểm tra kết nối mạng
+    if (!navigator.onLine) {
+      // Lưu dữ liệu vào localStorage để đồng bộ sau
+      const offlineId = saveTestOffline(globalTest)
+      showNotification("Đang offline: Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối", "warning")
+      return { success: true, offline: true, message: "Đã lưu offline", offlineId }
+    }
+
     // Normalize data before sending
     const normalizedData = normalizeTestData(globalTest)
     console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
 
-    // Thêm xử lý offline
-    if (!navigator.onLine) {
-      // Lưu dữ liệu vào localStorage để đồng bộ sau
-      saveTestOffline(normalizedData)
-      showNotification("Đang offline: Bài kiểm tra đã được lưu cục bộ và sẽ được đồng bộ khi có kết nối", "warning")
-      return { success: true, offline: true, message: "Đã lưu offline" }
+    // Kiểm tra cấu hình API_URL
+    if (!API_URL) {
+      console.error("API_URL không được định nghĩa")
+      showNotification("Lỗi cấu hình: API_URL không được định nghĩa", "error")
+      return { success: false, error: "API_URL không được định nghĩa" }
     }
 
-    // Make API request
-    const response = await fetchWithAuth(`${API_URL}/tests`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(normalizedData),
-      // Thêm credentials để xử lý vấn đề cookie
-      credentials: "include",
-    })
+    // Hiển thị thông tin về API endpoint
+    console.log(`Đang gửi dữ liệu đến: ${API_URL}/tests`)
 
-    if (!response.ok) {
-      const errorData = await response.json()
-      throw new Error(errorData.message || "Không thể lưu bài kiểm tra")
+    // Make API request with timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 giây timeout
+
+    try {
+      const response = await fetchWithAuth(`${API_URL}/tests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(normalizedData),
+        // Thêm credentials để xử lý vấn đề cookie
+        credentials: "include",
+        signal: controller.signal,
+      })
+
+      clearTimeout(timeoutId)
+
+      // Kiểm tra và hiển thị thông tin response
+      console.log("Response status:", response.status)
+      console.log("Response headers:", [...response.headers.entries()])
+
+      if (!response.ok) {
+        const errorData = await response.json().catch((e) => ({ message: "Không thể đọc dữ liệu lỗi" }))
+        console.error("Server error response:", errorData)
+        throw new Error(errorData.message || `Lỗi server: ${response.status} ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      showNotification("Bài kiểm tra đã được lưu thành công!", "success")
+
+      // Lưu ID bài kiểm tra để sử dụng sau này
+      if (result.testId) {
+        localStorage.setItem("lastSavedTestId", result.testId)
+      }
+
+      return result
+    } catch (error) {
+      clearTimeout(timeoutId)
+      if (error.name === "AbortError") {
+        console.error("Yêu cầu bị hủy do timeout")
+        throw new Error("Yêu cầu bị hủy do timeout. Vui lòng kiểm tra kết nối mạng và thử lại.")
+      }
+      throw error
     }
-
-    const result = await response.json()
-    showNotification("Bài kiểm tra đã được lưu thành công!", "success")
-
-    // Lưu ID bài kiểm tra để sử dụng sau này
-    if (result.testId) {
-      localStorage.setItem("lastSavedTestId", result.testId)
-    }
-
-    return result
   } catch (error) {
     console.error("Lỗi khi lưu bài kiểm tra lên máy chủ:", error)
-    showNotification(`Lỗi: ${error.message}`, "error")
+
+    // Hiển thị thông báo lỗi chi tiết
+    let errorMessage = error.message || "Lỗi không xác định"
+    if (error.response) {
+      errorMessage = `Lỗi server (${error.response.status}): ${error.response.statusText}`
+    } else if (error.request) {
+      errorMessage = "Không nhận được phản hồi từ server. Vui lòng kiểm tra kết nối mạng."
+    }
+
+    showNotification(`Lỗi: ${errorMessage}`, "error")
 
     // If there's a network error or server is down, provide a fallback
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
       // Lưu offline nếu không kết nối được
-      saveTestOffline(normalizeTestData(window.test || testData))
+      const offlineId = saveTestOffline(globalTest || testData)
       showNotification("Không thể kết nối đến máy chủ. Bài kiểm tra đã được lưu cục bộ.", "warning")
-      return { success: false, offline: true, message: "Đã lưu offline do lỗi kết nối" }
+      return { success: false, offline: true, message: "Đã lưu offline do lỗi kết nối", offlineId }
     }
 
     throw error
+  }
+}
+
+// Thêm hàm kiểm tra kết nối server
+async function checkServerConnection() {
+  try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 giây timeout
+
+    const response = await fetch(`${API_URL}/health`, {
+      method: "GET",
+      signal: controller.signal,
+    })
+
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      console.log("Kết nối server thành công")
+      return true
+    } else {
+      console.error("Server không phản hồi đúng:", response.status, response.statusText)
+      return false
+    }
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra kết nối server:", error)
+    return false
   }
 }
 
@@ -945,6 +1040,7 @@ window.addEventListener("online", async () => {
 
 // Thêm các hàm mới vào window object
 window.syncOfflineTests = syncOfflineTests
+window.checkServerConnection = checkServerConnection
 
 // Xuất các hàm để sử dụng trong các file khác
 window.saveToken = saveToken

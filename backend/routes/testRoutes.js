@@ -20,4 +20,7 @@ router.delete("/:id", testController.deleteTest)
 // Nhận câu trả lời từ học sinh
 router.post("/:testId/submit", testController.submitAnswers)
 
+// Thêm route kiểm tra kết nối
+router.get("/health", testController.healthCheck)
+
 module.exports = router
