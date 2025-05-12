@@ -281,7 +281,7 @@ async function saveTestToServer(testData) {
       }
     }
 
-    console.log(`Test has questions: ${hasQuestions}, Total questions: ${totalQuestions}`)
+    console.log(`Test has questions: ${hasQuestions}, Total questions: ${hasQuestions}`)
 
     if (!hasQuestions) {
       console.warn("Không tìm thấy câu hỏi trong dữ liệu bài kiểm tra, đang cố gắng tạo lại từ DOM")
@@ -466,13 +466,14 @@ async function saveTestToServer(testData) {
   }
 }
 
-// Thêm hàm kiểm tra kết nối server
+// Cập nhật hàm kiểm tra kết nối server
 async function checkServerConnection() {
   try {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 giây timeout
 
-    const response = await fetch(`${API_URL}/health`, {
+    // Sửa URL endpoint để đảm bảo đúng đường dẫn
+    const response = await fetch(`${API_URL}/tests/health`, {
       method: "GET",
       signal: controller.signal,
     })
@@ -1045,16 +1046,30 @@ window.checkServerConnection = checkServerConnection
 // Thêm hàm kiểm tra trạng thái lưu của bài kiểm tra
 async function checkTestSaveStatus(testTitle) {
   try {
+    // Kiểm tra nếu testTitle không tồn tại
+    if (!testTitle) {
+      return { saved: false, reason: "Chưa nhập tiêu đề bài kiểm tra" }
+    }
+
+    console.log("Đang kiểm tra trạng thái lưu cho bài kiểm tra:", testTitle)
+
     // Kiểm tra kết nối server
     const isServerConnected = await checkServerConnection()
+    console.log("Kết quả kiểm tra kết nối server:", isServerConnected)
+
     if (!isServerConnected) {
       console.log("Không thể kết nối đến server để kiểm tra")
 
       // Kiểm tra trong localStorage
       const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
-      const offlineTest = offlineTests.find((test) => test.data.title === testTitle)
+      console.log("Số lượng bài kiểm tra offline:", offlineTests.length)
+
+      const offlineTest = offlineTests.find(
+        (test) => test.data && (test.data.title === testTitle || test.data.vietnameseName === testTitle),
+      )
 
       if (offlineTest) {
+        console.log("Đã tìm thấy bài kiểm tra trong dữ liệu offline:", offlineTest.id)
         return {
           saved: true,
           location: "offline",
@@ -1066,26 +1081,39 @@ async function checkTestSaveStatus(testTitle) {
       return { saved: false, reason: "Không thể kết nối đến server" }
     }
 
-    // Lấy danh sách bài kiểm tra từ server
-    const tests = await getTests()
+    // Nếu kết nối được server, thử lấy danh sách bài kiểm tra
+    try {
+      const tests = await getTests()
+      console.log("Số lượng bài kiểm tra từ server:", tests ? tests.length : 0)
 
-    // Tìm bài kiểm tra theo tiêu đề
-    const test = tests.find((test) => test.title === testTitle)
-
-    if (test) {
-      return {
-        saved: true,
-        location: "database",
-        id: test.id,
-        timestamp: new Date(test.created_at).toLocaleString(),
+      if (!tests || !Array.isArray(tests)) {
+        return { saved: false, reason: "Không thể lấy danh sách bài kiểm tra từ server" }
       }
+
+      // Tìm bài kiểm tra theo tiêu đề hoặc tên tiếng Việt
+      const test = tests.find((test) => test.title === testTitle || test.vietnamese_name === testTitle)
+
+      if (test) {
+        console.log("Đã tìm thấy bài kiểm tra trên server:", test.id)
+        return {
+          saved: true,
+          location: "database",
+          id: test.id,
+          timestamp: new Date(test.created_at || test.updated_at || Date.now()).toLocaleString(),
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi lấy danh sách bài kiểm tra từ server:", error)
     }
 
     // Kiểm tra trong localStorage nếu không tìm thấy trên server
     const offlineTests = JSON.parse(localStorage.getItem("offlineTests") || "[]")
-    const offlineTest = offlineTests.find((test) => test.data.title === testTitle)
+    const offlineTest = offlineTests.find(
+      (test) => test.data && (test.data.title === testTitle || test.data.vietnameseName === testTitle),
+    )
 
     if (offlineTest) {
+      console.log("Đã tìm thấy bài kiểm tra trong dữ liệu offline:", offlineTest.id)
       return {
         saved: true,
         location: "offline",
@@ -1097,7 +1125,7 @@ async function checkTestSaveStatus(testTitle) {
     return { saved: false, reason: "Không tìm thấy bài kiểm tra" }
   } catch (error) {
     console.error("Lỗi khi kiểm tra trạng thái lưu:", error)
-    return { saved: false, error: error.message }
+    return { saved: false, reason: error.message || "Lỗi không xác định" }
   }
 }
 

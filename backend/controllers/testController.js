@@ -398,23 +398,18 @@ exports.submitAnswers = async (req, res) => {
 }
 
 // Thêm endpoint kiểm tra kết nối
-exports.healthCheck = async (req, res) => {
+exports.healthCheck = (req, res) => {
   try {
-    // Kiểm tra kết nối database
-    const dbResult = await query("SELECT 1")
-
-    res.json({
-      status: "ok",
-      message: "Server đang hoạt động",
-      database: dbResult ? "connected" : "error",
+    res.status(200).json({
+      status: "success",
+      message: "Server is running",
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error("Lỗi kiểm tra kết nối:", error)
+    console.error("Health check error:", error)
     res.status(500).json({
       status: "error",
-      message: "Lỗi kết nối database",
-      error: error.message,
+      message: "Server error during health check",
     })
   }
 }
