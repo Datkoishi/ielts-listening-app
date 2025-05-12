@@ -469,22 +469,41 @@ async function saveTestToServer(testData) {
 // Cập nhật hàm kiểm tra kết nối server
 async function checkServerConnection() {
   try {
+    console.log("Đang kiểm tra kết nối server...")
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 giây timeout
 
     // Sửa URL endpoint để đảm bảo đúng đường dẫn
-    const response = await fetch(`${API_URL}/tests/health`, {
+    const url = `${API_URL}/tests/health`
+    console.log("URL kiểm tra kết nối:", url)
+
+    const response = await fetch(url, {
       method: "GET",
       signal: controller.signal,
+      // Thêm mode: 'cors' để xử lý vấn đề CORS
+      mode: "cors",
+      // Thêm credentials để xử lý vấn đề cookie
+      credentials: "include",
     })
 
     clearTimeout(timeoutId)
 
+    // Log response để debug
+    console.log("Response status:", response.status)
+
     if (response.ok) {
-      console.log("Kết nối server thành công")
+      const data = await response.json()
+      console.log("Kết nối server thành công:", data)
       return true
     } else {
       console.error("Server không phản hồi đúng:", response.status, response.statusText)
+      // Thử đọc response body để xem lỗi chi tiết
+      try {
+        const errorData = await response.json()
+        console.error("Error details:", errorData)
+      } catch (e) {
+        console.error("Không thể đọc chi tiết lỗi")
+      }
       return false
     }
   } catch (error) {

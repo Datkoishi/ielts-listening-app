@@ -400,6 +400,7 @@ exports.submitAnswers = async (req, res) => {
 // Thêm endpoint kiểm tra kết nối
 exports.healthCheck = (req, res) => {
   try {
+    // Trả về response đơn giản không cần truy vấn database
     res.status(200).json({
       status: "success",
       message: "Server is running",
@@ -410,6 +411,7 @@ exports.healthCheck = (req, res) => {
     res.status(500).json({
       status: "error",
       message: "Server error during health check",
+      error: error.message,
     })
   }
 }
