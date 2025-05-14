@@ -6,73 +6,75 @@
     <title>IELTS Listening Test Creator</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="../teacher/css/styles.css">
+    <script src="../teacher/js/save-status.js"></script>
 </head>
 <body>
-    <div class="selection-page" id="selectionPage">
-        <h1><i class="fas fa-headphones"></i> Công cụ tạo bài kiểm tra IELTS Listening</h1>
-        <p>Chọn loại câu hỏi để đưa vào bài kiểm tra của bạn:</p>
-        <div class="question-types" id="questionTypes">
-            <div class="question-type">
-                <input type="checkbox" id="oneAnswer" value="Một đáp án">
-                <label for="oneAnswer"><i class="fas fa-check-circle"></i> Một đáp án</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="multipleAnswers" value="Nhiều đáp án">
-                <label for="multipleAnswers"><i class="fas fa-check-double"></i> Nhiều đáp án</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="matching" value="Ghép nối">
-                <label for="matching"><i class="fas fa-link"></i> Ghép nối</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="labelling" value="Ghi nhãn Bản đồ/Sơ đồ">
-                <label for="labelling"><i class="fas fa-map-marker-alt"></i> Ghi nhãn Bản đồ/Sơ đồ</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="noteCompletion" value="Hoàn thành ghi chú">
-                <label for="noteCompletion"><i class="fas fa-sticky-note"></i> Hoàn thành ghi chú</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="formCompletion" value="Hoàn thành bảng/biểu mẫu">
-                <label for="formCompletion"><i class="fas fa-table"></i> Hoàn thành bảng/biểu mẫu</label>
-            </div>
-            <div class="question-type">
-                <input type="checkbox" id="flowchartCompletion" value="Hoàn thành lưu đồ">
-                <label for="flowchartCompletion"><i class="fas fa-project-diagram"></i> Hoàn thành lưu đồ</label>
-            </div>
+  <div class="selection-page" id="selectionPage">
+    <h1><i class="fas fa-headphones"></i> Công cụ tạo bài kiểm tra IELTS Listening</h1>
+    <p>Chọn loại câu hỏi để đưa vào bài kiểm tra của bạn:</p>
+    <div class="question-types" id="questionTypes">
+        <div class="question-type">
+            <input type="checkbox" id="oneAnswer" value="Một đáp án">
+            <label for="oneAnswer"><i class="fas fa-check-circle"></i> Một đáp án</label>
         </div>
-        <button id="startTestBtn"><i class="fas fa-play"></i> Tạo bài kiểm tra</button>
+        <div class="question-type">
+            <input type="checkbox" id="multipleAnswers" value="Nhiều đáp án">
+            <label for="multipleAnswers"><i class="fas fa-check-double"></i> Nhiều đáp án</label>
+        </div>
+        <div class="question-type">
+            <input type="checkbox" id="matching" value="Ghép nối">
+            <label for="matching"><i class="fas fa-link"></i> Ghép nối</label>
+        </div>
+        <div class="question-type">
+            <input type="checkbox" id="labelling" value="Ghi nhãn Bản đồ/Sơ đồ">
+            <label for="labelling"><i class="fas fa-map-marker-alt"></i> Ghi nhãn Bản đồ/Sơ đồ</label>
+        </div>
+        <div class="question-type">
+            <input type="checkbox" id="noteCompletion" value="Hoàn thành ghi chú">
+            <label for="noteCompletion"><i class="fas fa-sticky-note"></i> Hoàn thành ghi chú</label>
+        </div>
+        <div class="question-type">
+            <input type="checkbox" id="formCompletion" value="Hoàn thành bảng/biểu mẫu">
+            <label for="formCompletion"><i class="fas fa-table"></i> Hoàn thành bảng/biểu mẫu</label>
+        </div>
+        <div class="question-type">
+            <input type="checkbox" id="flowchartCompletion" value="Hoàn thành lưu đồ">
+            <label for="flowchartCompletion"><i class="fas fa-project-diagram"></i> Hoàn thành lưu đồ</label>
+        </div>
     </div>
+    <button id="startTestBtn"><i class="fas fa-play"></i> Tạo bài kiểm tra</button>
+</div>
 
-    <div class="test-creation-page hidden" id="testCreationPage">
-        <h1><i class="fas fa-pencil-alt"></i> Bài kiểm tra IELTS Listening</h1>
-        <div class="test-metadata-form">
-        <div class="form-group">
-          <label for="testTitle">Tiêu đề bài kiểm tra (Tiếng Anh):</label>
-          <input type="text" id="testTitle" required placeholder="Nhập tiêu đề bài kiểm tra bằng tiếng Anh">
-        </div>
-        <div class="form-group">
-          <label for="testVietnameseName">Tên bộ câu hỏi (Tiếng Việt):</label>
-          <input type="text" id="testVietnameseName" placeholder="Nhập tên bộ câu hỏi bằng tiếng Việt">
-        </div>
-        <div class="form-group">
-          <label for="testDescription">Mô tả (không bắt buộc):</label>
-          <textarea id="testDescription" rows="2" placeholder="Nhập mô tả cho bài kiểm tra"></textarea>
-        </div>
-      </div>
-        <div id="testContent"></div>
-        <div class="nav-buttons">
-            <button id="previousPartBtn"><i class="fas fa-arrow-left"></i> Phần trước</button>
-            <button id="nextPartBtn">Phần tiếp theo <i class="fas fa-arrow-right"></i></button>
-        </div>
-        <div class="test-actions">
-            <button id="saveTestBtn"><i class="fas fa-save"></i> Lưu bài kiểm tra</button>
-            <button id="previewTestBtn"><i class="fas fa-eye"></i> Xem trước</button>
-            <button id="exportTestBtn"><i class="fas fa-file-export"></i> Xuất</button>
-            <button id="importTestBtn"><i class="fas fa-file-import"></i> Nhập</button>
-            <button id="showTestListBtn"><i class="fas fa-list"></i> Danh sách</button>
-            <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
-        </div>
+<div class="test-creation-page hidden" id="testCreationPage">
+    <h1><i class="fas fa-pencil-alt"></i> Bài kiểm tra IELTS Listening</h1>
+    <div class="test-metadata-form">
+    <div class="form-group">
+      <label for="testTitle">Tiêu đề bài kiểm tra (Tiếng Anh):</label>
+      <input type="text" id="testTitle" required placeholder="Nhập tiêu đề bài kiểm tra bằng tiếng Anh">
+    </div>
+    <div class="form-group">
+      <label for="testVietnameseName">Tên bộ câu hỏi (Tiếng Việt):</label>
+      <input type="text" id="testVietnameseName" placeholder="Nhập tên bộ câu hỏi bằng tiếng Việt">
+    </div>
+    <div class="form-group">
+      <label for="testDescription">Mô tả (không bắt buộc):</label>
+      <textarea id="testDescription" rows="2" placeholder="Nhập mô tả cho bài kiểm tra"></textarea>
+    </div>
+  </div>
+    <div id="testContent"></div>
+    <div class="nav-buttons">
+        <button id="previousPartBtn"><i class="fas fa-arrow-left"></i> Phần trước</button>
+        <button id="nextPartBtn">Phần tiếp theo <i class="fas fa-arrow-right"></i></button>
+    </div>
+    <div class="test-actions">
+        <button id="saveTestBtn"><i class="fas fa-save"></i> Lưu bài kiểm tra</button>
+        <button id="previewTestBtn"><i class="fas fa-eye"></i> Xem trước</button>
+        <button id="exportTestBtn"><i class="fas fa-file-export"></i> Xuất</button>
+        <button id="importTestBtn"><i class="fas fa-file-import"></i> Nhập</button>
+        <button id="showTestListBtn"><i class="fas fa-list"></i> Danh sách</button>
+        <button id="createNewTestBtn"><i class="fas fa-file"></i> Tạo mới</button>
+    </div>
+</div>
     </div>
     <button onclick="checkAndDisplaySaveStatus()">Kiểm tra trạng thái lưu</button>
 

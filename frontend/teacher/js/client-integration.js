@@ -473,7 +473,7 @@ async function checkServerConnection() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 giây timeout
 
-    // Sửa URL endpoint để sử dụng /api/health thay vì /api/tests/health
+    // Sử dụng endpoint health check mới
     const url = `${API_URL}/health`
     console.log("URL kiểm tra kết nối:", url)
 
@@ -508,6 +508,39 @@ async function checkServerConnection() {
     }
   } catch (error) {
     console.error("Lỗi khi kiểm tra kết nối server:", error)
+    return false
+  }
+}
+
+// Thêm hàm kiểm tra kết nối cơ sở dữ liệu
+async function checkDatabaseConnection() {
+  try {
+    console.log("Đang kiểm tra kết nối cơ sở dữ liệu...")
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 giây timeout
+
+    const url = `${API_URL}/health/db`
+    console.log("URL kiểm tra kết nối DB:", url)
+
+    const response = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      mode: "cors",
+      credentials: "include",
+    })
+
+    clearTimeout(timeoutId)
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log("Kết nối cơ sở dữ liệu:", data)
+      return data.status === "success"
+    } else {
+      console.error("Kiểm tra cơ sở dữ liệu thất bại:", response.status, response.statusText)
+      return false
+    }
+  } catch (error) {
+    console.error("Lỗi khi kiểm tra kết nối cơ sở dữ liệu:", error)
     return false
   }
 }
@@ -1047,6 +1080,7 @@ window.addEventListener("online", async () => {
 // Thêm các hàm mới vào window object
 window.syncOfflineTests = syncOfflineTests
 window.checkServerConnection = checkServerConnection
+window.checkDatabaseConnection = checkDatabaseConnection
 
 // Thêm hàm kiểm tra trạng thái lưu của bài kiểm tra
 async function checkTestSaveStatus(testTitle) {

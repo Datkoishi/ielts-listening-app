@@ -2,31 +2,47 @@ const express = require("express")
 const cors = require("cors")
 const path = require("path")
 require("dotenv").config()
+const db = require("./config/database")
 
 const app = express()
 const port = process.env.PORT || 3000
 
-// Middleware
+// Cấu hình CORS chi tiết hơn
 app.use(
   cors({
-    origin: "*", // Cho phép tất cả các origin
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:5500", "http://127.0.0.1:5500"],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
 )
+
 app.use(express.json())
 
 // Phục vụ các file tĩnh từ thư mục frontend
 app.use(express.static(path.join(__dirname, "../frontend")))
 
-// Thêm route kiểm tra kết nối đơn giản
+// Health check endpoint không phụ thuộc vào cơ sở dữ liệu
 app.get("/api/health", (req, res) => {
   res.status(200).json({
     status: "success",
     message: "Server is running",
     timestamp: new Date().toISOString(),
   })
+})
+
+// Health check endpoint có kiểm tra cơ sở dữ liệu
+app.get("/api/health/db", async (req, res) => {
+  try {
+    const dbStatus = await db.healthCheck()
+    res.status(dbStatus.status === "success" ? 200 : 500).json(dbStatus)
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    })
+  }
 })
 
 // Cấu hình routes API
@@ -48,13 +64,13 @@ app.get("/teacher/*", (req, res) => {
   res.sendFile(path.join(__dirname, "../frontend/teacher/index.html"))
 })
 
-// Error handling middleware
+// Middleware xử lý lỗi
 app.use((err, req, res, next) => {
-  console.error("Server error:", err.stack)
+  console.error("Server error:", err)
   res.status(500).json({
     status: "error",
-    message: "Lỗi máy chủ",
-    error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    message: err.message || "Lỗi máy chủ",
+    timestamp: new Date().toISOString(),
   })
 })
 
@@ -66,6 +82,17 @@ app.use((req, res) => {
 // Khởi động máy chủ
 app.listen(port, () => {
   console.log(`Máy chủ đang chạy trên cổng ${port}`)
-})
 
-module.exports = app
+  // Kiểm tra kết nối cơ sở dữ liệu khi khởi động
+  db.connectDB()
+    .then((connected) => {
+      if (!connected) {
+        console.warn("Cảnh báo: Máy chủ đang chạy nhưng không kết nối được đến cơ sở dữ liệu")
+        console.warn("Các tính năng liên quan đến cơ sở dữ liệu sẽ không hoạt động")
+        console.warn("Vui lòng kiểm tra cấu hình cơ sở dữ liệu trong file .env")
+      }
+    })
+    .catch((err) => {
+      console.error("Lỗi khi kiểm tra kết nối cơ sở dữ liệu:", err.message)
+    })
+})
