@@ -473,8 +473,8 @@ async function checkServerConnection() {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 giây timeout
 
-    // Sửa URL endpoint để đảm bảo đúng đường dẫn
-    const url = `${API_URL}/tests/health`
+    // Sửa URL endpoint để sử dụng /api/health thay vì /api/tests/health
+    const url = `${API_URL}/health`
     console.log("URL kiểm tra kết nối:", url)
 
     const response = await fetch(url, {
@@ -616,20 +616,6 @@ function validateQuestionByType(question, partIndex, questionIndex) {
       break
   }
 }
-
-// Thêm event listener để đồng bộ khi online trở lại
-window.addEventListener("online", async () => {
-  console.log("Kết nối internet đã được khôi phục, đang đồng bộ dữ liệu...")
-  const result = await syncOfflineTests()
-
-  if (result.synced > 0) {
-    showNotification(`Đã đồng bộ ${result.synced} bài kiểm tra lên máy chủ.`, "success")
-  }
-
-  if (result.failed > 0) {
-    showNotification(`Không thể đồng bộ ${result.failed} bài kiểm tra. Sẽ thử lại sau.`, "warning")
-  }
-})
 
 // Helper functions to extract question data from DOM elements
 function extractOneAnswerDataFromDOM(questionElement) {

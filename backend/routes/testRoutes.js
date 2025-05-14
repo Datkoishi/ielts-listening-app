@@ -2,9 +2,14 @@ const express = require("express")
 const router = express.Router()
 const testController = require("../controllers/testController")
 
-// Thêm route kiểm tra kết nối
-// Đặt route này ở đầu file để đảm bảo nó được xử lý trước các route khác
-router.get("/health", testController.healthCheck)
+// Thêm route kiểm tra kết nối đơn giản
+router.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Test API is running",
+    timestamp: new Date().toISOString(),
+  })
+})
 
 // Lấy tất cả bài kiểm tra
 router.get("/", testController.getAllTests)
