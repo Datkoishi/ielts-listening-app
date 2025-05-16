@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Tạo phần tử script để tải form-handlers.js
     const script = document.createElement("script")
-    script.src = "js/form-handlers.js"
+    script.src = "."
     script.onload = () => {
       console.log("form-handlers.js đã được tải động")
       // Khởi tạo lại các thành phần cần thiết
