@@ -55,7 +55,7 @@ try {
 }
 
 // Kết nối đến cơ sở dữ liệu
-exports.connectDB = async () => {
+const connectDB = async () => {
   try {
     if (!pool.getConnection) {
       console.error("Pool connection không hợp lệ")
@@ -73,7 +73,7 @@ exports.connectDB = async () => {
 }
 
 // Hàm thực hiện truy vấn với xử lý lỗi
-exports.query = async (sql, params) => {
+const query = async (sql, params) => {
   try {
     if (!pool.execute) {
       throw new Error("Pool connection không hợp lệ")
@@ -90,7 +90,7 @@ exports.query = async (sql, params) => {
 }
 
 // Thêm hàm kiểm tra kết nối
-exports.healthCheck = async () => {
+const healthCheck = async () => {
   try {
     if (!pool.getConnection) {
       return {
@@ -117,4 +117,10 @@ exports.healthCheck = async () => {
   }
 }
 
-module.exports = pool
+// Export tất cả các hàm và pool
+module.exports = {
+  pool,
+  connectDB,
+  query,
+  healthCheck,
+}

@@ -2,7 +2,7 @@ const express = require("express")
 const cors = require("cors")
 const path = require("path")
 require("dotenv").config()
-const db = require("./config/database")
+const database = require("./config/database")
 
 const app = express()
 const port = process.env.PORT || 3000
@@ -34,7 +34,7 @@ app.get("/api/health", (req, res) => {
 // Health check endpoint có kiểm tra cơ sở dữ liệu
 app.get("/api/health/db", async (req, res) => {
   try {
-    const dbStatus = await db.healthCheck()
+    const dbStatus = await database.healthCheck()
     res.status(dbStatus.status === "success" ? 200 : 500).json(dbStatus)
   } catch (error) {
     res.status(500).json({
@@ -84,7 +84,8 @@ app.listen(port, () => {
   console.log(`Máy chủ đang chạy trên cổng ${port}`)
 
   // Kiểm tra kết nối cơ sở dữ liệu khi khởi động
-  db.connectDB()
+  database
+    .connectDB()
     .then((connected) => {
       if (!connected) {
         console.warn("Cảnh báo: Máy chủ đang chạy nhưng không kết nối được đến cơ sở dữ liệu")
@@ -96,3 +97,5 @@ app.listen(port, () => {
       console.error("Lỗi khi kiểm tra kết nối cơ sở dữ liệu:", err.message)
     })
 })
+
+module.exports = app

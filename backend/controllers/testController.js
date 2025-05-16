@@ -212,7 +212,22 @@ exports.createTest = async (req, res) => {
     }
 
     await query("COMMIT")
-    res.status(201).json({ message: "Tạo bài kiểm tra thành công", testId })
+
+    // Get the created test to confirm it exists
+    const createdTest = await query("SELECT id, title, vietnamese_name FROM tests WHERE id = ?", [testId])
+
+    console.log("Test created successfully:", {
+      testId,
+      title,
+      vietnamese_name,
+      createdTest: createdTest[0],
+    })
+
+    res.status(201).json({
+      message: "Tạo bài kiểm tra thành công",
+      testId,
+      test: createdTest[0],
+    })
   } catch (error) {
     await query("ROLLBACK")
     console.error("Lỗi tạo bài kiểm tra:", error.message, error.stack)
@@ -398,20 +413,54 @@ exports.submitAnswers = async (req, res) => {
 }
 
 // Thêm endpoint kiểm tra kết nối
-exports.healthCheck = (req, res) => {
+exports.healthCheck = async (req, res) => {
   try {
-    // Trả về response đơn giản không cần truy vấn database
     res.status(200).json({
       status: "success",
       message: "Server is running",
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error("Health check error:", error)
     res.status(500).json({
       status: "error",
-      message: "Server error during health check",
-      error: error.message,
+      message: error.message,
+      timestamp: new Date().toISOString(),
     })
+  }
+}
+
+// Thêm endpoint kiểm tra bài kiểm tra theo tiêu đề
+exports.checkTestByTitle = async (req, res) => {
+  try {
+    const { title } = req.query
+
+    if (!title) {
+      return res.status(400).json({ message: "Thiếu tiêu đề bài kiểm tra" })
+    }
+
+    console.log(`Checking if test with title '${title}' exists`)
+
+    const tests = await query(
+      `SELECT id, title, vietnamese_name, created_at 
+       FROM tests 
+       WHERE title = ? OR vietnamese_name = ?`,
+      [title, title],
+    )
+
+    if (tests.length > 0) {
+      return res.json({
+        exists: true,
+        test: tests[0],
+        message: "Tìm thấy bài kiểm tra",
+      })
+    }
+
+    return res.json({
+      exists: false,
+      message: "Không tìm thấy bài kiểm tra",
+    })
+  } catch (error) {
+    console.error("Lỗi kiểm tra bài kiểm tra:", error.message)
+    res.status(500).json({ message: "Lỗi máy chủ", error: error.message })
   }
 }

@@ -29,4 +29,7 @@ router.delete("/:id", testController.deleteTest)
 // Nhận câu trả lời từ học sinh
 router.post("/:testId/submit", testController.submitAnswers)
 
+// Add this line after the other routes
+router.get("/check-by-title", testController.checkTestByTitle)
+
 module.exports = router

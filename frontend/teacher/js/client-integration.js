@@ -425,11 +425,14 @@ async function saveTestToServer(testData) {
       }
 
       const result = await response.json()
-      showNotification("Bài kiểm tra đã được lưu thành công!", "success")
+      console.log("Server response after saving test:", result)
 
-      // Lưu ID bài kiểm tra để sử dụng sau này
       if (result.testId) {
         localStorage.setItem("lastSavedTestId", result.testId)
+        showNotification(`Bài kiểm tra đã được lưu thành công! ID: ${result.testId}`, "success")
+      } else {
+        console.warn("Server did not return a testId in the response:", result)
+        showNotification("Bài kiểm tra có thể đã được lưu nhưng không nhận được ID", "warning")
       }
 
       return result
@@ -989,15 +992,23 @@ function defaultQuestionData(type) {
 // Lấy danh sách bài kiểm tra
 async function getTests() {
   try {
+    console.log("Fetching tests from API:", `${API_URL}/tests`)
+
     const response = await fetchWithAuth(`${API_URL}/tests`)
+    console.log("Get tests response status:", response.status)
 
     if (!response.ok) {
-      throw new Error("Không thể lấy danh sách bài kiểm tra")
+      const errorData = await response.json().catch((e) => ({ message: "Could not parse error response" }))
+      console.error("Error fetching tests:", errorData)
+      throw new Error(`Không thể lấy danh sách bài kiểm tra: ${response.status} ${response.statusText}`)
     }
 
-    return await response.json()
+    const tests = await response.json()
+    console.log(`Retrieved ${tests.length} tests from server`)
+    return tests
   } catch (error) {
-    console.error("Lỗi khi lấy danh sách bài kiểm tra:", error)
+    console.error("Error in getTests function:", error)
+    showNotification(`Lỗi khi lấy danh sách bài kiểm tra: ${error.message}`, "error")
     return []
   }
 }
@@ -1123,7 +1134,16 @@ async function checkTestSaveStatus(testTitle) {
     // Nếu kết nối được server, thử lấy danh sách bài kiểm tra
     try {
       const tests = await getTests()
-      console.log("Số lượng bài kiểm tra từ server:", tests ? tests.length : 0)
+      console.log("Tests retrieved from server:", tests)
+
+      // Log the test titles to help with debugging
+      if (tests && Array.isArray(tests)) {
+        console.log(
+          "Available test titles:",
+          tests.map((t) => t.title),
+        )
+        console.log("Looking for test with title:", testTitle)
+      }
 
       if (!tests || !Array.isArray(tests)) {
         return { saved: false, reason: "Không thể lấy danh sách bài kiểm tra từ server" }
@@ -1170,6 +1190,36 @@ async function checkTestSaveStatus(testTitle) {
 
 // Thêm hàm vào window object
 window.checkTestSaveStatus = checkTestSaveStatus
+
+// Add this new function after the checkTestSaveStatus function
+
+// Thêm hàm kiểm tra bài kiểm tra theo tiêu đề
+async function checkTestByTitle(title) {
+  try {
+    if (!title) {
+      return { exists: false, message: "Tiêu đề không được để trống" }
+    }
+
+    console.log(`Checking if test with title '${title}' exists via dedicated endpoint`)
+
+    const response = await fetchWithAuth(`${API_URL}/tests/check-by-title?title=${encodeURIComponent(title)}`)
+
+    if (!response.ok) {
+      throw new Error(`Server error: ${response.status} ${response.statusText}`)
+    }
+
+    const result = await response.json()
+    console.log("Check test by title result:", result)
+
+    return result
+  } catch (error) {
+    console.error("Error checking test by title:", error)
+    return { exists: false, message: error.message }
+  }
+}
+
+// Add to window object
+window.checkTestByTitle = checkTestByTitle
 
 // Thêm các hàm mới vào window object
 window.saveToken = saveToken
