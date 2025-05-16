@@ -803,7 +803,7 @@ function initDynamicButtons() {
     addOptionBtn.addEventListener("click", addOptionItem)
   }
 
-  // Thêm mục cho câu hỏi ghép nối
+  // Th��m mục cho câu hỏi ghép nối
   const addItemBtn = document.querySelector(".add-item-btn")
   if (addItemBtn) {
     addItemBtn.addEventListener("click", addItemRow)

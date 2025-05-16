@@ -19,14 +19,15 @@ function checkAndDisplaySaveStatus() {
         console.log("Kết quả kiểm tra:", status)
 
         if (status.saved) {
-          alert(
+          showNotification(
             `Bài kiểm tra "${testTitle}" đã được lưu tại: ${status.location === "database" ? "máy chủ" : "cục bộ"}\nThời gian: ${status.timestamp}`,
+            "success",
           )
 
           // Hiển thị biểu tượng đã lưu bên cạnh tiêu đề
           updateSaveStatusIcon(true)
         } else {
-          alert(`Bài kiểm tra "${testTitle}" chưa được lưu: ${status.reason}`)
+          showNotification(`Bài kiểm tra "${testTitle}" chưa được lưu: ${status.reason}`, "warning")
 
           // Hiển thị biểu tượng chưa lưu
           updateSaveStatusIcon(false)
@@ -34,12 +35,12 @@ function checkAndDisplaySaveStatus() {
       })
       .catch((error) => {
         console.error("Lỗi khi kiểm tra trạng thái lưu:", error)
-        alert(`Lỗi khi kiểm tra: ${error.message}`)
+        showNotification(`Lỗi khi kiểm tra: ${error.message}`, "error")
         updateSaveStatusIcon(false)
       })
   } catch (error) {
     console.error("Lỗi khi kiểm tra trạng thái lưu:", error)
-    alert(`Lỗi: ${error.message}`)
+    showNotification(`Lỗi: ${error.message}`, "error")
   }
 }
 
@@ -136,7 +137,7 @@ async function debugTestSaving() {
     }
 
     // Hiển thị thông báo đang kiểm tra
-    alert(`Đang debug bài kiểm tra: "${testTitle}"\nKết quả sẽ hiển thị trong console.`)
+    showNotification(`Đang debug bài kiểm tra: "${testTitle}"\nKết quả sẽ hiển thị trong console.`, "info")
 
     // Kiểm tra kết nối server
     const serverConnected = await window.checkServerConnection()
@@ -167,10 +168,10 @@ async function debugTestSaving() {
     resultMessage += `Offline Tests: ${offlineTests.length}\n\n`
     resultMessage += "See console for more details."
 
-    alert(resultMessage)
+    showNotification(resultMessage, "info")
   } catch (error) {
     console.error("Error in debug function:", error)
-    alert(`Debug error: ${error.message}`)
+    showNotification(`Debug error: ${error.message}`, "error")
   }
 }
 
@@ -198,8 +199,68 @@ document.addEventListener("DOMContentLoaded", () => {
 // Thêm vào window object để có thể gọi từ HTML
 window.checkAndDisplaySaveStatus = checkAndDisplaySaveStatus
 
-// Giả sử showNotification được định nghĩa ở một nơi khác, ví dụ:
-// function showNotification(message, type) {
-//   console.log(`Notification (${type}): ${message}`);
-//   // Triển khai thực tế sẽ hiển thị thông báo trên giao diện người dùng
-// }
+// Thêm hàm hiển thị thông báo
+function showNotification(message, type) {
+  // Tìm hoặc tạo container thông báo
+  let notificationContainer = document.getElementById("notificationContainer")
+
+  if (!notificationContainer) {
+    notificationContainer = document.createElement("div")
+    notificationContainer.id = "notificationContainer"
+    notificationContainer.style.position = "fixed"
+    notificationContainer.style.top = "20px"
+    notificationContainer.style.right = "20px"
+    notificationContainer.style.zIndex = "9999"
+    document.body.appendChild(notificationContainer)
+  }
+
+  // Tạo thông báo mới
+  const notification = document.createElement("div")
+  notification.className = `notification ${type}`
+  notification.innerHTML = message
+
+  // Thêm style cho thông báo
+  notification.style.padding = "10px 15px"
+  notification.style.marginBottom = "10px"
+  notification.style.borderRadius = "4px"
+  notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)"
+  notification.style.minWidth = "250px"
+  notification.style.maxWidth = "400px"
+
+  // Màu sắc dựa trên loại thông báo
+  switch (type) {
+    case "success":
+      notification.style.backgroundColor = "#4CAF50"
+      notification.style.color = "white"
+      break
+    case "error":
+      notification.style.backgroundColor = "#F44336"
+      notification.style.color = "white"
+      break
+    case "warning":
+      notification.style.backgroundColor = "#FF9800"
+      notification.style.color = "white"
+      break
+    case "info":
+    default:
+      notification.style.backgroundColor = "#2196F3"
+      notification.style.color = "white"
+  }
+
+  // Thêm vào container
+  notificationContainer.appendChild(notification)
+
+  // Tự động xóa sau 5 giây
+  setTimeout(() => {
+    notification.style.opacity = "0"
+    notification.style.transition = "opacity 0.5s"
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.parentNode.removeChild(notification)
+      }
+    }, 500)
+  }, 5000)
+}
+
+// Thêm vào window object để có thể gọi từ các file khác
+window.showNotification = showNotification

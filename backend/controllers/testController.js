@@ -86,7 +86,23 @@ exports.createTest = async (req, res) => {
 
     // Kiểm tra dữ liệu đầu vào
     if (!title) {
+      console.error("Lỗi: Thiếu tiêu đề bài kiểm tra")
       return res.status(400).json({ message: "Thiếu tiêu đề bài kiểm tra" })
+    }
+
+    // Kiểm tra xem bài kiểm tra đã tồn tại chưa
+    const existingTests = await query("SELECT id, title FROM tests WHERE title = ? OR vietnamese_name = ?", [
+      title,
+      vietnamese_name || "",
+    ])
+
+    if (existingTests && existingTests.length > 0) {
+      console.log(`Bài kiểm tra với tiêu đề "${title}" đã tồn tại, ID: ${existingTests[0].id}`)
+      return res.status(409).json({
+        message: "Bài kiểm tra với tiêu đề này đã tồn tại",
+        testId: existingTests[0].id,
+        exists: true,
+      })
     }
 
     await query("START TRANSACTION")
@@ -151,7 +167,7 @@ exports.createTest = async (req, res) => {
       // Xử lý theo định dạng cũ (part1, part2, part3, part4)
       for (let i = 1; i <= 4; i++) {
         const partData = req.body[`part${i}`]
-        if (partData?.length > 0) {
+        if (partData && Array.isArray(partData) && partData.length > 0) {
           // Tạo phần với các trường mới
           const partResult = await query(
             "INSERT INTO parts (test_id, part_number, instructions, content) VALUES (?, ?, ?, ?)",
@@ -213,10 +229,10 @@ exports.createTest = async (req, res) => {
 
     await query("COMMIT")
 
-    // Get the created test to confirm it exists
+    // Lấy bài kiểm tra đã tạo để xác nhận nó tồn tại
     const createdTest = await query("SELECT id, title, vietnamese_name FROM tests WHERE id = ?", [testId])
 
-    console.log("Test created successfully:", {
+    console.log("Đã tạo bài kiểm tra thành công:", {
       testId,
       title,
       vietnamese_name,

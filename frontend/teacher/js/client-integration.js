@@ -260,118 +260,19 @@ function normalizeTestData(testData) {
 // Cập nhật hàm saveTestToServer để cải thiện xử lý lỗi
 async function saveTestToServer(testData) {
   try {
-    // Show loading notification
+    // Hiển thị thông báo đang kết nối
     showNotification("Đang kết nối với máy chủ...", "info")
 
-    // Make sure we're using the global test object
-    // Declare globalTest to avoid the error
+    // Đảm bảo sử dụng đối tượng test toàn cục
     const globalTest = window.test || testData
 
-    console.log("Test data received by saveTestToServer:", testData)
-    console.log("Global test object:", globalTest)
+    console.log("Dữ liệu bài kiểm tra nhận được:", JSON.stringify(testData, null, 2))
+    console.log("Đối tượng test toàn cục:", JSON.stringify(globalTest, null, 2))
 
-    // Check if the test data has questions
-    let hasQuestions = false
-    let totalQuestions = 0
-
-    for (let i = 1; i <= 4; i++) {
-      if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
-        hasQuestions = true
-        totalQuestions += globalTest[`part${i}`].length
-      }
-    }
-
-    console.log(`Test has questions: ${hasQuestions}, Total questions: ${hasQuestions}`)
-
-    if (!hasQuestions) {
-      console.warn("Không tìm thấy câu hỏi trong dữ liệu bài kiểm tra, đang cố gắng tạo lại từ DOM")
-
-      // Try to rebuild from DOM
-      for (let i = 1; i <= 4; i++) {
-        const partElement = document.getElementById(`part${i}`)
-        if (partElement) {
-          const questionElements = partElement.querySelectorAll(".question")
-
-          if (questionElements.length > 0) {
-            console.log(`Tìm thấy ${questionElements.length} câu hỏi trong phần ${i} từ DOM`)
-
-            // Initialize the part array if it doesn't exist
-            if (!globalTest[`part${i}`]) {
-              globalTest[`part${i}`] = []
-            }
-
-            // Add missing questions
-            questionElements.forEach((questionElement, index) => {
-              if (!globalTest[`part${i}`][index]) {
-                // Try to determine the question type
-                const typeElement = questionElement.querySelector("h3")
-                const questionType = typeElement
-                  ? typeElement.textContent.replace(/^[\s\S]*?(\w+\s+\w+\s*\/?\s*\w*)$/, "$1").trim()
-                  : "Unknown Type"
-
-                // Extract question data based on type
-                let questionData = null
-
-                switch (questionType) {
-                  case "Một đáp án":
-                    questionData = extractOneAnswerDataFromDOM(questionElement)
-                    break
-                  case "Nhiều đáp án":
-                    questionData = extractMultipleAnswerDataFromDOM(questionElement)
-                    break
-                  case "Ghép nối":
-                    questionData = extractMatchingDataFromDOM(questionElement)
-                    break
-                  case "Ghi nhãn Bản đồ/Sơ đồ":
-                    questionData = extractPlanMapDiagramDataFromDOM(questionElement)
-                    break
-                  case "Hoàn thành ghi chú":
-                    questionData = extractNoteCompletionDataFromDOM(questionElement)
-                    break
-                  case "Hoàn thành bảng/biểu mẫu":
-                    questionData = extractFormTableCompletionDataFromDOM(questionElement)
-                    break
-                  case "Hoàn thành lưu đồ":
-                    questionData = extractFlowChartCompletionDataFromDOM(questionElement)
-                    break
-                  default:
-                    questionData = {
-                      type: questionType,
-                      content: ["Question content from DOM"],
-                      correctAnswers: ["Answer from DOM"],
-                    }
-                }
-
-                // Add the question to the test part
-                globalTest[`part${i}`][index] = questionData
-                console.log(`Đã thêm câu hỏi từ DOM vào phần ${i} tại vị trí ${index}`)
-              }
-            })
-          }
-        }
-      }
-    }
-
-    // Validate test data before sending
-    for (let i = 1; i <= 4; i++) {
-      if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
-        globalTest[`part${i}`].forEach((question, index) => {
-          // Ensure content is an array
-          if (!Array.isArray(question.content)) {
-            question.content = ["Missing content"]
-            console.warn(`Đã sửa nội dung không hợp lệ cho câu hỏi ${index} trong phần ${i}`)
-          }
-
-          // Ensure correctAnswers exists
-          if (!question.correctAnswers) {
-            question.correctAnswers = ["Missing answer"]
-            console.warn(`Đã sửa câu trả lời bị thiếu cho câu hỏi ${index} trong phần ${i}`)
-          }
-
-          // Validate specific question types
-          validateQuestionByType(question, i, index)
-        })
-      }
+    // Kiểm tra tiêu đề bài kiểm tra
+    if (!globalTest.title || globalTest.title.trim() === "") {
+      showNotification("Lỗi: Tiêu đề bài kiểm tra không được để trống", "error")
+      return { success: false, error: "Tiêu đề bài kiểm tra không được để trống" }
     }
 
     // Kiểm tra kết nối mạng
@@ -382,9 +283,27 @@ async function saveTestToServer(testData) {
       return { success: true, offline: true, message: "Đã lưu offline", offlineId }
     }
 
-    // Normalize data before sending
+    // Kiểm tra xem có câu hỏi nào không
+    let hasQuestions = false
+    let totalQuestions = 0
+
+    for (let i = 1; i <= 4; i++) {
+      if (globalTest[`part${i}`] && globalTest[`part${i}`].length > 0) {
+        hasQuestions = true
+        totalQuestions += globalTest[`part${i}`].length
+      }
+    }
+
+    console.log(`Bài kiểm tra có câu hỏi: ${hasQuestions}, Tổng số câu hỏi: ${totalQuestions}`)
+
+    if (!hasQuestions) {
+      showNotification("Lỗi: Bài kiểm tra phải có ít nhất một câu hỏi", "error")
+      return { success: false, error: "Bài kiểm tra phải có ít nhất một câu hỏi" }
+    }
+
+    // Chuẩn hóa dữ liệu trước khi gửi
     const normalizedData = normalizeTestData(globalTest)
-    console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", normalizedData)
+    console.log("Dữ liệu đã chuẩn hóa sẽ được gửi:", JSON.stringify(normalizedData, null, 2))
 
     // Kiểm tra cấu hình API_URL
     if (!API_URL) {
@@ -396,18 +315,20 @@ async function saveTestToServer(testData) {
     // Hiển thị thông tin về API endpoint
     console.log(`Đang gửi dữ liệu đến: ${API_URL}/tests`)
 
-    // Make API request with timeout
+    // Gửi yêu cầu API với timeout
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 giây timeout
 
     try {
-      const response = await fetchWithAuth(`${API_URL}/tests`, {
+      // Thêm log để kiểm tra dữ liệu trước khi gửi
+      console.log("Body request:", JSON.stringify(normalizedData))
+
+      const response = await fetch(`${API_URL}/tests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(normalizedData),
-        // Thêm credentials để xử lý vấn đề cookie
         credentials: "include",
         signal: controller.signal,
       })
@@ -418,20 +339,29 @@ async function saveTestToServer(testData) {
       console.log("Response status:", response.status)
       console.log("Response headers:", [...response.headers.entries()])
 
-      if (!response.ok) {
-        const errorData = await response.json().catch((e) => ({ message: "Không thể đọc dữ liệu lỗi" }))
-        console.error("Server error response:", errorData)
-        throw new Error(errorData.message || `Lỗi server: ${response.status} ${response.statusText}`)
+      const responseText = await response.text()
+      console.log("Response text:", responseText)
+
+      let result
+      try {
+        result = JSON.parse(responseText)
+      } catch (e) {
+        console.error("Không thể parse JSON response:", e)
+        throw new Error(`Lỗi khi xử lý phản hồi từ server: ${responseText}`)
       }
 
-      const result = await response.json()
+      if (!response.ok) {
+        console.error("Server error response:", result)
+        throw new Error(result.message || `Lỗi server: ${response.status} ${response.statusText}`)
+      }
+
       console.log("Server response after saving test:", result)
 
       if (result.testId) {
         localStorage.setItem("lastSavedTestId", result.testId)
         showNotification(`Bài kiểm tra đã được lưu thành công! ID: ${result.testId}`, "success")
       } else {
-        console.warn("Server did not return a testId in the response:", result)
+        console.warn("Server không trả về testId trong phản hồi:", result)
         showNotification("Bài kiểm tra có thể đã được lưu nhưng không nhận được ID", "warning")
       }
 
@@ -457,7 +387,7 @@ async function saveTestToServer(testData) {
 
     showNotification(`Lỗi: ${errorMessage}`, "error")
 
-    // If there's a network error or server is down, provide a fallback
+    // Nếu có lỗi mạng hoặc server không hoạt động, cung cấp phương án dự phòng
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
       // Lưu offline nếu không kết nối được
       const offlineId = saveTestOffline(globalTest || testData)

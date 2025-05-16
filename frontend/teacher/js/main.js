@@ -532,47 +532,6 @@ function displayExistingQuestions(part) {
   console.warn("displayExistingQuestions function is a placeholder.")
 }
 
-// Thêm vào file main.js hoặc index.js
-function updateSaveStatus() {
-  const testTitle = document.getElementById('test-title').value;
-  const saveStatusElement = document.getElementById('save-status');
-  
-  if (!saveStatusElement) {
-    // Tạo phần tử hiển thị trạng thái nếu chưa có
-    const statusDiv = document.createElement('div');
-    statusDiv.id = 'save-status';
-    statusDiv.className = 'save-status';
-    document.querySelector('.test-header').appendChild(statusDiv);
-  }
-  
-  // Hiển thị đang kiểm tra
-  saveStatusElement.innerHTML = '<span class="checking">Đang kiểm tra trạng thái lưu...</span>';
-  
-  // Kiểm tra trạng thái lưu
-  checkTestSaveStatus(testTitle)
-    .then(status => {
-      if (status.saved) {
-        saveStatusElement.innerHTML = `
-          <span class="saved">Đã lưu</span>
-          <span class="details">Vị trí: ${status.location === 'database' ? 'Cơ sở dữ liệu' : 'Offline'}</span>
-          <span class="details">Thời gian: ${status.timestamp}</span>
-        `;
-      } else {
-        saveStatusElement.innerHTML = `
-          <span class="not-saved">Chưa lưu</span>
-          <span class="details">${status.reason || 'Bài kiểm tra chưa được lưu'}</span>
-        `;
-      }
-    })
-    .catch(error => {
-      saveStatusElement.innerHTML = `
-        <span class="error">Lỗi kiểm tra</span>
-        <span class="details">${error.message}</span>
-      `;
-    });
-}
-
-// Gọi hàm này sau khi tạo bài kiểm tra hoặc khi cần kiểm tra
 // Make sure these functions are exposed to the global window object
 window.previousPart = previousPart
 window.nextPart = nextPart
@@ -596,4 +555,74 @@ window.previewQuestion = previewQuestion
 function startTestCreation() {
   console.log("startTestCreation function called")
   // This is a placeholder - the actual implementation is likely in test-management.js
+}
+
+// Thêm đoạn mã này vào cuối file main.js để đảm bảo showNotification được định nghĩa toàn cục
+
+// Đảm bảo showNotification được định nghĩa toàn cục
+if (typeof window.showNotification !== "function") {
+  window.showNotification = (message, type) => {
+    // Tìm hoặc tạo container thông báo
+    let notificationContainer = document.getElementById("notificationContainer")
+
+    if (!notificationContainer) {
+      notificationContainer = document.createElement("div")
+      notificationContainer.id = "notificationContainer"
+      notificationContainer.style.position = "fixed"
+      notificationContainer.style.top = "20px"
+      notificationContainer.style.right = "20px"
+      notificationContainer.style.zIndex = "9999"
+      document.body.appendChild(notificationContainer)
+    }
+
+    // Tạo thông báo mới
+    const notification = document.createElement("div")
+    notification.className = `notification ${type}`
+    notification.innerHTML = message
+
+    // Thêm style cho thông báo
+    notification.style.padding = "10px 15px"
+    notification.style.marginBottom = "10px"
+    notification.style.borderRadius = "4px"
+    notification.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)"
+    notification.style.minWidth = "250px"
+    notification.style.maxWidth = "400px"
+
+    // Màu sắc dựa trên loại thông báo
+    switch (type) {
+      case "success":
+        notification.style.backgroundColor = "#4CAF50"
+        notification.style.color = "white"
+        break
+      case "error":
+        notification.style.backgroundColor = "#F44336"
+        notification.style.color = "white"
+        break
+      case "warning":
+        notification.style.backgroundColor = "#FF9800"
+        notification.style.color = "white"
+        break
+      case "info":
+      default:
+        notification.style.backgroundColor = "#2196F3"
+        notification.style.color = "white"
+    }
+
+    // Thêm vào container
+    notificationContainer.appendChild(notification)
+
+    // Tự động xóa sau 5 giây
+    setTimeout(() => {
+      notification.style.opacity = "0"
+      notification.style.transition = "opacity 0.5s"
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification)
+        }
+      }, 500)
+    }, 5000)
+
+    // Đồng thời log ra console
+    console.log(`${type.toUpperCase()}: ${message}`)
+  }
 }
