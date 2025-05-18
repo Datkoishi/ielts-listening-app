@@ -4,6 +4,9 @@ const path = require("path")
 require("dotenv").config()
 const database = require("./config/database")
 
+// Add this near the top of the file, after other imports
+const { setupDatabase } = require("./config/setup-database")
+
 const app = express()
 const port = process.env.PORT || 3000
 
@@ -78,6 +81,20 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, "../frontend/index.html"))
 })
+
+// Add this before app.listen
+// Thiết lập cơ sở dữ liệu
+setupDatabase()
+  .then((success) => {
+    if (success) {
+      console.log("Cơ sở dữ liệu đã được thiết lập thành công")
+    } else {
+      console.warn("Không thể thiết lập cơ sở dữ liệu tự động. Vui lòng kiểm tra kết nối và cấu trúc cơ sở dữ liệu.")
+    }
+  })
+  .catch((error) => {
+    console.error("Lỗi khi thiết lập cơ sở dữ liệu:", error)
+  })
 
 // Khởi động máy chủ
 app.listen(port, () => {

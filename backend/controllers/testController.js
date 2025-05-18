@@ -166,7 +166,9 @@ exports.createTest = async (req, res) => {
     } else {
       // Xử lý theo định dạng cũ (part1, part2, part3, part4)
       for (let i = 1; i <= 4; i++) {
-        const partData = req.body[`part${i}`]
+        const partKey = `part${i}`
+        const partData = req.body[partKey]
+
         if (partData && Array.isArray(partData) && partData.length > 0) {
           // Tạo phần với các trường mới
           const partResult = await query(
