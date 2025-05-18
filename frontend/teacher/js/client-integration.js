@@ -181,8 +181,6 @@ function normalizeTestData(testData) {
     version: testData.version || "1.0",
     // Thêm trường status nếu cần
     status: "active",
-    // Cấu trúc parts theo đúng schema
-    parts: [],
   }
 
   // Tính tổng số câu hỏi
@@ -196,57 +194,33 @@ function normalizeTestData(testData) {
     return total
   }
 
-  // Chuyển đổi parts theo đúng cấu trúc schema
+  // Thêm các phần vào dữ liệu chuẩn hóa
   for (let i = 1; i <= 4; i++) {
-    if (testData[`part${i}`] && testData[`part${i}`].length > 0) {
-      const partQuestions = testData[`part${i}`].map((question, qIndex) => {
-        // Map question_type string sang type_id (theo schema)
-        const typeIdMap = {
-          "Một đáp án": 1,
-          "Nhiều đáp án": 2,
-          "Ghép nối": 3,
-          "Ghi nhãn Bản đồ/Sơ đồ": 4,
-          "Hoàn thành ghi chú": 5,
-          "Hoàn thành bảng/biểu mẫu": 6,
-          "Hoàn thành lưu đồ": 7,
+    const partKey = `part${i}`
+    if (testData[partKey] && Array.isArray(testData[partKey]) && testData[partKey].length > 0) {
+      normalizedTest[partKey] = testData[partKey].map((question) => {
+        // Đảm bảo content và correctAnswers là đúng định dạng
+        let content = question.content
+        let correctAnswers = question.correctAnswers
+
+        // Chuyển đổi content thành chuỗi JSON nếu cần
+        if (typeof content !== "string") {
+          content = JSON.stringify(content)
         }
 
-        // Đảm bảo content và correctAnswers là chuỗi JSON
-        let contentStr = question.content
-        if (typeof contentStr !== "string") {
-          contentStr = JSON.stringify(contentStr)
-        }
-
-        let correctAnswersStr = question.correctAnswers
-        if (typeof correctAnswersStr !== "string") {
-          correctAnswersStr = JSON.stringify(correctAnswersStr)
+        // Chuyển đổi correctAnswers thành chuỗi JSON nếu cần
+        if (typeof correctAnswers !== "string") {
+          correctAnswers = JSON.stringify(correctAnswers)
         }
 
         return {
-          question_type: question.type,
-          // Thêm type_id để liên kết với bảng question_types
-          type_id: typeIdMap[question.type] || 1,
-          content: contentStr,
-          correct_answers: correctAnswersStr,
-          // Thêm các trường bổ sung theo schema
-          difficulty: "medium",
-          points: 1,
-          position: qIndex + 1, // Vị trí câu hỏi trong phần
+          ...question,
+          content,
+          correctAnswers,
         }
       })
-
-      normalizedTest.parts.push({
-        part_number: i,
-        // Thêm instructions cho mỗi phần
-        instructions: `Instructions for Part ${i}`,
-        // Thêm content để lưu thông tin bổ sung
-        content: JSON.stringify({
-          title: `Part ${i}`,
-          description: `Description for Part ${i}`,
-          question_count: testData[`part${i}`].length,
-        }),
-        questions: partQuestions,
-      })
+    } else {
+      normalizedTest[partKey] = []
     }
   }
 
@@ -323,13 +297,15 @@ async function saveTestToServer(testData) {
       // Thêm log để kiểm tra dữ liệu trước khi gửi
       console.log("Body request:", JSON.stringify(normalizedData))
 
+      // Sửa lỗi: Thay đổi cách gửi request để đảm bảo dữ liệu được gửi đúng cách
       const response = await fetch(`${API_URL}/tests`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(normalizedData),
-        credentials: "include",
+        // Thay đổi từ credentials: "include" sang credentials: "same-origin" để tránh vấn đề CORS
+        credentials: "same-origin",
         signal: controller.signal,
       })
 
@@ -390,7 +366,7 @@ async function saveTestToServer(testData) {
     // Nếu có lỗi mạng hoặc server không hoạt động, cung cấp phương án dự phòng
     if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
       // Lưu offline nếu không kết nối được
-      const offlineId = saveTestOffline(globalTest || testData)
+      const offlineId = saveTestOffline(testData)
       showNotification("Không thể kết nối đến máy chủ. Bài kiểm tra đã được lưu cục bộ.", "warning")
       return { success: false, offline: true, message: "Đã lưu offline do lỗi kết nối", offlineId }
     }
